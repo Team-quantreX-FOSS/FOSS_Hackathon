@@ -1,1 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>FinRisk</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+margin-top:100px;
+}
+
+/* BUTTON */
+button{
+padding:15px 30px;
+font-size:18px;
+cursor:pointer;
+}
+
+/* POPUP */
+.popup{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+}
+
+.popup.show{
+display:flex;
+}
+
+.popup-content{
+background:white;
+padding:30px;
+border-radius:12px;
+width:320px;
+text-align:center;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+.popup-content input{
+width:90%;
+padding:10px;
+font-size:16px;
+margin:5px;
+}
+
+.popup-content button{
+padding:10px 20px;
+font-size:16px;
+background:#333;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>FinRisk System</h1>
+
+<button onclick="openBankerLogin()">Banker</button>
+
+<!-- 🔐 LOGIN -->
+<div id="bankerLoginPopup" class="popup">
+<div class="popup-content">
+
+<h2>Banker Login</h2>
+
+<input id="loginId" placeholder="Banker ID"><br>
+<input id="loginPass" type="password" placeholder="Password"><br><br>
+
+<button onclick="loginBanker()">Login</button>
+
+<p>
+<a href="#" onclick="openRegister()">Create Account</a>
+</p>
+
+<p id="loginMsg" style="color:red;"></p>
+
+</div>
+</div>
+
+<!-- 🔐 REGISTER -->
+<div id="bankerRegisterPopup" class="popup">
+<div class="popup-content">
+
+<h2>Create Account</h2>
+
+<input id="regName" placeholder="Name"><br>
+<input id="regPhone" placeholder="Phone"><br>
+<input id="regEmail" placeholder="Email"><br>
+<input id="regId" placeholder="Banker ID"><br>
+<input id="regPass" type="password" placeholder="Password"><br>
+<input id="regConfirm" type="password" placeholder="Confirm Password"><br><br>
+
+<button onclick="registerBanker()">Register</button>
+
+<p id="regMsg" style="color:red;"></p>
+
+</div>
+</div>
+
+<script>
+
+function openBankerLogin(){
+document.getElementById("bankerLoginPopup").classList.add("show");
+}
+
+function openRegister(){
+document.getElementById("bankerLoginPopup").classList.remove("show");
+document.getElementById("bankerRegisterPopup").classList.add("show");
+}
+
+function registerBanker(){
+
+let p = regPass.value;
+let c = regConfirm.value;
+
+if(p !== c){
+document.getElementById("regMsg").innerText = "Passwords do not match";
+return;
+}
+
+let user = {
+name: regName.value,
+phone: regPhone.value,
+email: regEmail.value,
+bankerId: regId.value,
+pass: p
+};
+
+localStorage.setItem("banker_"+regId.value, JSON.stringify(user));
+
+document.getElementById("bankerRegisterPopup").classList.remove("show");
+document.getElementById("bankerLoginPopup").classList.add("show");
+
+}
+
+function loginBanker(){
+
+let id = loginId.value;
+let pass = loginPass.value;
+
+let data = JSON.parse(localStorage.getItem("banker_"+id));
+
+if(data && data.pass === pass){
+window.location.href = "banker_dashboard.html";
+}else{
+document.getElementById("loginMsg").innerText = "Invalid credentials";
+}
+
+}
+
+</script>
+
+</body>
+</html>
 
