@@ -31,7 +31,29 @@ init_db()
 # ------------------ HOME ------------------
 @app.route('/')
 def home():
-    return render_template('dashboard.html')
+    return render_template('index.html')
+
+
+# ------------------ USER DASHBOARD ------------------
+@app.route('/user_dashboard')
+def user_dashboard():
+    return render_template('user_dashboard.html')
+
+
+# ------------------ BANKER DASHBOARD ------------------
+@app.route('/banker_dashboard')
+def banker_dashboard():
+    return render_template('banker_dashboard.html')
+
+
+# ------------------ ADMIN DASHBOARD ------------------
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@app.route('/test')
+def test():
+    return "Working!"
 
 
 # ------------------ SAVE USER FINANCE ------------------
