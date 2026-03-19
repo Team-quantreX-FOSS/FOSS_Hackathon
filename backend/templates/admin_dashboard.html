@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Admin Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* 🔥 BIGGER TABLE */
+#adminTable{
+font-size:22px;
+border-collapse:collapse;
+}
+
+#adminTable th, #adminTable td{
+padding:16px;
+text-align:center;
+}
+
+#adminTable th{
+font-size:24px;
+background:#333;
+color:white;
+}
+
+/* Buttons */
+button{
+font-size:20px;
+padding:10px 16px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+<h2>FinRisk - Admin Panel</h2>
+</div>
+
+<div class="container">
+
+<div class="sidebar">
+<h2>Admin</h2>
+<button onclick="location.href='admin_dashboard.html'">Dashboard</button>
+<button onclick="clearAll()">Reset System</button>
+</div>
+
+<div class="main">
+
+<h1>System Users</h1>
+
+<table border="1" width="100%" id="adminTable">
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Score</th>
+<th>Action</th>
+</tr>
+</table>
+
+</div>
+</div>
+
+<script>
+
+let users = JSON.parse(localStorage.getItem("users")) || [];
+
+let table = document.getElementById("adminTable");
+
+function loadUsers(){
+
+table.innerHTML = `
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Score</th>
+<th>Action</th>
+</tr>
+`;
+
+users.forEach(u => {
+
+let row = table.insertRow();
+
+row.innerHTML = `
+<td>${u.name}</td>
+<td>${u.phone}</td>
+<td style="font-size:24px; font-weight:bold;">${u.score}</td>
+<td>
+<button onclick="deleteUser('${u.id}')">Delete</button>
+</td>
+`;
+
+});
+
+}
+
+loadUsers();
+
+/* DELETE USER */
+function deleteUser(id){
+
+users = users.filter(u => u.id != id);
+
+localStorage.setItem("users", JSON.stringify(users));
+
+loadUsers();
+}
+
+/* RESET SYSTEM */
+function clearAll(){
+
+if(confirm("Are you sure?")){
+localStorage.clear();
+location.reload();
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
 
