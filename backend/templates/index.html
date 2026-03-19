@@ -1,1 +1,296 @@
+<!DOCTYPE html>
+<html>
 
+<head>
+<title>Borrower Risk Analyzer</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* ONLY KEEP MINIMAL PAGE ALIGNMENT */
+body{
+    font-family: Georgia, serif;
+    text-align:center;
+    margin-top:80px;
+}
+
+/* REMOVE OLD POPUP + INPUT STYLES (they were breaking your theme) */
+
+.close{
+    float:right;
+    font-size:22px;
+    cursor:pointer;
+    color:#e6d5b8;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Borrower Risk Analyzer</h1>
+<p>AI-powered system for analyzing borrower risk</p>
+
+<h2>Select Role</h2>
+
+<div class="buttons">
+<button onclick="openLogin('user')">👤 User</button>
+<button onclick="openLogin('banker')">🏦 Banker</button>
+<button onclick="openLogin('admin')">⚙ Admin</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginPopup" class="popup">
+<div class="popup-content">
+
+<span class="close" onclick="closePopup('loginPopup')">&times;</span>
+
+<h2 id="loginTitle"></h2>
+<div id="loginFields"></div>
+
+<button onclick="login()">Login</button>
+
+<p id="loginMsg" style="color:red;"></p>
+
+<p style="font-size:24px;">
+Not registered? 
+<a href="#" onclick="openRegister()" style="font-size:26px;">Create Account</a>
+</p>
+
+</div>
+</div>
+
+<!-- REGISTER -->
+<div id="registerPopup" class="popup">
+<div class="popup-content">
+
+<span class="close" onclick="closePopup('registerPopup')">&times;</span>
+
+<h2 id="registerTitle"></h2>
+<div id="registerFields"></div>
+
+<button onclick="register()">Register</button>
+
+<p id="regMsg" style="color:red;"></p>
+
+</div>
+</div>
+
+<script>
+
+let role = "";
+
+/* OPEN LOGIN */
+function openLogin(r){
+role = r;
+
+document.getElementById("loginMsg").innerText = "";
+
+document.getElementById("loginPopup").classList.add("show");
+document.getElementById("loginTitle").innerText = r.toUpperCase()+" Login";
+
+if(r==="user"){
+document.getElementById("loginFields").innerHTML = `
+<input id="loginUser" placeholder="Username"><br>
+<input id="loginPass" type="password" placeholder="Password"><br>
+`;
+}
+else{
+document.getElementById("loginFields").innerHTML = `
+<input id="loginId" placeholder="${r==='banker'?'Banker ID':'Admin ID'}"><br>
+<input id="loginPass" type="password" placeholder="Password"><br>
+`;
+}
+}
+
+/* OPEN REGISTER */
+function openRegister(){
+
+document.getElementById("regMsg").innerText = "";
+
+document.getElementById("loginPopup").classList.remove("show");
+document.getElementById("registerPopup").classList.add("show");
+
+document.getElementById("registerTitle").innerText = role.toUpperCase()+" Register";
+
+if(role==="user"){
+document.getElementById("registerFields").innerHTML = `
+<input id="name" placeholder="Name"><br>
+<input id="phone" placeholder="Phone"><br>
+<input id="username" placeholder="Username"><br>
+<input id="pass" type="password" placeholder="Password"><br>
+<input id="confirm" type="password" placeholder="Confirm Password"><br>
+`;
+}
+else if(role==="banker"){
+document.getElementById("registerFields").innerHTML = `
+<input id="name" placeholder="Name"><br>
+<input id="bankId" placeholder="Banker ID"><br>
+<input id="bankName" placeholder="Bank Name"><br>
+<input id="pass" type="password" placeholder="Password"><br>
+<input id="confirm" type="password" placeholder="Confirm Password"><br>
+`;
+}
+else{
+document.getElementById("registerFields").innerHTML = `
+<input id="name" placeholder="Admin Name"><br>
+<input id="email" placeholder="Email"><br>
+<input id="pass" type="password" placeholder="Password"><br>
+<input id="confirm" type="password" placeholder="Confirm Password"><br>
+`;
+}
+}
+
+/* CLOSE */
+function closePopup(id){
+document.getElementById(id).classList.remove("show");
+}
+
+/* REGISTER */
+function register(){
+
+let regMsg = document.getElementById("regMsg");
+
+let password = document.getElementById("pass").value.trim();
+let confirmPassword = document.getElementById("confirm").value.trim();
+
+if(password !== confirmPassword){
+regMsg.innerText = "Passwords do not match";
+return;
+}
+
+if(role==="user"){
+let username = document.getElementById("username").value.trim();
+
+if(!username){
+regMsg.innerText="Enter username";
+return;
+}
+
+let data = {
+name: document.getElementById("name").value.trim(),
+phone: document.getElementById("phone").value.trim(),
+username: username,
+pass: password
+};
+
+localStorage.setItem("user_"+username, JSON.stringify(data));
+}
+
+else if(role==="banker"){
+let id = document.getElementById("bankId").value.trim();
+
+if(!id){
+regMsg.innerText="Enter Banker ID";
+return;
+}
+
+let data = {
+name: document.getElementById("name").value.trim(),
+bankId: id,
+bankName: document.getElementById("bankName").value.trim(),
+pass: password
+};
+
+localStorage.setItem("banker_"+id, JSON.stringify(data));
+}
+
+else{
+let adminId = "ADM" + Math.floor(Math.random()*100000);
+
+alert("Your Admin ID: " + adminId);
+
+let data = {
+name: document.getElementById("name").value.trim(),
+email: document.getElementById("email").value.trim(),
+adminId: adminId,
+pass: password
+};
+
+localStorage.setItem("admin_"+adminId, JSON.stringify(data));
+
+alert("Registration Successful!");
+window.location.href="admin_dashboard.html";
+return;
+}
+
+regMsg.style.color="green";
+regMsg.innerText = "Registration Successful!";
+
+setTimeout(()=>{
+document.getElementById("registerPopup").classList.remove("show");
+document.getElementById("loginPopup").classList.add("show");
+},1500);
+
+}
+
+/* LOGIN */
+function login(){
+
+let loginMsg = document.getElementById("loginMsg");
+
+/* USER LOGIN */
+if(role==="user"){
+let username = document.getElementById("loginUser").value.trim();
+let password = document.getElementById("loginPass").value.trim();
+
+if(!username || !password){
+loginMsg.innerText="Enter all fields!";
+return;
+}
+
+let stored = localStorage.getItem("user_"+username);
+
+if(!stored){
+loginMsg.innerText="Not registered!";
+return;
+}
+
+let data = JSON.parse(stored);
+
+if(data.pass === password){
+
+localStorage.setItem("currentUser", username);
+window.location.href="user_dashboard.html";
+
+}else{
+loginMsg.innerText="Wrong password!";
+}
+}
+
+/* BANKER + ADMIN */
+else{
+let id = document.getElementById("loginId").value.trim();
+let password = document.getElementById("loginPass").value.trim();
+
+if(!id || !password){
+loginMsg.innerText="Enter all fields!";
+return;
+}
+
+let key = role==="banker" ? "banker_"+id : "admin_"+id;
+
+let stored = localStorage.getItem(key);
+
+if(!stored){
+loginMsg.innerText="Not registered!";
+return;
+}
+
+let data = JSON.parse(stored);
+
+if(data.pass === password){
+window.location.href = role==="banker" ? "banker_dashboard.html" : "admin_dashboard.html";
+}else{
+loginMsg.innerText="Wrong password!";
+}
+}
+
+}
+
+</script>
+
+</body>
+</html>
