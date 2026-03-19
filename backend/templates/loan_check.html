@@ -1,1 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Loan Eligibility</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>AI-Based Loan Risk Analysis System</h1>
+
+<div class="loan-card">
+
+<h2>Loan Eligibility Check</h2>
+
+Monthly Income:<br>
+<input type="number" id="income"><br><br>
+
+Monthly Expenses:<br>
+<input type="number" id="expenses"><br><br>
+
+Age:<br>
+<input type="number" id="age"><br><br>
+
+Existing EMI:<br>
+<input type="number" id="existingEmi"><br><br>
+
+Loan Type:<br>
+<select id="loanTypeSelect">
+<option>Personal Loan</option>
+<option>Education Loan</option>
+<option>Business Loan</option>
+<option>Micro Loan</option>
+</select><br><br>
+
+Loan Amount Requested:<br>
+<input type="number" id="loan"><br><br>
+
+Loan Tenure (months):<br>
+<input type="number" id="tenure"><br><br>
+
+<h3>Alternative Credit Data</h3>
+
+Upload Rent Payment Proof:<br>
+<input type="file"><br><br>
+
+Upload Electricity Bill:<br>
+<input type="file"><br><br>
+
+Upload Mobile Recharge Bill:<br>
+<input type="file"><br><br>
+
+Upload Water Bill:<br>
+<input type="file"><br><br>
+
+<button onclick="checkRisk()">Check Eligibility</button>
+<br><br>
+Phone Number<br>
+<input type="text" id="phone"><br><br>
+<button onclick="applyLoan()">Apply for Loan</button>
+
+<h3>Risk Score</h3>
+<p id="score">Your score will appear here</p>
+
+<h3>Loan Risk Result</h3>
+<p id="result">Your risk result will appear here.</p>
+
+<div id="riskColor" style="width:200px;height:20px;margin:auto;"></div>
+
+<h3>Loan Recommendation</h3>
+<p id="loanType">Recommended loan will appear here.</p>
+
+<h3>Estimated Monthly EMI</h3> 
+<p id="emiResult">EMI will appear here</p>
+
+</div>
+
+<script>
+
+function checkRisk(){
+
+let income = parseFloat(document.getElementById("income").value) || 0;
+let expenses = parseFloat(document.getElementById("expenses").value) || 0;
+let age = parseFloat(document.getElementById("age").value) || 0;
+let loan = parseFloat(document.getElementById("loan").value) || 0;
+let tenure = parseFloat(document.getElementById("tenure").value) || 1;
+
+let emi = loan / tenure;
+let ratio = expenses / income;
+
+let score = 0;
+let result = "";
+let loanType = "";
+let color = "";
+
+// SAME LOGIC + AGE FACTOR ADDED
+if(ratio < 0.4 && age >= 21 && age <= 60){
+    score = 80;
+    result = "Low Risk Borrower";
+    loanType = "Eligible for Personal Loan or Business Loan";
+    color = "green";
+}
+else if(ratio < 0.7){
+    score = 60;
+    result = "Medium Risk Borrower";
+    loanType = "Eligible for Small Personal Loan";
+    color = "yellow";
+}
+else{
+    score = 35;
+    result = "High Risk Borrower";
+    loanType = "Only Micro Loan Recommended";
+    color = "red";
+}
+
+/* APPLY */
+function applyLoan(){
+
+let phone = document.getElementById("phone").value;
+
+if(!phone){
+alert("Enter phone number!");
+return;
+}
+
+window.location.href = "loan_check.html";
+
+}
+
+// UI UPDATE (UNCHANGED STYLE)
+document.getElementById("riskColor").style.backgroundColor = color;
+document.getElementById("score").innerText = "Risk Score: " + score;
+document.getElementById("result").innerText = result;
+document.getElementById("loanType").innerText = loanType;
+document.getElementById("emiResult").innerText = "Estimated EMI: ₹" + emi;
+
+// 🔥 STORE FOR BANKER
+let application = {
+    income,
+    expenses,
+    age,
+    loan,
+    tenure,
+    emi,
+    score,
+    result,
+    loanType
+};
+
+let applications = JSON.parse(localStorage.getItem("applications")) || [];
+applications.push(application);
+localStorage.setItem("applications", JSON.stringify(applications));
+
+}
+
+</script>
+
+</body>
+</html>
 
