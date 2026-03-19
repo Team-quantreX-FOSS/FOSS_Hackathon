@@ -1,1 +1,302 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Banker Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.controls{
+margin:20px;
+text-align:center;
+}
+
+/* 🔥 BIGGER CONTROL BUTTONS */
+.controls button{
+margin:8px;
+font-size:22px;
+padding:10px 18px;
+}
+
+/* 🔥 BIGGER TABLE */
+#userTable {
+font-size:22px;
+border-collapse: collapse;
+}
+
+#userTable th, #userTable td {
+padding:16px;
+text-align:center;
+}
+
+#userTable th {
+background:#333;
+color:white;
+font-size:24px;
+}
+
+/* Popup */
+.popup{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+}
+
+.popup-content{
+background:rgb(70, 58, 58);
+padding:25px;
+width:320px;
+margin:100px auto;
+border-radius:10px;
+text-align:center;
+font-size:22px;
+}
+
+/* 🔥 POPUP TEXT */
+.popup-content h3{
+font-size:26px;
+}
+
+.popup-content input{
+font-size:22px;
+padding:10px;
+width:90%;
+}
+
+.popup-content button{
+font-size:20px;
+margin:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+<h2>FinRisk - Banker Dashboard</h2>
+</div>
+
+<div class="container">
+
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='banker_dashboard.html'">Dashboard</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="main">
+
+<h1>Borrower Applications</h1>
+
+<div class="controls">
+<button onclick="showAll()">Show All</button>
+<button onclick="filterLowRisk()">Low Risk Only</button>
+<button onclick="sortByScore()">Sort by Score</button>
+</div>
+
+<div class="loan-card">
+
+<table border="1" width="100%" id="userTable">
+<tr>
+<th>Name</th>
+<th>Age</th>
+<th>Loan Amount</th>
+<th>Existing EMI</th>
+<th>Risk Score</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</table>
+
+</div>
+
+</div>
+</div>
+
+<!-- 🔴 REJECT POPUP -->
+<div id="rejectPopup" class="popup">
+<div class="popup-content">
+<h3>Reason for Rejection</h3>
+<input type="text" id="rejectReason" placeholder="Enter reason"><br><br>
+<button onclick="submitReject()">Submit</button>
+<button onclick="closePopup()">Cancel</button>
+</div>
+</div>
+
+<script>
+
+let table = document.getElementById("userTable");
+let selectedId = null;
+let applications = [];
+
+/* FETCH FROM BACKEND */
+function fetchUsers(){
+
+fetch("http://127.0.0.1:5000/users")
+.then(res => res.json())
+.then(data => {
+
+applications = data.map(u => ({
+id: u[0],
+name: u[1],
+age: "-",
+loan: 0,
+existingEmi: u[3] * 0.2,
+score: u[5],
+status: u[6],
+reason: u[7]
+}));
+
+loadTable(applications);
+
+});
+
+}
+
+/* LOAD TABLE */
+function loadTable(data){
+
+table.innerHTML = `
+<tr>
+<th>Name</th>
+<th>Age</th>
+<th>Loan Amount</th>
+<th>Existing EMI</th>
+<th>Risk Score</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+`;
+
+data.forEach((u) => {
+
+let color = "black";
+
+if(u.score >= 75) color = "green";
+else if(u.score >= 55) color = "orange";
+else color = "red";
+
+let row = table.insertRow();
+
+row.innerHTML = `
+<td>${u.name}</td>
+<td>${u.age}</td>
+<td>₹${u.loan}</td>
+<td>₹${u.existingEmi}</td>
+<td style="color:${color}; font-weight:bold; font-size:24px;">${u.score}</td>
+<td style="font-size:22px;">${u.status}</td>
+<td>
+<button onclick="approve(${u.id})">Approve</button>
+<button onclick="openReject(${u.id})">Reject</button>
+<button onclick="manualReview(${u.id})">Manual Review</button>
+</td>
+`;
+
+});
+
+}
+
+/* APPROVE */
+function approve(id){
+
+fetch("http://127.0.0.1:5000/update_status",{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+id:id,
+status:"Approved",
+reason:""
+})
+})
+.then(()=>fetchUsers());
+
+}
+
+/* REJECT */
+function openReject(id){
+selectedId = id;
+document.getElementById("rejectReason").value = "";
+document.getElementById("rejectPopup").style.display = "block";
+}
+
+function submitReject(){
+
+let reason = document.getElementById("rejectReason").value;
+
+fetch("http://127.0.0.1:5000/update_status",{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+id:selectedId,
+status:"Rejected",
+reason:reason
+})
+})
+.then(()=>{
+closePopup();
+fetchUsers();
+});
+
+}
+
+function manualReview(id){
+
+fetch("http://127.0.0.1:5000/update_status",{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+id:id,
+status:"Manual Review",
+reason:"Under verification"
+})
+})
+.then(()=>fetchUsers());
+
+}
+
+
+/* FILTER */
+function filterLowRisk(){
+let filtered = applications.filter(u => u.score >= 75);
+loadTable(filtered);
+}
+
+/* SHOW ALL */
+function showAll(){
+fetchUsers();
+}
+
+/* SORT */
+function sortByScore(){
+let sorted = [...applications].sort((a,b)=>b.score-a.score);
+loadTable(sorted);
+}
+
+/* CLOSE POPUP */
+function closePopup(){
+document.getElementById("rejectPopup").style.display = "none";
+}
+
+/* LOGOUT */
+function logout(){
+window.location.href = "index.html";
+}
+
+/* INITIAL LOAD */
+fetchUsers();
+
+</script>
+
+</body>
+</html>
 
