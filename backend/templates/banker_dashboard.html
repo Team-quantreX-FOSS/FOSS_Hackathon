@@ -265,6 +265,7 @@ reason:"Under verification"
 }
 
 
+
 /* FILTER */
 function filterLowRisk(){
 let filtered = applications.filter(u => u.score >= 75);
@@ -295,7 +296,54 @@ window.location.href = "index.html";
 /* INITIAL LOAD */
 fetchUsers();
 
+function loadUsers() {
+    fetch("http://127.0.0.1:5000/users")
+    .then(res => res.json())
+    .then(data => {
+        let container = document.getElementById("users");
+
+        container.innerHTML = "";
+
+        data.forEach(user => {
+            container.innerHTML += `
+                <div>
+                    <p>Name: ${user[1]}</p>
+                    <p>Income: ${user[3]}</p>
+                    <p>Status: ${user[6]}</p>
+
+                    <button onclick="update(${user[0]}, 'Approved')">Approve</button>
+                    <button onclick="update(${user[0]}, 'Rejected')">Reject</button>
+                </div>
+                <hr>
+            `;
+        });
+    });
+}
+
+function update(id, status) {
+    fetch("http://127.0.0.1:5000/update_status", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            id: id,
+            status: status,
+            reason: ""
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Updated!");
+        loadUsers();
+    });
+}
+
+window.onload = loadUsers;
+
 </script>
+
+<div id="users"></div>
 
 </body>
 </html>
