@@ -57,23 +57,26 @@ def banker_dashboard():
 def admin_dashboard():
     return render_template('admin_dashboard.html')
 
+# ------------------ LOAN CHECK ------------------
 @app.route('/loan_check')
 def loan_check():
     return render_template('loan_check.html')
 
+
+# ------------------ FINANCIAL ADVISORY ------------------
 @app.route('/financial_advisory')
 def financial_advisory():
     return render_template('financial_advisory.html')
+
+# ------------------ APPLY LOAN ------------------
+@app.route('/apply_loan')
+def apply_loan():
+    return render_template('apply_loan.html')
 
 
 @app.route('/check')
 def check():
     return "HELLO WORKING"
-
-@app.route('/test123')
-def test123():
-    return "TEST OK"
-
 
 # ------------------ SAVE USER FINANCE ------------------
 @app.route('/save', methods=['POST'])
