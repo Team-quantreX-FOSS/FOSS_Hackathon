@@ -5,10 +5,9 @@
 
 <title>User Dashboard</title>
 
-<link rel="stylesheet" href="style.css">
-
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 <style>
 .popup {
     display: none;
@@ -51,9 +50,9 @@
 <div class="sidebar">
 <h2>FinRisk</h2>
 
-<button onclick="location.href='user_dashboard.html'">Dashboard</button>
-<button onclick="location.href='loan_check.html'">Loan Eligibility</button>
-<button onclick="location.href='financial_advisory.html'">Financial Advisory</button>
+<button onclick="location.href='/user_dashboard'">Dashboard</button>
+<button onclick="location.href='/loan_check'">Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
 <button>Profile</button>
 <button onclick="logout()">Logout</button>
 </div>
@@ -179,7 +178,7 @@ let currentUser = localStorage.getItem("currentUser");
 
 if(!currentUser){
 alert("Please login first!");
-window.location.href="index.html";
+window.location.href="/index";
 return;
 }
 
@@ -197,7 +196,7 @@ loadSavedData();
 /* LOGOUT */
 function logout(){
 localStorage.removeItem("currentUser");
-window.location.href="index.html";
+window.location.href="/index";
 }
 
 
@@ -271,6 +270,38 @@ localStorage.setItem("utilities", utilities);
 localStorage.setItem("other", other);
 localStorage.setItem("riskScore", riskScore);
 localStorage.setItem("riskLevel", riskLevel);
+
+function applyLoan() {
+    const data = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        income: parseInt(document.getElementById("income").value),
+        expense: parseInt(document.getElementById("expense").value),
+        risk_score: 70
+    };
+
+    fetch("http://127.0.0.1:5000/save", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Loan request sent to banker!");
+    });
+}
+
+function checkStatus() {
+    const phone = document.getElementById("phone").value;
+
+    fetch(`http://127.0.0.1:5000/get_status/${phone}`)
+    .then(res => res.json())
+    .then(data => {
+        alert("Status: " + data.status + "\nReason: " + data.reason);
+    });
+}
 
 
 /* 🔥 FIXED BACKEND CALL (MOVED HERE) */
