@@ -209,11 +209,6 @@ width: 95%;
 overflow-x: auto;
 transition:0.3s;
 font-size:24px;
-<br><br>
-Phone Number<br>
-<input type="text" id="phone"><br><br>
-<button onclick="applyLoan()">Apply for Loan</button>
-<div id="statusBox" style="margin-top:20px; font-size:22px; font-weight:bold;"></div>
 }
 
 .loan-card:hover{
