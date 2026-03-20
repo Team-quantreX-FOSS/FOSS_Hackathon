@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Loan Application</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h2>Final Loan Application Form</h2>
+
+<div class="loan-card">
+
+Loan Amount:<br>
+<input type="number" id="loan"><br><br>
+
+Loan Type:<br>
+<input type="text" id="loanType"><br><br>
+
+Tenure:<br>
+<input type="number" id="tenure"><br><br>
+
+Risk Score:<br>
+<input type="text" id="score"><br><br>
+
+Risk Level:<br>
+<input type="text" id="risk"><br><br>
+
+Bank Account Number:<br>
+<input type="text"><br><br>
+
+IFSC Code:<br>
+<input type="text"><br><br>
+
+Account Holder Name:<br>
+<input type="text"><br><br>
+
+<button onclick="submitApplication()">Submit Application</button>
+
+</div>
+
+<script>
+
+function submitApplication(){
+
+alert("Application sent to banker!");
+
+window.location.href = "/user_dashboard";
+
+}
+
+</script>
+
+</body>
+
+</html>
