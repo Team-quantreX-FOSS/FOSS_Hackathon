@@ -4,6 +4,8 @@
 <head>
 <title>Loan Eligibility</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
 <body>
 
 <h1>AI-Based Loan Risk Analysis System</h1>
@@ -12,6 +14,16 @@
 
 <h2>Loan Eligibility Check</h2>
 
+<h3>Select Evaluation Method</h3>
+
+<input type="radio" name="method" value="credit" onclick="toggleMethod()" checked> Use Credit Score
+<input type="radio" name="method" value="alt" onclick="toggleMethod()"> Use Alternative Data
+
+<br><br>
+
+<div id="creditSection">
+
+<!-- CREDIT SCORE METHOD -->
 Monthly Income:<br>
 <input type="number" id="income"><br><br>
 
@@ -38,7 +50,42 @@ Loan Amount Requested:<br>
 Loan Tenure (months):<br>
 <input type="number" id="tenure"><br><br>
 
+Credit Score:<br>
+<input type="number" id="creditScore"><br><br>
+
+</div>
+
+<div id="altSection" style="display:none;">
+
+<!-- ALTERNATIVE DATA METHOD -->
+
 <h3>Alternative Credit Data</h3>
+
+Monthly Income:<br>
+<input type="number" id="income_alt"><br><br>
+
+Monthly Expenses:<br>
+<input type="number" id="expenses_alt"><br><br>
+
+Age:<br>
+<input type="number" id="age_alt"><br><br>
+
+Existing EMI:<br>
+<input type="number" id="existingEmi_alt"><br><br>
+
+Loan Type:<br>
+<select id="loanTypeSelect_alt">
+<option>Personal Loan</option>
+<option>Education Loan</option>
+<option>Business Loan</option>
+<option>Micro Loan</option>
+</select><br><br>
+
+Loan Amount Requested:<br>
+<input type="number" id="loan_alt"><br><br>
+
+Loan Tenure (months):<br>
+<input type="number" id="tenure_alt"><br><br>
 
 Upload Rent Payment Proof:<br>
 <input type="file"><br><br>
@@ -52,7 +99,10 @@ Upload Mobile Recharge Bill:<br>
 Upload Water Bill:<br>
 <input type="file"><br><br>
 
+</div>
+
 <button onclick="checkRisk()">Check Eligibility</button>
+
 <br><br>
 Phone Number<br>
 <input type="text" id="phone"><br><br>
@@ -76,16 +126,44 @@ Phone Number<br>
 
 <script>
 
-function checkRisk(){
+function toggleMethod(){
 
-let income = parseFloat(document.getElementById("income").value) || 0;
-let expenses = parseFloat(document.getElementById("expenses").value) || 0;
-let age = parseFloat(document.getElementById("age").value) || 0;
-let loan = parseFloat(document.getElementById("loan").value) || 0;
-let tenure = parseFloat(document.getElementById("tenure").value) || 1;
+let method = document.querySelector('input[name="method"]:checked').value;
+
+if(method === "credit"){
+    document.getElementById("creditSection").style.display = "block";
+    document.getElementById("altSection").style.display = "none";
+}
+else{
+    document.getElementById("creditSection").style.display = "none";
+    document.getElementById("altSection").style.display = "block";
+}
+
+}
+
+function checkRisk(){
+let method = document.querySelector('input[name="method"]:checked').value;
+
+let income, expenses, age, loan, tenure;
+let creditScore = 0;
+
+if(method === "credit"){
+    income = parseFloat(document.getElementById("income").value) || 0;
+    expenses = parseFloat(document.getElementById("expenses").value) || 0;
+    age = parseFloat(document.getElementById("age").value) || 0;
+    loan = parseFloat(document.getElementById("loan").value) || 0;
+    tenure = parseFloat(document.getElementById("tenure").value) || 1;
+let creditScore = parseFloat(document.getElementById("creditScore").value) || 0;
+} else {
+    income = parseFloat(document.getElementById("income_alt").value) || 0;
+    expenses = parseFloat(document.getElementById("expenses_alt").value) || 0;
+    age = parseFloat(document.getElementById("age_alt").value) || 0;
+    loan = parseFloat(document.getElementById("loan_alt").value) || 0;
+    tenure = parseFloat(document.getElementById("tenure_alt").value) || 1;
+}
 
 let emi = loan / tenure;
-let ratio = expenses / income;
+let ratio = income > 0 ? expenses / income : 1;
 
 let score = 0;
 let result = "";
@@ -112,19 +190,6 @@ else{
     color = "red";
 }
 
-/* APPLY */
-function applyLoan(){
-
-let phone = document.getElementById("phone").value;
-
-if(!phone){
-alert("Enter phone number!");
-return;
-}
-
-window.location.href = "/loan_check";
-
-}
 
 // UI UPDATE (UNCHANGED STYLE)
 document.getElementById("riskColor").style.backgroundColor = color;
@@ -143,7 +208,9 @@ let application = {
     emi,
     score,
     result,
-    loanType
+    loanType,
+    creditScore
+
 };
 
 let applications = JSON.parse(localStorage.getItem("applications")) || [];
@@ -152,8 +219,22 @@ localStorage.setItem("applications", JSON.stringify(applications));
 
 }
 
+/* APPLY */
+function applyLoan(){
+
+let phone = document.getElementById("phone").value;
+
+if(!phone){
+alert("Enter phone number!");
+return;
+}
+
+// redirect to new page
+window.location.href = "/apply_loan";
+
+}
+
 </script>
 
 </body>
 </html>
-
