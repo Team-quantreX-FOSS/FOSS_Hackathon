@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import sqlite3
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
 # ------------------ DB INIT ------------------
@@ -33,10 +33,16 @@ init_db()
 def home():
     return render_template('index.html')
 
+   
+@app.route('/index')
+def index():
+    return render_template('index.html')
+
 
 # ------------------ USER DASHBOARD ------------------
 @app.route('/user_dashboard')
 def user_dashboard():
+    print("DASHBOARD ROUTE HIT")
     return render_template('user_dashboard.html')
 
 
@@ -51,9 +57,22 @@ def banker_dashboard():
 def admin_dashboard():
     return render_template('admin_dashboard.html')
 
-@app.route('/test')
-def test():
-    return "Working!"
+@app.route('/loan_check')
+def loan_check():
+    return render_template('loan_check.html')
+
+@app.route('/financial_advisory')
+def financial_advisory():
+    return render_template('financial_advisory.html')
+
+
+@app.route('/check')
+def check():
+    return "HELLO WORKING"
+
+@app.route('/test123')
+def test123():
+    return "TEST OK"
 
 
 # ------------------ SAVE USER FINANCE ------------------
