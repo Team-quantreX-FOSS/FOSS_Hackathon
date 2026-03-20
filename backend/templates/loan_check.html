@@ -3,9 +3,7 @@
 
 <head>
 <title>Loan Eligibility</title>
-<link rel="stylesheet" href="style.css">
-</head>
-
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <body>
 
 <h1>AI-Based Loan Risk Analysis System</h1>
@@ -124,7 +122,7 @@ alert("Enter phone number!");
 return;
 }
 
-window.location.href = "loan_check.html";
+window.location.href = "/loan_check";
 
 }
 
