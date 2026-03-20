@@ -3,7 +3,7 @@
 
 <head>
 <title>FinRisk</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <style>
 
@@ -157,7 +157,7 @@ let pass = loginPass.value;
 let data = JSON.parse(localStorage.getItem("banker_"+id));
 
 if(data && data.pass === pass){
-window.location.href = "banker_dashboard.html";
+window.location.href = "/banker_dashboard";
 }else{
 document.getElementById("loginMsg").innerText = "Invalid credentials";
 }
