@@ -6,7 +6,7 @@
 
 <title>Admin Dashboard</title>
 
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <style>
 
@@ -47,7 +47,7 @@ padding:10px 16px;
 
 <div class="sidebar">
 <h2>Admin</h2>
-<button onclick="location.href='admin_dashboard.html'">Dashboard</button>
+<button onclick="location.href='/admin_dashboard'">Dashboard</button>
 <button onclick="clearAll()">Reset System</button>
 </div>
 
