@@ -78,6 +78,11 @@ def apply_loan():
 def check():
     return "HELLO WORKING"
 
+@app.route('/test123')
+def test123():
+    return "TEST OK"
+
+
 # ------------------ SAVE USER FINANCE ------------------
 @app.route('/save', methods=['POST'])
 def save_data():
