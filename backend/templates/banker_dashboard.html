@@ -110,6 +110,9 @@ margin:5px;
 <tr>
 <th>Name</th>
 <th>Age</th>
+<th>Phone</th>
+<th>Income</th>
+<th>Expense</th>
 <th>Loan Amount</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
@@ -150,6 +153,9 @@ applications = data.map(u => ({
 id: u[0],
 name: u[1],
 age: "-",
+phone: "_",
+income: "_",
+expense: "_",
 loan: 0,
 existingEmi: u[3] * 0.2,
 score: u[5],
@@ -170,6 +176,9 @@ table.innerHTML = `
 <tr>
 <th>Name</th>
 <th>Age</th>
+<th>Phone</th>
+<th>Income</th>
+<th>Expense</th>
 <th>Loan Amount</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
@@ -191,6 +200,9 @@ let row = table.insertRow();
 row.innerHTML = `
 <td>${u.name}</td>
 <td>${u.age}</td>
+<td>₹${u.phone}</td>
+<td>${u.income}</td>
+<td>${u.expense}</td>
 <td>₹${u.loan}</td>
 <td>₹${u.existingEmi}</td>
 <td style="color:${color}; font-weight:bold; font-size:24px;">${u.score}</td>
