@@ -110,9 +110,6 @@ margin:5px;
 <tr>
 <th>Name</th>
 <th>Age</th>
-<th>Phone</th>
-<th>Income</th>
-<th>Expense</th>
 <th>Loan Amount</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
@@ -145,7 +142,7 @@ let applications = [];
 /* FETCH FROM BACKEND */
 function fetchUsers(){
 
-fetch("http://127.0.0.1:5000/users")
+fetch("http://127.0.0.1:5050/users")
 .then(res => res.json())
 .then(data => {
 
@@ -153,9 +150,6 @@ applications = data.map(u => ({
 id: u[0],
 name: u[1],
 age: "-",
-phone: "_",
-income: "_",
-expense: "_",
 loan: 0,
 existingEmi: u[3] * 0.2,
 score: u[5],
@@ -176,9 +170,6 @@ table.innerHTML = `
 <tr>
 <th>Name</th>
 <th>Age</th>
-<th>Phone</th>
-<th>Income</th>
-<th>Expense</th>
 <th>Loan Amount</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
@@ -200,9 +191,6 @@ let row = table.insertRow();
 row.innerHTML = `
 <td>${u.name}</td>
 <td>${u.age}</td>
-<td>₹${u.phone}</td>
-<td>${u.income}</td>
-<td>${u.expense}</td>
 <td>₹${u.loan}</td>
 <td>₹${u.existingEmi}</td>
 <td style="color:${color}; font-weight:bold; font-size:24px;">${u.score}</td>
@@ -221,7 +209,7 @@ row.innerHTML = `
 /* APPROVE */
 function approve(id){
 
-fetch("http://127.0.0.1:5000/update_status",{
+fetch("http://127.0.0.1:5050/update_status",{
 method:"POST",
 headers:{ "Content-Type":"application/json"},
 body:JSON.stringify({
@@ -245,7 +233,7 @@ function submitReject(){
 
 let reason = document.getElementById("rejectReason").value;
 
-fetch("http://127.0.0.1:5000/update_status",{
+fetch("http://127.0.0.1:5050/update_status",{
 method:"POST",
 headers:{ "Content-Type":"application/json"},
 body:JSON.stringify({
@@ -263,7 +251,7 @@ fetchUsers();
 
 function manualReview(id){
 
-fetch("http://127.0.0.1:5000/update_status",{
+fetch("http://127.0.0.1:5050/update_status",{
 method:"POST",
 headers:{ "Content-Type":"application/json"},
 body:JSON.stringify({
@@ -309,7 +297,7 @@ window.location.href = "index.html";
 fetchUsers();
 
 function loadUsers() {
-    fetch("http://127.0.0.1:5000/users")
+    fetch("http://127.0.0.1:5050/users")
     .then(res => res.json())
     .then(data => {
         let container = document.getElementById("users");
@@ -333,7 +321,7 @@ function loadUsers() {
 }
 
 function update(id, status) {
-    fetch("http://127.0.0.1:5000/update_status", {
+    fetch("http://127.0.0.1:5050/update_status", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
