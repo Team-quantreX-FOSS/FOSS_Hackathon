@@ -8,19 +8,17 @@
 #userTable{
 font-size:22px;
 border-collapse:collapse;
+width:100%;
 }
 #userTable th, #userTable td{
 padding:16px;
 text-align:center;
+border:1px solid #ccc;
 }
 #userTable th{
 font-size:24px;
 background:#333;
 color:white;
-}
-button{
-padding:6px 10px;
-margin:2px;
 }
 </style>
 </head>
@@ -31,28 +29,31 @@ margin:2px;
 <div class="container">
 <div class="sidebar">
 <h2>Admin</h2>
-<button onclick="location.href='/admin_dashboard'">Banks</button>
-<button onclick="location.href='/admin_borrowers'">Borrowers</button>
-<button onclick="location.href='/admin_bankers'">Bankers</button>
-<button onclick="window.location.href='/'">Logout</button>
+<button onclick="location.href='/admin_dashboard'">🏛 Banks</button>
+<button onclick="location.href='/admin_borrowers'">👥 Borrowers</button>
+<button onclick="location.href='/admin_bankers'">🏦 Bankers</button>
+<button onclick="location.href='/admin_profile'">⚙ Profile</button>
+<button onclick="window.location.href='/'">🚪 Logout</button>
 </div>
 
 <div class="main">
 
-<h1>Borrowers</h1>
-<table border="1" width="100%" id="userTable">
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);">
+<div style="width:54px;height:54px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(16,185,129,0.3);">👥</div>
+<div><h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Borrowers</h1>
+<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">All Registered Loan Applications</p></div></div>
+<table id="userTable">
 <tr>
 <th>Name</th>
 <th>Age</th>
 <th>Phone</th>
-<th>Loan Amt</th>
+<th>Loan Amount</th>
 <th>Loan Type</th>
 <th>Tenure</th>
-<th>Existing EMI</th>
+<th>EMI</th>
 <th>Risk Score</th>
 <th>Allocated Banker</th>
 <th>Status</th>
-<th>Action</th>
 </tr>
 </table>
 
@@ -63,71 +64,52 @@ margin:2px;
 </div>
 
 <script>
-// ================= LOAD USERS =================
 async function loadUsers(){
-    let res = await fetch("/api/users");
+    let res   = await fetch("/api/users");
     let users = await res.json();
+
     let table = document.getElementById("userTable");
     table.innerHTML = `
 <tr>
-<th>Name</th>
-<th>Age</th>
-<th>Phone</th>
-<th>Loan Amt</th>
-<th>Loan Type</th>
-<th>Tenure</th>
-<th>Existing EMI</th>
-<th>Risk Score</th>
-<th>Allocated Banker</th>
-<th>Status</th>
-<th>Action</th>
+<th>Name</th><th>Age</th><th>Phone</th><th>Loan Amount</th>
+<th>Loan Type</th><th>Tenure</th><th>EMI</th><th>Risk Score</th>
+<th>Allocated Banker</th><th>Status</th>
 </tr>`;
+
     let statusCount = {Pending:0, Approved:0, Rejected:0, "Manual Review":0};
-    users.forEach(u=>{
-        let row = table.insertRow();
-        row.innerHTML = `
+
+    if(users.length === 0){
+        table.innerHTML += "<tr><td colspan='10'>No borrowers registered yet.</td></tr>";
+    } else {
+        users.forEach(u => {
+            let row = table.insertRow();
+            row.innerHTML = `
 <td>${u.name||""}</td>
 <td>${u.age||""}</td>
 <td>${u.phone||""}</td>
-<td>${u.loanAmount||""}</td>
-<td>${u.loanType||""}</td>
-<td>${u.tenure||""}</td>
-<td>${u.emi||""}</td>
-<td>${u.score||""}</td>
-<td>${u.banker||""}</td>
-<td>${u.status||"Pending"}${u.reason? "<br><small>("+u.reason+")</small>":""}</td>
-<td>
-<button onclick="takeAction(${u.id},'Approved')">Approve</button>
-<button onclick="takeAction(${u.id},'Rejected')">Reject</button>
-<button onclick="takeAction(${u.id},'Manual Review')">Manual</button>
-</td>`;
-        statusCount[u.status||"Pending"]++;
-    });
+<td>${u.loanAmount ? "₹"+u.loanAmount : "-"}</td>
+<td>${u.loanType||"-"}</td>
+<td>${u.tenure||"-"}</td>
+<td>${u.emi ? "₹"+u.emi : "-"}</td>
+<td>${u.score||"-"}</td>
+<td>${u.banker||"-"}</td>
+<td>${u.status||"Pending"}${u.reason ? "<br><small>("+u.reason+")</small>" : ""}</td>`;
+            statusCount[u.status||"Pending"]++;
+        });
+    }
 
-    // ================= BORROWER CHART =================
     const ctx = document.getElementById('borrowerChart').getContext('2d');
     new Chart(ctx,{
         type:'pie',
         data:{
             labels:['Pending','Approved','Rejected','Manual Review'],
             datasets:[{
-                data:[statusCount.Pending,statusCount.Approved,statusCount.Rejected,statusCount["Manual Review"]],
+                data:[statusCount.Pending, statusCount.Approved, statusCount.Rejected, statusCount["Manual Review"]],
                 backgroundColor:['#f39c12','#27ae60','#c0392b','#8e44ad']
             }]
         },
         options:{responsive:true}
     });
-}
-
-// ================= TAKE ACTION ON BORROWER =================
-async function takeAction(userId, action){
-    let reason = prompt("Enter reason (optional):","");
-    await fetch("/banker_action",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({user_id:userId, action:action, reason:reason})
-    });
-    loadUsers();
 }
 
 loadUsers();
