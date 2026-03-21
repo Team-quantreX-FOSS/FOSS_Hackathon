@@ -15,17 +15,36 @@ margin:20px;
 text-align:center;
 }
 
-/* 🔥 BIGGER CONTROL BUTTONS */
+button {
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+td {
+    transition:0.3s;
+}
+
+
+.low { color:green; font-weight:bold; }
+.medium { color:orange; font-weight:bold; }
+.high { color:red; font-weight:bold; }
+
 .controls button{
 margin:8px;
 font-size:22px;
 padding:10px 18px;
 }
 
-/* 🔥 BIGGER TABLE */
 #userTable {
 font-size:22px;
 border-collapse: collapse;
+width:100%;
 }
 
 #userTable th, #userTable td {
@@ -39,7 +58,6 @@ color:white;
 font-size:24px;
 }
 
-/* Popup */
 .popup{
 display:none;
 position:fixed;
@@ -60,7 +78,6 @@ text-align:center;
 font-size:22px;
 }
 
-/* 🔥 POPUP TEXT */
 .popup-content h3{
 font-size:26px;
 }
@@ -91,6 +108,7 @@ margin:5px;
 <div class="sidebar">
 <h2>FinRisk</h2>
 <button onclick="location.href='/banker_dashboard'">Dashboard</button>
+<button onclick="location.href='/banker_review'">Review Queue</button>
 <button onclick="logout()">Logout</button>
 </div>
 
@@ -106,12 +124,14 @@ margin:5px;
 
 <div class="loan-card">
 
-<table border="1" width="100%" id="userTable">
+<table border="1" id="userTable">
 <tr>
 <th>Name</th>
-<th>Age</th>
+<th>Phone</th>
 <th>Loan Amount</th>
-<th>Existing EMI</th>
+<th>Loan Type</th>
+<th>Tenure</th>
+<th>EMI</th>
 <th>Risk Score</th>
 <th>Status</th>
 <th>Action</th>
@@ -123,7 +143,6 @@ margin:5px;
 </div>
 </div>
 
-<!-- 🔴 REJECT POPUP -->
 <div id="rejectPopup" class="popup">
 <div class="popup-content">
 <h3>Reason for Rejection</h3>
@@ -141,26 +160,26 @@ let applications = [];
 
 /* FETCH FROM BACKEND */
 function fetchUsers(){
-
-fetch("http://127.0.0.1:5050/users")
-.then(res => res.json())
-.then(data => {
-
-applications = data.map(u => ({
-id: u[0],
-name: u[1],
-age: "-",
-loan: 0,
-existingEmi: u[3] * 0.2,
-score: u[5],
-status: u[6],
-reason: u[7]
-}));
-
-loadTable(applications);
-
-});
-
+    fetch("/users")
+    .then(res => res.json())
+    .then(data => {
+        // /users returns array of arrays:
+        // [id, name, phone, loanAmount, loanType, tenure, emi, risk_score, allocated_banker, loan_status, reason]
+        applications = data.map(u => ({
+            id:       u[0],
+            name:     u[1],
+            phone:    u[2],
+            loan:     u[3],
+            loanType: u[4],
+            tenure:   u[5],
+            emi:      u[6],
+            score:    u[7],
+            banker:   u[8],
+            status:   u[9],
+            reason:   u[10]
+        }));
+        loadTable(applications);
+    });
 }
 
 /* LOAD TABLE */
@@ -169,36 +188,46 @@ function loadTable(data){
 table.innerHTML = `
 <tr>
 <th>Name</th>
-<th>Age</th>
+<th>Phone</th>
 <th>Loan Amount</th>
-<th>Existing EMI</th>
+<th>Loan Type</th>
+<th>Tenure</th>
+<th>EMI</th>
 <th>Risk Score</th>
 <th>Status</th>
 <th>Action</th>
 </tr>
 `;
 
+if(data.length === 0){
+    table.innerHTML += "<tr><td colspan='9'>No applications found</td></tr>";
+    return;
+}
+
 data.forEach((u) => {
 
-let color = "black";
+    let color = "black";
+    let riskLabel = "";
 
-if(u.score >= 75) color = "green";
-else if(u.score >= 55) color = "orange";
-else color = "red";
+    if(u.score >= 75){ color = "green";  riskLabel = "Low Risk"; }
+    else if(u.score >= 55){ color = "orange"; riskLabel = "Medium Risk"; }
+    else { color = "red"; riskLabel = "High Risk"; }
 
-let row = table.insertRow();
+    let row = table.insertRow();
 
-row.innerHTML = `
-<td>${u.name}</td>
-<td>${u.age}</td>
-<td>₹${u.loan}</td>
-<td>₹${u.existingEmi}</td>
-<td style="color:${color}; font-weight:bold; font-size:24px;">${u.score}</td>
-<td style="font-size:22px;">${u.status}</td>
+    row.innerHTML = `
+<td>${u.name || ""}</td>
+<td>${u.phone || ""}</td>
+<td>₹${u.loan || 0}</td>
+<td>${u.loanType || ""}</td>
+<td>${u.tenure || ""}</td>
+<td>₹${u.emi || 0}</td>
+<td style="color:${color}; font-weight:bold;">${u.score} (${riskLabel})</td>
+<td>${u.status || "Pending"}${u.reason ? "<br><small>(" + u.reason + ")</small>" : ""}</td>
 <td>
 <button onclick="approve(${u.id})">Approve</button>
 <button onclick="openReject(${u.id})">Reject</button>
-<button onclick="manualReview(${u.id})">Manual Review</button>
+<button onclick="manualReview(${u.id})">Review</button>
 </td>
 `;
 
@@ -208,18 +237,13 @@ row.innerHTML = `
 
 /* APPROVE */
 function approve(id){
-
-fetch("http://127.0.0.1:5050/update_status",{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-id:id,
-status:"Approved",
-reason:""
+fetch("/banker_action",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json"},
+    body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
 })
-})
-.then(()=>fetchUsers());
-
+.then(()=> fetchUsers())
+.catch(err=>console.error(err));
 }
 
 /* REJECT */
@@ -230,41 +254,29 @@ document.getElementById("rejectPopup").style.display = "block";
 }
 
 function submitReject(){
-
 let reason = document.getElementById("rejectReason").value;
-
-fetch("http://127.0.0.1:5050/update_status",{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-id:selectedId,
-status:"Rejected",
-reason:reason
-})
+fetch("/banker_action",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json"},
+    body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
 })
 .then(()=>{
-closePopup();
-fetchUsers();
-});
-
+    closePopup();
+    fetchUsers();
+})
+.catch(err=>console.error(err));
 }
 
+/* MANUAL REVIEW */
 function manualReview(id){
-
-fetch("http://127.0.0.1:5050/update_status",{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-id:id,
-status:"Manual Review",
-reason:"Under verification"
+fetch("/banker_action",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json"},
+    body:JSON.stringify({ user_id:id, action:"Manual Review", reason:"Under verification" })
 })
-})
-.then(()=>fetchUsers());
-
+.then(()=> fetchUsers())
+.catch(err=>console.error(err));
 }
-
-
 
 /* FILTER */
 function filterLowRisk(){
@@ -290,61 +302,13 @@ document.getElementById("rejectPopup").style.display = "none";
 
 /* LOGOUT */
 function logout(){
-window.location.href = "index.html";
+window.location.href = "/";
 }
 
 /* INITIAL LOAD */
 fetchUsers();
 
-function loadUsers() {
-    fetch("http://127.0.0.1:5050/users")
-    .then(res => res.json())
-    .then(data => {
-        let container = document.getElementById("users");
-
-        container.innerHTML = "";
-
-        data.forEach(user => {
-            container.innerHTML += `
-                <div>
-                    <p>Name: ${user[1]}</p>
-                    <p>Income: ${user[3]}</p>
-                    <p>Status: ${user[6]}</p>
-
-                    <button onclick="update(${user[0]}, 'Approved')">Approve</button>
-                    <button onclick="update(${user[0]}, 'Rejected')">Reject</button>
-                </div>
-                <hr>
-            `;
-        });
-    });
-}
-
-function update(id, status) {
-    fetch("http://127.0.0.1:5050/update_status", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            id: id,
-            status: status,
-            reason: ""
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert("Updated!");
-        loadUsers();
-    });
-}
-
-window.onload = loadUsers;
-
 </script>
-
-<div id="users"></div>
 
 </body>
 </html>
-
