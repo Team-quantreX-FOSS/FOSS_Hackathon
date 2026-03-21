@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Borrowers Information Table</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+#userTable{
+font-size:22px;
+border-collapse:collapse;
+}
+
+#userTable th, #userTable td{
+padding:16px;
+text-align:center;
+}
+
+#userTable th{
+font-size:24px;
+background:#333;
+color:white;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+<h2>Borrowers Panel</h2>
+</div>
+
+<div class="container">
+
+<div class="sidebar">
+<button onclick="location.href='/admin_dashboard'">Dashboard</button>
+<button onclick="location.href='/admin_borrowers'">Borrowers</button>
+<button onclick="location.href='/admin_bankers'">Bankers</button>
+</div>
+
+<div class="main">
+
+<h1>Borrowers</h1>
+
+<table border="1" width="100%" id="userTable">
+<tr>
+<th>Name</th>
+<th>Age</th>
+<th>Phone</th>
+<th>Loan Amt</th>
+<th>Loan Type</th>
+<th>Tenure</th>
+<th>Existing EMI</th>
+<th>Risk Score</th>
+<th>Banker</th>
+<th>Action</th>
+</tr>
+</table>
+
+</div>
+</div>
+
+<script>
+
+async function loadUsers(){
+
+let res = await fetch("/api/users");
+let users = await res.json();
+
+let table = document.getElementById("userTable");
+
+table.innerHTML = `
+<tr>
+<th>Name</th>
+<th>Age</th>
+<th>Phone</th>
+<th>Loan Amt</th>
+<th>Loan Type</th>
+<th>Tenure</th>
+<th>Existing EMI</th>
+<th>Risk Score</th>
+<th>Banker</th>
+<th>Action</th>
+</tr>
+`;
+
+users.forEach(u => {
+
+let row = table.insertRow();
+
+row.innerHTML = `
+<td>${u.name || "-"}</td>
+<td>${u.age || "-"}</td>
+<td>${u.phone || "-"}</td>
+<td>${u.loanAmount || "-"}</td>
+<td>${u.loanType || "-"}</td>
+<td>${u.tenure || "-"}</td>
+<td>${u.emi || "-"}</td>
+<td style="font-weight:bold;">${u.score || "-"}</td>
+<td>${u.banker || "Not Assigned"}</td>
+<td>
+${u.status || "Pending"}
+${u.reason ? "<br><small>("+u.reason+")</small>" : ""}
+</td>
+`;
+
+});
+
+}
+
+loadUsers();
+
+</script>
+
+</body>
+</html>
