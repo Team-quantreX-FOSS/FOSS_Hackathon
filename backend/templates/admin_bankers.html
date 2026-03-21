@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Bankers Information Table</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+#bankerTable{
+font-size:22px;
+border-collapse:collapse;
+}
+
+#bankerTable th, #bankerTable td{
+padding:16px;
+text-align:center;
+}
+
+#bankerTable th{
+font-size:24px;
+background:#333;
+color:white;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+<h2>Bankers Panel</h2>
+</div>
+
+<div class="container">
+
+<div class="sidebar">
+<button onclick="location.href='/admin_dashboard'">Dashboard</button>
+<button onclick="location.href='/admin_borrowers'">Borrowers</button>
+<button onclick="location.href='/admin_bankers'">Bankers</button>
+</div>
+
+<div class="main">
+
+<h1>Bankers</h1>
+
+<table border="1" width="100%" id="bankerTable">
+<tr>
+<th>Name</th>
+<th>Banker ID</th>
+<th>Bank Name</th>
+<th>IFSC Code</th>
+<th>Total Customers</th>
+<th>Approval %</th>
+<th>Rejection %</th>
+<th>Manual Review %</th>
+</tr>
+</table>
+
+</div>
+</div>
+
+<script>
+
+async function loadBankers(){
+
+let res = await fetch("/api/bankers");
+let bankers = await res.json();
+
+let table = document.getElementById("bankerTable");
+
+table.innerHTML = `
+<tr>
+<th>Name</th>
+<th>Banker ID</th>
+<th>Bank Name</th>
+<th>IFSC Code</th>
+<th>Total Customers</th>
+<th>Approval %</th>
+<th>Rejection %</th>
+<th>Manual Review %</th>
+</tr>
+`;
+
+bankers.forEach(b => {
+
+let row = table.insertRow();
+
+row.innerHTML = `
+<td>${b.name || "-"}</td>
+<td>${b.id || "-"}</td>
+<td>${b.bankName || "-"}</td>
+<td>${b.ifsc || "-"}</td>
+<td>${b.totalCustomers || 0}</td>
+<td>${b.approval || 0}%</td>
+<td>${b.rejection || 0}%</td>
+<td>${b.manual || 0}%</td>
+`;
+
+});
+
+}
+
+loadBankers();
+
+</script>
+
+</body>
+
+</html>
