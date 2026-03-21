@@ -54,7 +54,7 @@
 <button onclick="location.href='/loan_check'">Loan Eligibility</button>
 <button onclick="location.href='/financial_advisory'">Financial Advisory</button>
 <button onclick="location.href='/apply_loan'">Apply for Loan</button>
-<button onclick="location.href='/profile'">Profile</button>
+<button onclick="location.href='/user_profile'">Profile</button>
 <button onclick="logout()">Logout</button>
 </div>
 
@@ -106,6 +106,8 @@ Risk Level :
 
 <button onclick="openPopup()">Re-enter Expenses</button>
 
+<!-- FIXED: redirects to /apply_loan which collects full loan details -->
+<button onclick="location.href='/apply_loan'" style="margin-left:10px;">Apply for Loan</button>
 
 <div id="statusBox" style="margin-top:20px; font-size:22px; font-weight:bold;"></div>
 
@@ -336,53 +338,6 @@ createCharts(income, transport, education, food, utilities, other, totalExpense)
 }
 
 
-/* APPLY LOAN */
-function applyLoan(){
-
-let currentUser = localStorage.getItem("currentUser");
-let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-
-if(!userData){
-    alert("Session expired. Login again.");
-    window.location.href="/index";
-    return;
-}
-
-let phone = localStorage.getItem("phone");
-let income = localStorage.getItem("income");
-
-if(!phone || !income){
-    alert("Please fill financial details first!");
-    return;
-}
-
-const data = {
-    name: userData.name,
-    phone: localStorage.getItem("phone"),
-    income: Number(localStorage.getItem("income")),
-    expense: Number(localStorage.getItem("totalExpense")),
-    risk_score: Number(localStorage.getItem("riskScore"))
-};
-
-fetch("/save", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-})
-.then(res => res.json())
-.then(() => {
-    document.getElementById("statusBox").innerText = "⏳ Request Sent...";
-    alert("Loan request sent!");
-})
-.catch(() => {
-    alert("Server error!");
-});
-
-}
-
-
 /* CHARTS */
 function createCharts(income, transport, education, food, utilities, other, totalExpense){
 
@@ -412,7 +367,7 @@ data:[income,totalExpense]
 }
 
 
-/* STATUS */
+/* STATUS - auto poll for loan decision */
 function checkStatus(phone){
 
 fetch(`/get_status/${phone}`)
@@ -463,17 +418,16 @@ new Notification(message);
 }
 
 
-/* AUTO UPDATE */
+/* AUTO UPDATE every 5 seconds */
 setInterval(()=>{
 let phone = localStorage.getItem("phone");
 if(phone){
     checkStatus(phone);
 }
-},5050);
+},5000);
 
 
 </script>
 
 </body>
 </html>
-
