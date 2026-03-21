@@ -1,25 +1,42 @@
 from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
 import sqlite3
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-CORS(app)
 
-# ------------------ DB INIT ------------------
+# ------------------ INIT DB ------------------
 def init_db():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
 
+    # USERS TABLE
     c.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
+        age INTEGER,
         phone TEXT,
-        income INTEGER,
-        expense INTEGER,
+        loanAmount REAL,
+        loanType TEXT,
+        tenure INTEGER,
+        emi REAL,
         risk_score INTEGER,
+        allocated_banker TEXT,
         loan_status TEXT,
         reason TEXT
+    )
+    ''')
+
+    # BANKERS TABLE
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS bankers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        bank_name TEXT,
+        ifsc TEXT,
+        total_customers INTEGER DEFAULT 0,
+        approval INTEGER DEFAULT 0,
+        rejection INTEGER DEFAULT 0,
+        manual INTEGER DEFAULT 0
     )
     ''')
 
@@ -28,50 +45,51 @@ def init_db():
 
 init_db()
 
-# ------------------ HOME ------------------
+# ------------------ STATIC BANK DATA ------------------
+banks = [
+    {"name": "State Bank of India", "branch": "Mumbai Main", "ifsc": "SBIN0000001"},
+    {"name": "HDFC Bank", "branch": "Hyderabad", "ifsc": "HDFC0001234"},
+    {"name": "ICICI Bank", "branch": "Delhi", "ifsc": "ICIC0005678"},
+    {"name": "Axis Bank", "branch": "Chennai", "ifsc": "UTIB0004321"}
+]
+
+# ------------------ ROUTES ------------------
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-   
 @app.route('/index')
 def index():
     return render_template('index.html')
 
-
-# ------------------ USER DASHBOARD ------------------
 @app.route('/user_dashboard')
 def user_dashboard():
-    print("DASHBOARD ROUTE HIT")
     return render_template('user_dashboard.html')
 
-
-# ------------------ BANKER DASHBOARD ------------------
 @app.route('/banker_dashboard')
 def banker_dashboard():
     return render_template('banker_dashboard.html')
 
-
-# ------------------ ADMIN DASHBOARD ------------------
 @app.route('/admin_dashboard')
 def admin_dashboard():
     return render_template('admin_dashboard.html')
 
-# ------------------ LOAN CHECK ------------------
+@app.route('/admin_borrowers')
+def admin_borrowers():
+    return render_template('admin_borrowers.html')
+
+@app.route('/admin_bankers')
+def admin_bankers():
+    return render_template('admin_bankers.html')
+
 @app.route('/loan_check')
 def loan_check():
     return render_template('loan_check.html')
 
-
-# ------------------ FINANCIAL ADVISORY ------------------
 @app.route('/financial_advisory')
 def financial_advisory():
     return render_template('financial_advisory.html')
-
-# ------------------ APPLY LOAN ------------------
-@app.route('/apply_loan')
-def apply_loan():
-    return render_template('apply_loan.html')
 
 @app.route('/user_profile')
 def user_profile():
@@ -89,17 +107,13 @@ def admin_profile():
 def banker_review():
     return render_template('banker_review.html')
 
-
-@app.route('/check')
-def check():
-    return "HELLO WORKING"
-
-@app.route('/test123')
-def test123():
-    return "TEST OK"
+# ------------------ SAVE LOAN APPLICATION ------------------
+@app.route('/apply_loan')
+def apply_loan():
+    return render_template('apply_loan.html')
 
 
-# ------------------ SAVE USER FINANCE ------------------
+# ------------------ SAVE USER ------------------
 @app.route('/save', methods=['POST'])
 def save_data():
     data = request.json
@@ -125,20 +139,104 @@ def save_data():
 
     return jsonify({"message": "Saved"})
 
-
-# ------------------ GET USERS (BANKER) ------------------
-@app.route('/users')
+# ------------------ GET USERS ------------------
+@app.route('/api/users')
 def get_users():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-
     c.execute("SELECT * FROM users")
-    users = c.fetchall()
-
+    rows = c.fetchall()
     conn.close()
-
+    users = []
+    for r in rows:
+        users.append({
+            "id": r[0],
+            "name": r[1],
+            "age": r[2],
+            "phone": r[3],
+            "loanAmount": r[4],
+            "loanType": r[5],
+            "tenure": r[6],
+            "emi": r[7],
+            "score": r[8],
+            "banker": r[9],
+            "status": r[10],
+            "reason": r[11]
+        })
     return jsonify(users)
 
+# ------------------ GET BANKERS ------------------
+@app.route('/api/bankers')
+def get_bankers():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM bankers")
+    rows = c.fetchall()
+    conn.close()
+    bankers = []
+    for b in rows:
+        bankers.append({
+            "id": b[0],
+            "name": b[1],
+            "bankName": b[2],
+            "ifsc": b[3],
+            "totalCustomers": b[4],
+            "approval": b[5],
+            "rejection": b[6],
+            "manual": b[7]
+        })
+    return jsonify(bankers)
+
+# ------------------ BANKER ACTION ------------------
+@app.route('/banker_action', methods=['POST'])
+def banker_action():
+    data = request.json
+    user_id = data.get('user_id')
+    action = data.get('action')  # Approved / Rejected / Manual
+    reason = data.get('reason', "")
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET loan_status=?, reason=? WHERE id=?", (action, reason, user_id))
+
+    # Update banker stats
+    c.execute("SELECT allocated_banker FROM users WHERE id=?", (user_id,))
+    banker = c.fetchone()[0]
+    if banker:
+        if action == "Approved":
+            c.execute("UPDATE bankers SET approval = approval + 1, total_customers = total_customers + 1 WHERE name=?", (banker,))
+        elif action == "Rejected":
+            c.execute("UPDATE bankers SET rejection = rejection + 1, total_customers = total_customers + 1 WHERE name=?", (banker,))
+        elif action == "Manual Review":
+            c.execute("UPDATE bankers SET manual = manual + 1, total_customers = total_customers + 1 WHERE name=?", (banker,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Action recorded"})
+
+# ------------------ DELETE USER ------------------
+@app.route('/delete_user/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM users WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Deleted"})
+
+# ------------------ GET BANKS ------------------
+@app.route('/api/banks')
+def get_banks():
+    return jsonify(banks)
+
+# ------------------ RESET SYSTEM ------------------
+@app.route('/reset_all', methods=['POST'])
+def reset_all():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM users")
+    c.execute("DELETE FROM bankers")
+    conn.commit()
+    conn.close()
 
 # ------------------ UPDATE STATUS ------------------
 @app.route('/update_status', methods=['POST'])
@@ -163,10 +261,10 @@ def update_status():
 
     return jsonify({"message": "Updated"})
 
-
 # ------------------ USER NOTIFICATION ------------------
 @app.route('/get_status/<phone>')
 def get_status(phone):
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
 
@@ -177,7 +275,6 @@ def get_status(phone):
     ''', (phone,))
 
     data = c.fetchone()
-
     conn.close()
 
     if data:
@@ -191,6 +288,6 @@ def get_status(phone):
             "reason": ""
         })
 
-
+# ------------------ RUN ------------------
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5050, debug=True)
+    app.run(debug=True, port=5050)
