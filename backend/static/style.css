@@ -1,82 +1,131 @@
-/* Whole Website Styling */
+html {
+min-height: 100%;
+background: #0f0f0f;
+}
 
-body{
+/* ============================================
+   FINRISK - GLOBAL STYLESHEET
+   ============================================ */
+
+/* BASE */
+* {
+box-sizing: border-box;
+}
+
+body {
 font-family: Georgia, serif;
-background: linear-gradient(135deg,#0f0f0f,#1f1f1f,#e6d5b8);
-color:#EAEAEA;
-margin:0;
-height:100%;
-padding:0;
-text-align:center;
+background: #141414;
+background: radial-gradient(ellipse at top left, #2a2118 0%, #141414 40%, #0f0f0f 100%);
+min-height: 100vh;
+color: #EAEAEA;
+margin: 0;
+min-height: 100vh;
+padding: 0;
+text-align: center;
 }
 
-/* Headings */
+/* ============================================
+   TYPOGRAPHY - ALL INCREASED
+   ============================================ */
 
-h1{
-margin-top:40px;
-font-size:56px;   /* INCREASED */
-letter-spacing:1px;
+h1 {
+margin-top: 40px;
+font-size: 62px;
+letter-spacing: 1px;
+color: #e6d5b8;
 }
 
-h2{
-font-size:44px;   /* INCREASED */
+h2 {
+font-size: 46px;
+color: #e6d5b8;
 }
 
-h3{
-font-size:36px;   /* INCREASED */
+h3 {
+font-size: 36px;
+color: #e6d5b8;
 }
 
-h4{
-font-size:28px;   /* NEW for sub-sub */
+h4 {
+font-size: 30px;
+color: #e6d5b8;
 }
 
-/* Paragraphs */
-
-p{
-font-size:26px;   /* GLOBAL TEXT BIGGER */
+p {
+font-size: 22px;
+color: #EAEAEA;
+line-height: 1.6;
 }
 
-/* Buttons */
+/* ============================================
+   BUTTONS - GLOBAL
+   ============================================ */
 
-button{
-background:linear-gradient(135deg,#e6d5b8,#bfa980);
-color:#111;
-padding:14px;
-width:220px;
-border:none;
-border-radius:8px;
-font-size:28px;   /* balanced */
-cursor:pointer;
-transition:all 0.3s ease;
-font-weight:bold;
+button {
+background: linear-gradient(135deg, #e6d5b8, #bfa980);
+color: #111;
+padding: 14px;
+width: 220px;
+border: none;
+border-radius: 8px;
+font-size: 22px;
+cursor: pointer;
+transition: all 0.3s ease;
+font-weight: bold;
 }
 
-button:hover{
-transform:scale(1.05);
-box-shadow:0 8px 20px rgba(0,0,0,0.4);
+button:hover {
+transform: scale(1.05);
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Inputs */
+/* ============================================
+   INPUTS & SELECTS - ALL BIGGER + READABLE
+   ============================================ */
 
-input, select{
-padding:12px;
-width:260px;
-border-radius:6px;
-border:1px solid #aaa;
-font-size:26px;   /* slightly adjusted */
+input, select, textarea {
+padding: 14px 16px;
+width: 280px;
+border-radius: 8px;
+border: 1.5px solid rgba(230, 213, 184, 0.35);
+font-size: 22px;
+background: rgba(230, 213, 184, 0.07);
+color: #e6d5b8;
+font-family: Georgia, serif;
+transition: border-color 0.2s;
 }
 
-/* Front Page Buttons Layout */
-
-.buttons{
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:20px;
-margin-top:60px;
+input:focus, select:focus, textarea:focus {
+outline: none;
+border-color: #bfa980;
+background: rgba(230, 213, 184, 0.1);
 }
 
-/* Popup Styling */
+input::placeholder, textarea::placeholder {
+color: #888;
+font-size: 20px;
+}
+
+select option {
+background: #1f1f1f;
+color: #e6d5b8;
+font-size: 20px;
+}
+
+/* ============================================
+   FRONT PAGE BUTTONS LAYOUT
+   ============================================ */
+
+.buttons {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 20px;
+margin-top: 60px;
+}
+
+/* ============================================
+   POPUP - GLOBAL
+   ============================================ */
 
 .popup {
 display: none;
@@ -84,10 +133,11 @@ position: fixed;
 top: 0;
 left: 0;
 width: 100%;
-height: 100%;
-background: rgba(0,0,0,0.6);
+min-height: 100vh;
+background: rgba(0, 0, 0, 0.7);
 justify-content: center;
 align-items: center;
+z-index: 999;
 }
 
 .popup.show {
@@ -95,157 +145,390 @@ display: flex;
 }
 
 .popup-content {
-background: rgb(65, 58, 58);
-padding: 30px;
-border-radius: 12px;
-width: 340px;
-text-align:center;
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
+background: #1a1614;
+padding: 36px;
+border-radius: 16px;
+width: 420px;
+max-height: 92vh;
+overflow-y: auto;
+text-align: left;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+border: 1.5px solid rgba(230, 213, 184, 0.2);
 }
 
-/* 🔥 FIXED: popup headings BIG */
-.popup-content h2{
-font-size:34px;
+.popup-content h2 {
+font-size: 32px;
+color: #e6d5b8;
+margin: 0 0 24px 0;
+font-weight: 800;
 }
 
-.popup-content h3{
-font-size:28px;
+.popup-content h3 {
+font-size: 26px;
+color: #bfa980;
+margin: 20px 0 12px 0;
 }
 
-/* Bigger input text */
-
-.popup-content input {
-font-size:26px;
-padding: 10px;
-width: 90%;
+.popup-content p {
+font-size: 18px;
+color: #bfa980;
 }
 
-/* BUTTON */
+.popup-content input,
+.popup-content select {
+display: block;
+width: 100%;
+margin-bottom: 14px;
+font-size: 22px;
+padding: 13px 16px;
+border-radius: 10px;
+border: 1.5px solid rgba(230, 213, 184, 0.2);
+background: rgba(230, 213, 184, 0.06);
+color: #e6d5b8;
+}
+
+.popup-content input::placeholder {
+color: #666;
+font-size: 20px;
+}
+
+.popup-content input:focus,
+.popup-content select:focus {
+border-color: #bfa980;
+outline: none;
+}
 
 .popup-content button {
-padding: 12px 20px;
-font-size:26px;
-background-color: #0e1922;
-color: rgb(255,255,255);
+width: 100%;
+margin-top: 8px;
+padding: 14px 20px;
+font-size: 22px;
+background: linear-gradient(135deg, #e6d5b8, #bfa980);
+color: #111;
 border: none;
-border-radius: 6px;
+border-radius: 10px;
 cursor: pointer;
+font-weight: 800;
+transition: all 0.2s;
 }
 
-/* Risk Bar */
-
-#riskColor{
-height:25px;  /* slightly bigger */
-border-radius:20px;
-margin-top:10px;
+.popup-content button:hover {
+transform: translateY(-2px);
+box-shadow: 0 8px 24px rgba(230, 213, 184, 0.3);
 }
 
-/* Dashboard Layout */
-
-.container{
-display:flex;
+/* Close button */
+.close {
+float: right;
+font-size: 28px;
+cursor: pointer;
+color: #bfa980;
+line-height: 1;
 }
 
-/* Sidebar */
-
-.sidebar{
-width:220px;
-background:#23262B;
-height:100vh;
-padding:20px;
-position:fixed;
+.close:hover {
+color: #e6d5b8;
 }
 
-.sidebar h2{
-color:#e6d5b8;
+/* Switch link inside popup */
+.switch-link {
+font-size: 18px;
+color: #bfa980;
+margin-top: 16px;
+text-align: center;
 }
 
-.sidebar button{
-display:block;
-width:100%;
-margin:15px 0;
-padding:12px;
-background:#e6d5b8;
-color:black;
-border:none;
-border-radius:6px;
-font-size:18px;   /* FIXED small font */
-cursor:pointer;
+.switch-link a {
+color: #e6d5b8;
+text-decoration: none;
+font-weight: 700;
 }
 
-.sidebar button:hover{
-background:white;
+.switch-link a:hover {
+color: #fff;
 }
 
-/* Main Dashboard Area */
+/* ============================================
+   RISK BAR
+   ============================================ */
 
-.main{
-margin-left:240px;
-padding:30px;
+#riskColor {
+height: 28px;
+border-radius: 20px;
+margin-top: 12px;
 }
 
-/* Profile Card */
+/* ============================================
+   LAYOUT - DASHBOARD
+   ============================================ */
 
-.profile-card{
-background:#23262B;
-padding:20px;
-border-radius:10px;
-width:260px;
-box-shadow:0 4px 10px rgba(0,0,0,0.4);
-margin:auto;
-font-size:22px;
+.container {
+display: flex;
 }
 
-/* Financial Summary Card */
+/* ============================================
+   SIDEBAR
+   ============================================ */
 
-.loan-card{
-background: rgba(255,255,255,0.06);
+.sidebar {
+width: 230px;
+background: #1a1c20;
+height: 100vh;
+padding: 24px 16px;
+position: fixed;
+border-right: 1px solid rgba(230, 213, 184, 0.1);
+overflow-y: auto;
+}
+
+.sidebar h2 {
+color: #e6d5b8;
+font-size: 26px;
+margin-bottom: 28px;
+letter-spacing: 1px;
+border-bottom: 1px solid rgba(230, 213, 184, 0.15);
+padding-bottom: 16px;
+}
+
+.sidebar button {
+display: block;
+width: 100%;
+margin: 10px 0;
+padding: 13px 16px;
+background: linear-gradient(135deg, #e6d5b8, #bfa980);
+color: #111;
+border: none;
+border-radius: 8px;
+font-size: 17px;
+cursor: pointer;
+text-align: left;
+font-weight: 700;
+letter-spacing: 0.3px;
+transition: all 0.2s;
+}
+
+.sidebar button:hover {
+background: white;
+color: #111;
+transform: scale(1.03);
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+
+.main {
+margin-left: 242px;
+padding: 28px 40px;
+text-align: left;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: flex-start;
+}
+
+.main > * {
+width: 100%;
+max-width: 1100px;
+}
+
+.profile-wrap, .form-wrap {
+width: 100%;
+max-width: 720px;
+margin-left: auto;
+margin-right: auto;
+}
+
+/* ============================================
+   TOPBAR
+   ============================================ */
+
+.topbar {
+width: 100%;
+background: #111;
+padding: 14px 24px;
+position: sticky;
+top: 0;
+z-index: 100;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+.topbar h2 {
+margin: 0;
+color: #e6d5b8;
+font-size: 26px;
+letter-spacing: 0.5px;
+}
+
+/* ============================================
+   PROFILE CARD
+   ============================================ */
+
+.profile-card {
+background: rgba(230, 213, 184, 0.06);
+padding: 24px;
+border-radius: 14px;
+width: 280px;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+border: 1px solid rgba(230, 213, 184, 0.12);
+font-size: 20px;
+color: #e6d5b8;
+}
+
+/* ============================================
+   LOAN / FINANCE CARD
+   ============================================ */
+
+.loan-card {
+background: rgba(230, 213, 184, 0.05);
 backdrop-filter: blur(8px);
-border-radius:15px;
-padding:25px;
+border-radius: 16px;
+padding: 28px;
 margin: auto;
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+border: 1px solid rgba(230, 213, 184, 0.1);
 width: 95%;
 overflow-x: auto;
-transition:0.3s;
-font-size:24px;
+transition: 0.3s;
+font-size: 22px;
+color: #e6d5b8;
 }
 
-.loan-card:hover{
-transform:translateY(-5px);
-box-shadow:0 20px 40px rgba(0,0,0,0.5);
+.loan-card:hover {
+transform: translateY(-4px);
+box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
-#userTable{
-width: 100%;             /* 🔥 force table inside */
-min-width: 900px;        /* 🔥 keeps structure proper */
-font-size:18px;
+/* ============================================
+   TABLES - GLOBAL
+   ============================================ */
+
+table {
+width: 100%;
+border-collapse: collapse;
+font-size: 20px;
+color: #e6d5b8;
+}
+
+th {
+background: #2a2d33;
+color: #e6d5b8;
+padding: 16px 18px;
+text-align: center;
+font-size: 20px;
+border: 1px solid rgba(230, 213, 184, 0.15);
+letter-spacing: 0.5px;
+}
+
+td {
+padding: 15px 18px;
+text-align: center;
+border: 1px solid rgba(230, 213, 184, 0.08);
+font-size: 19px;
+color: #e6d5b8;
+vertical-align: middle;
+}
+
+tr:hover td {
+background: rgba(230, 213, 184, 0.04);
+}
+
+#userTable {
+width: 100%;
+min-width: 900px;
+font-size: 19px;
 border-collapse: collapse;
 }
 
-/* Charts Layout */
+/* ============================================
+   CHARTS
+   ============================================ */
 
-.charts{
-display:flex;
-justify-content:center;
-gap:40px;
-flex-wrap:wrap;
-margin-top:40px;
+.charts {
+display: flex;
+justify-content: center;
+gap: 40px;
+flex-wrap: wrap;
+margin-top: 40px;
 }
 
-.topbar{
-width:100%;
-background:#111;
-padding:15px;
-position:sticky;
-top:0;
-box-shadow:0 4px 10px rgba(0,0,0,0.4);
+/* ============================================
+   FORM LABELS (for pages using .field-label)
+   ============================================ */
+
+.field-label {
+display: block;
+font-size: 18px;
+color: #bfa980;
+margin-bottom: 6px;
+letter-spacing: 1px;
+text-transform: uppercase;
+font-family: Georgia, serif;
 }
 
-.topbar h2{
-margin:0;
-color:#e6d5b8;
-text-align:center;
-font-size:28px;
+/* ============================================
+   DM MONO overrides - make readable
+   ============================================ */
+
+[style*="DM Mono"],
+.dm-mono {
+font-size: 18px !important;
+color: #e6d5b8 !important;
 }
 
+/* ============================================
+   LINKS
+   ============================================ */
+
+a {
+color: #bfa980;
+text-decoration: none;
+font-size: 20px;
+}
+
+a:hover {
+color: #e6d5b8;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+width: 6px;
+}
+
+::-webkit-scrollbar-track {
+background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+background: rgba(230, 213, 184, 0.3);
+border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+background: rgba(230, 213, 184, 0.5);
+}
+
+/* ============================================
+   SMALL TEXT OVERRIDES
+   (prevents DM Mono tiny fonts from being unreadable)
+   ============================================ */
+
+small {
+font-size: 16px;
+color: #bfa980;
+}
+
+label {
+font-size: 20px;
+color: #e6d5b8;
+}
+
+.page-header { width: 100%; }
+.topbar h2 { text-align: center; width: 100%; }
