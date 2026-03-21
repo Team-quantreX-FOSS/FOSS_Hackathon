@@ -1,314 +1,307 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
 <title>Banker Dashboard</title>
-
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+* { box-sizing: border-box; }
 
-.controls{
-margin:20px;
-text-align:center;
+.page-header {
+    display: flex; align-items: center; gap: 18px;
+    margin: 32px 0 28px 0;
+    padding-bottom: 18px;
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+.page-header .icon-wrap {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(230,213,184,0.3);
+}
+.page-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800; margin: 0;
+    color: #e6d5b8;
+}
+.page-header .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: #888;
+    letter-spacing: 2px; text-transform: uppercase; margin: 3px 0 0 0;
 }
 
-button {
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    transition:0.3s;
+.controls { margin: 0 0 24px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+.ctrl-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; padding: 8px 18px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: #aaa; cursor: pointer; transition: all 0.2s;
+    letter-spacing: 1px;
 }
-
-button:hover {
-    transform: scale(1.05);
-}
-
-td {
-    transition:0.3s;
-}
-
-
-.low { color:green; font-weight:bold; }
-.medium { color:orange; font-weight:bold; }
-.high { color:red; font-weight:bold; }
-
-.controls button{
-margin:8px;
-font-size:22px;
-padding:10px 18px;
+.ctrl-btn:hover, .ctrl-btn.active {
+    background: rgba(16,185,129,0.12);
+    border-color: #10b981; color: #10b981;
 }
 
 #userTable {
-font-size:22px;
-border-collapse: collapse;
-width:100%;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 20px;
 }
-
-#userTable th, #userTable td {
-padding:16px;
-text-align:center;
-}
-
 #userTable th {
-background:#333;
-color:white;
-font-size:24px;
+    padding: 14px;
+    background: #333;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+    border: 1px solid #555;
 }
-
-.popup{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.5);
+#userTable td {
+    padding: 14px;
+    text-align: center;
+    border: 1px solid #444;
+    vertical-align: middle;
 }
+#userTable tr:hover td { background: rgba(230,213,184,0.05); }
 
-.popup-content{
-background:rgb(70, 58, 58);
-padding:25px;
-width:320px;
-margin:100px auto;
-border-radius:10px;
-text-align:center;
-font-size:22px;
+.badge {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 999px; font-size: 12px; font-weight: 500;
 }
+.badge-pending  { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.badge-approved { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+.badge-rejected { background:rgba(239,68,68,0.15);  color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.badge-manual   { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
 
-.popup-content h3{
-font-size:26px;
+.action-btn {
+    padding: 7px 14px; border-radius: 8px; border: none;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    cursor: pointer; margin: 2px; transition: all 0.2s;
 }
+.btn-approve { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+.btn-approve:hover { background:rgba(16,185,129,0.3); }
+.btn-reject  { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.btn-reject:hover  { background:rgba(239,68,68,0.3); }
+.btn-manual  { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
+.btn-manual:hover  { background:rgba(139,92,246,0.3); }
 
-.popup-content input{
-font-size:22px;
-padding:10px;
-width:90%;
+.score-wrap { display:flex; align-items:center; gap:10px; }
+.score-bar-bg { flex:1; height:5px; border-radius:99px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:99px; }
+
+.empty-state { text-align:center; padding:60px 20px; color:#555; }
+.empty-state .ei { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-family:'DM Mono',monospace; font-size:13px; letter-spacing:1px; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.anim-row { animation: fadeUp 0.35s ease both; }
+
+.popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; }
+.popup-content {
+    background:#1a1a2e; padding:30px; width:340px;
+    margin:120px auto; border-radius:16px;
+    text-align:center; font-family:'DM Mono',monospace;
+    border: 1px solid rgba(255,255,255,0.1);
 }
-
-.popup-content button{
-font-size:20px;
-margin:5px;
+.popup-content h3 { font-family:'Syne',sans-serif; font-size:1.2rem; margin:0 0 16px 0; }
+.popup-content input {
+    width:100%; padding:12px; border-radius:10px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.05);
+    color:white; font-family:'DM Mono',monospace; font-size:14px;
+    margin-bottom:14px;
 }
-
+.popup-content button { margin:4px; }
 </style>
-
 </head>
-
 <body>
 
-<div class="topbar">
-<h2>FinRisk - Banker Dashboard</h2>
-</div>
+<div class="topbar"><h2>FinRisk - Banker Dashboard</h2></div>
 
 <div class="container">
-
 <div class="sidebar">
 <h2>FinRisk</h2>
 <button onclick="location.href='/banker_dashboard'">Dashboard</button>
+<button onclick="location.href='/loan_requests'">Loan Requests</button>
 <button onclick="location.href='/banker_review'">Review Queue</button>
 <button onclick="logout()">Logout</button>
 </div>
 
 <div class="main">
 
-<h1>Borrower Applications</h1>
-
-<div class="controls">
-<button onclick="showAll()">Show All</button>
-<button onclick="filterLowRisk()">Low Risk Only</button>
-<button onclick="sortByScore()">Sort by Score</button>
+<div class="page-header">
+    <div class="icon-wrap">📋</div>
+    <div>
+        <h1>My Applications</h1>
+        <p class="subtitle">Cases you have claimed</p>
+    </div>
 </div>
 
-<div class="loan-card">
+<div class="controls">
+    <button class="ctrl-btn active" onclick="filterTable('all', this)">All</button>
+    <button class="ctrl-btn" onclick="filterTable('Picked Up', this)">Pending Review</button>
+    <button class="ctrl-btn" onclick="filterTable('Approved', this)">Approved</button>
+    <button class="ctrl-btn" onclick="filterTable('Rejected', this)">Rejected</button>
+    <button class="ctrl-btn" onclick="filterTable('Manual Review', this)">Manual Review</button>
+    <button class="ctrl-btn" onclick="sortByScore()">↑ Sort by Score</button>
+</div>
 
-<table border="1" id="userTable">
-<tr>
-<th>Name</th>
-<th>Phone</th>
-<th>Loan Amount</th>
-<th>Loan Type</th>
-<th>Tenure</th>
-<th>EMI</th>
-<th>Risk Score</th>
-<th>Status</th>
-<th>Action</th>
-</tr>
+<table id="userTable">
+<thead><tr>
+<th>Name</th><th>Phone</th><th>Loan Amount</th>
+<th>Type</th><th>Tenure</th><th>EMI</th>
+<th>Risk Score</th><th>Status</th><th>Action</th>
+</tr></thead>
+<tbody id="tableBody"></tbody>
 </table>
 
 </div>
-
-</div>
 </div>
 
+<!-- REJECT POPUP -->
 <div id="rejectPopup" class="popup">
 <div class="popup-content">
 <h3>Reason for Rejection</h3>
-<input type="text" id="rejectReason" placeholder="Enter reason"><br><br>
-<button onclick="submitReject()">Submit</button>
-<button onclick="closePopup()">Cancel</button>
+<input type="text" id="rejectReason" placeholder="Enter reason...">
+<div>
+<button class="action-btn btn-reject" onclick="submitReject()">Submit</button>
+<button class="action-btn btn-manual" onclick="closePopup()">Cancel</button>
+</div>
 </div>
 </div>
 
 <script>
 
-let table = document.getElementById("userTable");
-let selectedId = null;
 let applications = [];
+let selectedId   = null;
 
-/* FETCH FROM BACKEND */
+let currentBankerId = localStorage.getItem("currentBanker") || "";
+let bankerData      = currentBankerId ? JSON.parse(localStorage.getItem("banker_" + currentBankerId) || "{}") : {};
+let bankerName      = bankerData.name || "";
+
 function fetchUsers(){
+    if(!bankerName){
+        /* Banker not identified — show warning */
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#f87171;">
+            Could not identify banker. Please <a href="/" style="color:#e6d5b8;">logout and login again</a>.
+        </td></tr>`;
+        return;
+    }
     fetch("/users")
     .then(res => res.json())
     .then(data => {
-        // /users returns array of arrays:
-        // [id, name, phone, loanAmount, loanType, tenure, emi, risk_score, allocated_banker, loan_status, reason]
-        applications = data.map(u => ({
-            id:       u[0],
-            name:     u[1],
-            phone:    u[2],
-            loan:     u[3],
-            loanType: u[4],
-            tenure:   u[5],
-            emi:      u[6],
-            score:    u[7],
-            banker:   u[8],
-            status:   u[9],
-            reason:   u[10]
-        }));
-        loadTable(applications);
+        /* ONLY show applications this banker has claimed (allocated_banker === bankerName) */
+        applications = data
+            .map(u => ({
+                id: u[0], name: u[1], phone: u[2],
+                loan: u[3], loanType: u[4], tenure: u[5],
+                emi: u[6], score: u[7], banker: u[8],
+                status: u[9], reason: u[10]
+            }))
+            .filter(u => u.banker && u.banker === bankerName);
+        renderTable(applications);
     });
 }
 
-/* LOAD TABLE */
-function loadTable(data){
+function renderTable(data){
+    let body = document.getElementById("tableBody");
+    body.innerHTML = "";
 
-table.innerHTML = `
-<tr>
-<th>Name</th>
-<th>Phone</th>
-<th>Loan Amount</th>
-<th>Loan Type</th>
-<th>Tenure</th>
-<th>EMI</th>
-<th>Risk Score</th>
-<th>Status</th>
-<th>Action</th>
-</tr>
-`;
+    if(data.length === 0){
+        body.innerHTML = `<tr><td colspan="9">
+<div class="empty-state">
+<div class="ei">📂</div>
+<p>No applications claimed yet.<br>Go to <a href="/loan_requests" style="color:#3b82f6;">Loan Requests</a> to pick one up.</p>
+</div></td></tr>`;
+        return;
+    }
 
-if(data.length === 0){
-    table.innerHTML += "<tr><td colspan='9'>No applications found</td></tr>";
-    return;
-}
+    data.forEach((u, i) => {
+        let scoreColor = u.score >= 75 ? "#10b981" : u.score >= 55 ? "#f59e0b" : "#ef4444";
+        let riskLabel  = u.score >= 75 ? "Low Risk" : u.score >= 55 ? "Medium Risk" : "High Risk";
+        let badgeClass = { "Approved":"badge-approved","Rejected":"badge-rejected","Manual Review":"badge-manual" }[u.status] || "badge-pending";
+        let statusText = u.status === "Picked Up" ? "Pending Review" : (u.status || "Pending");
 
-data.forEach((u) => {
-
-    let color = "black";
-    let riskLabel = "";
-
-    if(u.score >= 75){ color = "green";  riskLabel = "Low Risk"; }
-    else if(u.score >= 55){ color = "orange"; riskLabel = "Medium Risk"; }
-    else { color = "red"; riskLabel = "High Risk"; }
-
-    let row = table.insertRow();
-
-    row.innerHTML = `
-<td>${u.name || ""}</td>
-<td>${u.phone || ""}</td>
-<td>₹${u.loan || 0}</td>
-<td>${u.loanType || ""}</td>
-<td>${u.tenure || ""}</td>
-<td>₹${u.emi || 0}</td>
-<td style="color:${color}; font-weight:bold;">${u.score} (${riskLabel})</td>
-<td>${u.status || "Pending"}${u.reason ? "<br><small>(" + u.reason + ")</small>" : ""}</td>
+        let row = document.createElement("tr");
+        row.className = "anim-row";
+        row.style.animationDelay = (i * 0.05) + "s";
+        row.innerHTML = `
+<td><b style="font-family:'Syne',sans-serif;">${u.name||""}</b></td>
+<td style="color:#888;">${u.phone||""}</td>
+<td>₹${u.loan ? Number(u.loan).toLocaleString() : 0}</td>
+<td>${u.loanType||""}</td>
+<td>${u.tenure||""} mo</td>
+<td>₹${u.emi ? Number(u.emi).toLocaleString() : 0}</td>
 <td>
-<button onclick="approve(${u.id})">Approve</button>
-<button onclick="openReject(${u.id})">Reject</button>
-<button onclick="manualReview(${u.id})">Review</button>
+  <div class="score-wrap">
+    <span style="color:${scoreColor};font-weight:600;min-width:28px;">${u.score||0}</span>
+    <div class="score-bar-bg">
+      <div class="score-bar-fill" style="width:${u.score||0}%;background:${scoreColor};"></div>
+    </div>
+    <span style="color:#666;font-size:11px;">${riskLabel}</span>
+  </div>
 </td>
-`;
-
-});
-
+<td><span class="badge ${badgeClass}">${statusText}</span>${u.reason?"<br><small style='color:#666;font-size:11px;'>("+u.reason+")</small>":""}</td>
+<td>
+<button class="action-btn btn-approve" onclick="approve(${u.id})">Approve</button>
+<button class="action-btn btn-reject"  onclick="openReject(${u.id})">Reject</button>
+<button class="action-btn btn-manual"  onclick="manualReview(${u.id})">Manual</button>
+</td>`;
+        body.appendChild(row);
+    });
 }
 
-/* APPROVE */
+function filterTable(status, btn){
+    document.querySelectorAll(".ctrl-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    if(status === "all") renderTable(applications);
+    else renderTable(applications.filter(u => u.status === status || (status === "Picked Up" && (u.status === "Picked Up" || u.status === "Pending"))));
+}
+
+function sortByScore(){
+    renderTable([...applications].sort((a,b) => b.score - a.score));
+}
+
 function approve(id){
-fetch("/banker_action",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json"},
-    body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
-})
-.then(()=> fetchUsers())
-.catch(err=>console.error(err));
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
+    }).then(()=> fetchUsers());
 }
 
-/* REJECT */
 function openReject(id){
-selectedId = id;
-document.getElementById("rejectReason").value = "";
-document.getElementById("rejectPopup").style.display = "block";
+    selectedId = id;
+    document.getElementById("rejectReason").value = "";
+    document.getElementById("rejectPopup").style.display = "block";
 }
 
 function submitReject(){
-let reason = document.getElementById("rejectReason").value;
-fetch("/banker_action",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json"},
-    body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
-})
-.then(()=>{
-    closePopup();
-    fetchUsers();
-})
-.catch(err=>console.error(err));
+    let reason = document.getElementById("rejectReason").value;
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
+    }).then(()=>{ closePopup(); fetchUsers(); });
 }
 
-/* MANUAL REVIEW */
 function manualReview(id){
-fetch("/banker_action",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json"},
-    body:JSON.stringify({ user_id:id, action:"Manual Review", reason:"Under verification" })
-})
-.then(()=> fetchUsers())
-.catch(err=>console.error(err));
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:id, action:"Manual Review", reason:"Under verification" })
+    }).then(()=> fetchUsers());
 }
 
-/* FILTER */
-function filterLowRisk(){
-let filtered = applications.filter(u => u.score >= 75);
-loadTable(filtered);
-}
-
-/* SHOW ALL */
-function showAll(){
-fetchUsers();
-}
-
-/* SORT */
-function sortByScore(){
-let sorted = [...applications].sort((a,b)=>b.score-a.score);
-loadTable(sorted);
-}
-
-/* CLOSE POPUP */
 function closePopup(){
-document.getElementById("rejectPopup").style.display = "none";
+    document.getElementById("rejectPopup").style.display = "none";
 }
 
-/* LOGOUT */
 function logout(){
-window.location.href = "/";
+    localStorage.removeItem("currentBanker");
+    window.location.href = "/";
 }
 
-/* INITIAL LOAD */
 fetchUsers();
 
 </script>
-
 </body>
 </html>
