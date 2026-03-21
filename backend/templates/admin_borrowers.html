@@ -1,51 +1,45 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
-<title>Borrowers Information Table</title>
-
+<title>Admin - Borrowers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 #userTable{
 font-size:22px;
 border-collapse:collapse;
 }
-
 #userTable th, #userTable td{
 padding:16px;
 text-align:center;
 }
-
 #userTable th{
 font-size:24px;
 background:#333;
 color:white;
 }
+button{
+padding:6px 10px;
+margin:2px;
+}
 </style>
-
 </head>
-
 <body>
 
-<div class="topbar">
-<h2>Borrowers Panel</h2>
-</div>
+<div class="topbar"><h2>Borrowers Panel</h2></div>
 
 <div class="container">
-
 <div class="sidebar">
-<button onclick="location.href='/admin_dashboard'">Dashboard</button>
+<h2>Admin</h2>
+<button onclick="location.href='/admin_dashboard'">Banks</button>
 <button onclick="location.href='/admin_borrowers'">Borrowers</button>
 <button onclick="location.href='/admin_bankers'">Bankers</button>
+<button onclick="window.location.href='/'">Logout</button>
 </div>
 
 <div class="main">
 
 <h1>Borrowers</h1>
-
 <table border="1" width="100%" id="userTable">
 <tr>
 <th>Name</th>
@@ -56,24 +50,25 @@ color:white;
 <th>Tenure</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
-<th>Banker</th>
+<th>Allocated Banker</th>
+<th>Status</th>
 <th>Action</th>
 </tr>
 </table>
+
+<h2>Borrower Loan Status</h2>
+<canvas id="borrowerChart" width="400" height="200"></canvas>
 
 </div>
 </div>
 
 <script>
-
+// ================= LOAD USERS =================
 async function loadUsers(){
-
-let res = await fetch("/api/users");
-let users = await res.json();
-
-let table = document.getElementById("userTable");
-
-table.innerHTML = `
+    let res = await fetch("/api/users");
+    let users = await res.json();
+    let table = document.getElementById("userTable");
+    table.innerHTML = `
 <tr>
 <th>Name</th>
 <th>Age</th>
@@ -83,37 +78,59 @@ table.innerHTML = `
 <th>Tenure</th>
 <th>Existing EMI</th>
 <th>Risk Score</th>
-<th>Banker</th>
+<th>Allocated Banker</th>
+<th>Status</th>
 <th>Action</th>
-</tr>
-`;
-
-users.forEach(u => {
-
-let row = table.insertRow();
-
-row.innerHTML = `
-<td>${u.name || "-"}</td>
-<td>${u.age || "-"}</td>
-<td>${u.phone || "-"}</td>
-<td>${u.loanAmount || "-"}</td>
-<td>${u.loanType || "-"}</td>
-<td>${u.tenure || "-"}</td>
-<td>${u.emi || "-"}</td>
-<td style="font-weight:bold;">${u.score || "-"}</td>
-<td>${u.banker || "Not Assigned"}</td>
+</tr>`;
+    let statusCount = {Pending:0, Approved:0, Rejected:0, "Manual Review":0};
+    users.forEach(u=>{
+        let row = table.insertRow();
+        row.innerHTML = `
+<td>${u.name||""}</td>
+<td>${u.age||""}</td>
+<td>${u.phone||""}</td>
+<td>${u.loanAmount||""}</td>
+<td>${u.loanType||""}</td>
+<td>${u.tenure||""}</td>
+<td>${u.emi||""}</td>
+<td>${u.score||""}</td>
+<td>${u.banker||""}</td>
+<td>${u.status||"Pending"}${u.reason? "<br><small>("+u.reason+")</small>":""}</td>
 <td>
-${u.status || "Pending"}
-${u.reason ? "<br><small>("+u.reason+")</small>" : ""}
-</td>
-`;
+<button onclick="takeAction(${u.id},'Approved')">Approve</button>
+<button onclick="takeAction(${u.id},'Rejected')">Reject</button>
+<button onclick="takeAction(${u.id},'Manual Review')">Manual</button>
+</td>`;
+        statusCount[u.status||"Pending"]++;
+    });
 
-});
+    // ================= BORROWER CHART =================
+    const ctx = document.getElementById('borrowerChart').getContext('2d');
+    new Chart(ctx,{
+        type:'pie',
+        data:{
+            labels:['Pending','Approved','Rejected','Manual Review'],
+            datasets:[{
+                data:[statusCount.Pending,statusCount.Approved,statusCount.Rejected,statusCount["Manual Review"]],
+                backgroundColor:['#f39c12','#27ae60','#c0392b','#8e44ad']
+            }]
+        },
+        options:{responsive:true}
+    });
+}
 
+// ================= TAKE ACTION ON BORROWER =================
+async function takeAction(userId, action){
+    let reason = prompt("Enter reason (optional):","");
+    await fetch("/banker_action",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({user_id:userId, action:action, reason:reason})
+    });
+    loadUsers();
 }
 
 loadUsers();
-
 </script>
 
 </body>
