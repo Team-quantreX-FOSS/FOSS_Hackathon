@@ -3,44 +3,80 @@
 <head>
 <title>Admin - Bankers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-#bankerTable{
-font-size:22px;
-border-collapse:collapse;
+* { box-sizing: border-box; }
+#bankerTable { font-size: 18px; border-collapse: collapse; width: 100%; }
+#bankerTable th { font-size: 17px; background: #2a2d33; color: #e6d5b8; padding: 16px 14px; text-align: center; border: 1px solid rgba(230,213,184,0.15); }
+#bankerTable td { padding: 15px 14px; text-align: center; border: 1px solid rgba(230,213,184,0.08); font-size: 17px; color: #e6d5b8; vertical-align: middle; }
+#bankerTable tr:hover td { background: rgba(230,213,184,0.04); }
+
+.pct-bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.pct-bar-bg { width: 80px; height: 7px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.pct-bar-fill { height: 100%; border-radius: 99px; }
+
+.charts-section { margin-top: 36px; }
+.charts-section h2 {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: #bfa980;
+    margin: 0 0 20px 0; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-#bankerTable th, #bankerTable td{
-padding:16px;
-text-align:center;
+.pie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
 }
-#bankerTable th{
-font-size:24px;
-background:#333;
-color:white;
+.pie-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 20px; text-align: center;
+    transition: transform 0.2s;
 }
-button{
-padding:6px 10px;
-margin:2px;
+.pie-card:hover { transform: translateY(-4px); }
+.pie-card .banker-name {
+    font-family: 'Syne', sans-serif; font-size: 17px;
+    font-weight: 700; color: #e6d5b8; margin-bottom: 4px;
 }
+.pie-card .banker-bank {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: #bfa980; margin-bottom: 16px;
+}
+.pie-legend { margin-top: 14px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.legend-item { font-family: 'DM Mono', monospace; font-size: 13px; color: #bfa980; display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.no-data { text-align: center; padding: 60px; color: #bfa980; font-family: 'DM Mono', monospace; font-size: 16px; }
 </style>
 </head>
 <body>
 
-<div class="topbar"><h2>Bankers Panel</h2></div>
+<div class="topbar"><h2>FinRisk - Bankers Panel</h2></div>
 
 <div class="container">
 <div class="sidebar">
 <h2>Admin</h2>
-<button onclick="location.href='/admin_dashboard'">Banks</button>
-<button onclick="location.href='/admin_borrowers'">Borrowers</button>
-<button onclick="location.href='/admin_bankers'">Bankers</button>
-<button onclick="window.location.href='/'">Logout</button>
+<button onclick="location.href='/admin_dashboard'">🏛 Banks</button>
+<button onclick="location.href='/admin_borrowers'">👥 Borrowers</button>
+<button onclick="location.href='/admin_bankers'">🏦 Bankers</button>
+<button onclick="location.href='/admin_profile'">⚙ Profile</button>
+<button onclick="window.location.href='/'">🚪 Logout</button>
 </div>
 
 <div class="main">
 
-<h1>Bankers</h1>
-<table border="1" width="100%" id="bankerTable">
+<!-- HEADER -->
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);width:100%;">
+<div style="width:54px;height:54px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(59,130,246,0.3);">🏦</div>
+<div>
+<h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Bankers</h1>
+<p style="font-family:'DM Mono',monospace;font-size:14px;color:#bfa980;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">Registered Bankers · Performance Stats</p>
+</div>
+</div>
+
+<!-- TABLE -->
+<table id="bankerTable">
+<thead>
 <tr>
 <th>Name</th>
 <th>Banker ID</th>
@@ -50,84 +86,151 @@ margin:2px;
 <th>Approval %</th>
 <th>Rejection %</th>
 <th>Manual Review %</th>
-<th>Action</th>
 </tr>
+</thead>
+<tbody id="bankerBody"></tbody>
 </table>
 
-<h2>Banker Performance</h2>
-<canvas id="bankerChart" width="400" height="200"></canvas>
+<!-- PIE CHARTS SECTION -->
+<div class="charts-section">
+<h2>📊 Individual Performance Breakdown</h2>
+<div class="pie-grid" id="pieGrid"></div>
+</div>
+
+<!-- OVERALL PIE -->
+<div class="charts-section" style="margin-top:32px;">
+<h2>🌐 Overall System Performance</h2>
+<div style="max-width:340px;margin:0 auto;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;">
+<canvas id="overallChart" height="260"></canvas>
+<div class="pie-legend" style="margin-top:16px;">
+<span class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span>Approved</span>
+<span class="legend-item"><span class="legend-dot" style="background:#c0392b;"></span>Rejected</span>
+<span class="legend-item"><span class="legend-dot" style="background:#8e44ad;"></span>Manual</span>
+</div>
+</div>
+</div>
 
 </div>
 </div>
 
 <script>
-// ================= LOAD BANKERS =================
 async function loadBankers(){
-    let res = await fetch("/api/bankers");
+    let res     = await fetch("/api/bankers");
     let bankers = await res.json();
-    let table = document.getElementById("bankerTable");
-    table.innerHTML = `
-<tr>
-<th>Name</th>
-<th>Banker ID</th>
-<th>Bank Name</th>
-<th>IFSC Code</th>
-<th>Total Customers</th>
-<th>Approval %</th>
-<th>Rejection %</th>
-<th>Manual Review %</th>
-<th>Action</th>
-</tr>`;
-    let totalApproval=0, totalRejection=0, totalManual=0;
-    bankers.forEach(b=>{
-        totalApproval += b.approval||0;
-        totalRejection += b.rejection||0;
-        totalManual += b.manual||0;
-        let row = table.insertRow();
-        row.innerHTML = `
-<td>${b.name||""}</td>
-<td>${b.id||""}</td>
+    let body    = document.getElementById("bankerBody");
+    let pieGrid = document.getElementById("pieGrid");
+    body.innerHTML    = "";
+    pieGrid.innerHTML = "";
+
+    if(bankers.length === 0){
+        body.innerHTML = `<tr><td colspan="8"><div class="no-data">No bankers registered yet.</div></td></tr>`;
+        return;
+    }
+
+    let totalApp=0, totalRej=0, totalMan=0;
+
+    bankers.forEach((b, i) => {
+        let total = (b.approval||0) + (b.rejection||0) + (b.manual||0);
+        let appPct = total > 0 ? Math.round((b.approval||0)/total*100) : 0;
+        let rejPct = total > 0 ? Math.round((b.rejection||0)/total*100) : 0;
+        let manPct = total > 0 ? Math.round((b.manual||0)/total*100)   : 0;
+
+        totalApp += b.approval  || 0;
+        totalRej += b.rejection || 0;
+        totalMan += b.manual    || 0;
+
+        /* TABLE ROW */
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+<td><b>${b.name||""}</b></td>
+<td style="color:#bfa980;">${b.bankerId||""}</td>
 <td>${b.bankName||""}</td>
-<td>${b.ifsc||""}</td>
-<td>${b.totalCustomers||0}</td>
-<td>${b.approval||0}%</td>
-<td>${b.rejection||0}%</td>
-<td>${b.manual||0}%</td>
+<td style="color:#bfa980;">${b.ifsc||""}</td>
+<td><b>${b.totalCustomers||0}</b></td>
 <td>
-<button onclick="takeAction('${b.name}','Approved')">Approve</button>
-<button onclick="takeAction('${b.name}','Rejected')">Reject</button>
-<button onclick="takeAction('${b.name}','Manual Review')">Manual</button>
+  <div class="pct-bar-wrap">
+    <span style="color:#27ae60;font-weight:700;min-width:38px;">${appPct}%</span>
+    <div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${appPct}%;background:#27ae60;"></div></div>
+  </div>
+</td>
+<td>
+  <div class="pct-bar-wrap">
+    <span style="color:#c0392b;font-weight:700;min-width:38px;">${rejPct}%</span>
+    <div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${rejPct}%;background:#c0392b;"></div></div>
+  </div>
+</td>
+<td>
+  <div class="pct-bar-wrap">
+    <span style="color:#8e44ad;font-weight:700;min-width:38px;">${manPct}%</span>
+    <div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${manPct}%;background:#8e44ad;"></div></div>
+  </div>
 </td>`;
+        body.appendChild(tr);
+
+        /* PIE CARD */
+        let card = document.createElement("div");
+        card.className = "pie-card";
+        let canvasId = "pie_" + i;
+        card.innerHTML = `
+<div class="banker-name">${b.name||""}</div>
+<div class="banker-bank">${b.bankName||""}</div>
+<canvas id="${canvasId}" height="200"></canvas>
+<div class="pie-legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span>${appPct}% Approved</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#c0392b;"></span>${rejPct}% Rejected</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#8e44ad;"></span>${manPct}% Manual</span>
+</div>`;
+        pieGrid.appendChild(card);
+
+        /* Draw individual pie */
+        setTimeout(() => {
+            new Chart(document.getElementById(canvasId), {
+                type: 'pie',
+                data: {
+                    labels: ['Approved', 'Rejected', 'Manual Review'],
+                    datasets: [{
+                        data: [b.approval||0, b.rejection||0, b.manual||0],
+                        backgroundColor: ['#27ae60','#c0392b','#8e44ad'],
+                        borderWidth: 2,
+                        borderColor: '#1a1a2e'
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    responsive: true
+                }
+            });
+        }, 50 * i);
     });
 
-    // ================= BANKER CHART =================
-    const ctx = document.getElementById('bankerChart').getContext('2d');
-    new Chart(ctx,{
-        type:'pie',
-        data:{
-            labels:['Approved','Rejected','Manual Review'],
-            datasets:[{
-                data:[totalApproval,totalRejection,totalManual],
-                backgroundColor:['#27ae60','#c0392b','#8e44ad']
+    /* OVERALL PIE */
+    new Chart(document.getElementById('overallChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Approved','Rejected','Manual Review'],
+            datasets: [{
+                data: [totalApp, totalRej, totalMan],
+                backgroundColor: ['#27ae60','#c0392b','#8e44ad'],
+                borderWidth: 2,
+                borderColor: '#1a1a2e'
             }]
         },
-        options:{responsive:true}
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx){
+                            let total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                            let pct   = total > 0 ? Math.round(ctx.parsed/total*100) : 0;
+                            return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                        }
+                    }
+                }
+            },
+            responsive: true
+        }
     });
-}
-
-// ================= BANKER ACTION =================
-async function takeAction(bankerName,action){
-    let res = await fetch("/api/users");
-    let users = await res.json();
-    let user = users.find(u=>u.banker===bankerName && u.status==="Pending");
-    if(!user){ alert("No pending requests for this banker."); return; }
-    let reason = prompt("Enter reason (optional):","");
-    await fetch("/banker_action",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({user_id:user.id, action:action, reason:reason})
-    });
-    loadBankers();
 }
 
 loadBankers();
