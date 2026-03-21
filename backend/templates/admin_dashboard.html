@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
 <style>
 table{
 font-size:20px;
 border-collapse:collapse;
 width:100%;
 }
-
 th, td{
 padding:14px;
 text-align:center;
+border: 1px solid #ccc;
 }
-
 th{
 background:#333;
 color:white;
 }
 </style>
-
 </head>
 
 <body>
@@ -35,26 +31,29 @@ color:white;
 
 <div class="sidebar">
 <h2>Admin</h2>
-
-<button onclick="location.href='/admin_dashboard'">Banks</button>
-<button onclick="location.href='/admin_borrowers'">Borrowers</button>
-<button onclick="location.href='/admin_bankers'">Bankers</button>
-<button onclick="logout()">Logout</button>
-
+<button onclick="location.href='/admin_dashboard'">🏛 Banks</button>
+<button onclick="location.href='/admin_borrowers'">👥 Borrowers</button>
+<button onclick="location.href='/admin_bankers'">🏦 Bankers</button>
+<button onclick="location.href='/admin_profile'">⚙ Profile</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div class="main">
 
-<h1>Registered Banks</h1>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);">
+<div style="width:54px;height:54px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(245,158,11,0.3);">🏛</div>
+<div><h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Registered Banks</h1>
+<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">System Overview · Live Data</p></div></div>
 
 <table id="bankTable">
 <tr>
 <th>Bank Name</th>
-<th>Branch</th>
 <th>IFSC</th>
-<th>Registered in App</th>
-<th>% Bankers Using App</th>
-<th>% Loans via App</th>
+<th>No. of Bankers</th>
+<th>Total Customers</th>
+<th>Approved</th>
+<th>Rejected</th>
+<th>Manual Review</th>
 </tr>
 </table>
 
@@ -65,30 +64,55 @@ color:white;
 
 async function loadBanks(){
 
-let res = await fetch("/api/banks");
-let banks = await res.json();
+    let res     = await fetch("/api/bankers");
+    let bankers = await res.json();
 
-let table = document.getElementById("bankTable");
+    let table = document.getElementById("bankTable");
 
-banks.forEach(b => {
+    if(bankers.length === 0){
+        table.innerHTML += "<tr><td colspan='7'>No banks registered yet.</td></tr>";
+        return;
+    }
 
-let row = table.insertRow();
+    /* Group by bank name */
+    let banks = {};
+    bankers.forEach(b => {
+        let key = b.bankName + "||" + b.ifsc;
+        if(!banks[key]){
+            banks[key] = {
+                name: b.bankName,
+                ifsc: b.ifsc,
+                count: 0,
+                customers: 0,
+                approved: 0,
+                rejected: 0,
+                manual: 0
+            };
+        }
+        banks[key].count++;
+        banks[key].customers += b.totalCustomers || 0;
+        banks[key].approved  += b.approval || 0;
+        banks[key].rejected  += b.rejection || 0;
+        banks[key].manual    += b.manual || 0;
+    });
 
-row.innerHTML = `
+    Object.values(banks).forEach(b => {
+        let row = table.insertRow();
+        row.innerHTML = `
 <td>${b.name}</td>
-<td>${b.branch}</td>
 <td>${b.ifsc}</td>
-<td>Yes</td>
-<td>${Math.floor(Math.random()*100)}%</td>
-<td>${Math.floor(Math.random()*100)}%</td>
+<td>${b.count}</td>
+<td>${b.customers}</td>
+<td style="color:green;">${b.approved}</td>
+<td style="color:red;">${b.rejected}</td>
+<td style="color:purple;">${b.manual}</td>
 `;
-
-});
+    });
 
 }
 
 function logout(){
-window.location.href="/";
+    window.location.href="/";
 }
 
 loadBanks();
