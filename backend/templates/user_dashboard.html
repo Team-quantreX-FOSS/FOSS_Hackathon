@@ -1,43 +1,174 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <title>User Dashboard</title>
-
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 <style>
+* { box-sizing: border-box; }
 .popup {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    justify-content: center;
-    align-items: center;
+    display: none; position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    justify-content: center; align-items: center; z-index: 999;
 }
-
-.popup.show {
-    display: flex;
-}
-
+.popup.show { display: flex; }
 .popup-content {
-    background: rgb(70, 63, 63);
-    padding: 25px;
-    border-radius: 10px;
-    width: 350px;
-    max-height: 90vh;
-    overflow-y: auto;
-    color: rgb(34, 20, 20);
+    background: #1a1614;
+    border: 1px solid rgba(230,213,184,0.15);
+    padding: 32px; border-radius: 20px;
+    width: 420px; max-height: 90vh; overflow-y: auto;
 }
+.popup-content h2 {
+    font-family: 'Syne', sans-serif; font-size: 1.4rem;
+    font-weight: 800; color: #e6d5b8; margin: 0 0 20px 0;
+}
+.popup-content h3 {
+    font-family: 'Syne', sans-serif; font-size: 1rem;
+    font-weight: 700; color: #bfa980; margin: 20px 0 12px 0;
+    letter-spacing: 1px;
+}
+.field-label {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #888; display: block; margin-bottom: 6px;
+}
+.popup-content input {
+    display: block; width: 100%; margin-bottom: 14px;
+    font-family: 'DM Mono', monospace; font-size: 18px;
+    padding: 12px 14px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05); color: #e6d5b8;
+}
+.popup-content input:focus { outline: none; border-color: #bfa980; }
+.popup-content input::placeholder { color: #444; }
+.popup-btn-row { display: flex; gap: 10px; margin-top: 8px; }
+.popup-btn-primary {
+    flex: 1; padding: 13px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    color: #111; font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.popup-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(230,213,184,0.25); }
+.popup-btn-secondary {
+    padding: 13px 20px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: #888;
+    font-family: 'DM Mono', monospace; font-size: 14px; cursor: pointer;
+}
+#errorMsg { font-family: 'DM Mono', monospace; font-size: 13px; color: #f87171; margin-top: 8px; }
+
+/* PAGE HEADER */
+.page-header {
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 28px; padding-bottom: 18px;
+    border-bottom: 2px solid rgba(255,255,255,0.06);
+}
+.page-header .icon-wrap {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(230,213,184,0.2);
+}
+.page-header h1 {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem;
+    font-weight: 800; margin: 0; color: #e6d5b8;
+}
+.page-header .subtitle {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: #666; letter-spacing: 2px; text-transform: uppercase; margin: 3px 0 0 0;
+}
+
+/* STAT CARDS ROW */
+.stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card {
+    flex: 1; min-width: 140px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 18px 20px;
+    transition: transform 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); }
+.stat-card .s-label {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase; color: #666;
+    margin-bottom: 8px; display: block;
+}
+.stat-card .s-val {
+    font-family: 'Syne', sans-serif; font-size: 1.5rem;
+    font-weight: 800; color: #e6d5b8;
+}
+
+/* ACTION BUTTONS */
+.action-row { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+.btn-primary {
+    padding: 12px 24px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    color: #111; font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(230,213,184,0.25); }
+.btn-outline {
+    padding: 12px 24px; border-radius: 10px;
+    border: 1px solid rgba(230,213,184,0.3);
+    background: transparent; color: #e6d5b8;
+    font-family: 'Syne', sans-serif; font-size: 15px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-outline:hover { background: rgba(230,213,184,0.08); }
+
+/* STATUS BOX */
+#statusBox {
+    margin-top: 20px; font-size: 16px; font-weight: 600;
+    padding: 16px 20px; border-radius: 12px;
+    display: none; font-family: 'DM Mono', monospace;
+    line-height: 1.6;
+}
+
+/* SECTION */
+.section-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 24px; margin-bottom: 20px;
+}
+.section-card h2 {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: #888;
+    margin: 0 0 16px 0; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fin-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; }
+.fin-table th {
+    text-align: left; padding: 10px 14px;
+    font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #666; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fin-table td {
+    padding: 12px 14px; font-size: 16px; color: #e6d5b8;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+/* CHARTS */
+.charts { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 24px; }
+.chart-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 20px;
+}
+.chart-box h3 {
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: #888;
+    margin: 0 0 16px 0;
+}
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.main > * { animation: fadeUp 0.4s ease both; }
 </style>
-
 </head>
-
 <body>
 
 <div class="topbar">
@@ -46,85 +177,66 @@
 </div>
 
 <div class="container">
-
 <div class="sidebar">
 <h2>FinRisk</h2>
-
-<button onclick="location.href='/user_dashboard'">Dashboard</button>
-<button onclick="location.href='/loan_check'">Loan Eligibility</button>
-<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
-<button onclick="location.href='/apply_loan'">Apply for Loan</button>
-<button onclick="location.href='/user_profile'">Profile</button>
-<button onclick="logout()">Logout</button>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div class="main">
 
-<h1>User Financial Dashboard</h1>
-
-<div class="profile-card">
-<h3>User Profile</h3>
-
-<p>Name : <span id="userName"></span></p>
-<p>Account Type : Borrower</p>
-<p>Status : Active</p>
-
+<!-- HEADER -->
+<div class="page-header">
+    <div class="icon-wrap">📊</div>
+    <div>
+        <h1 id="userName">Dashboard</h1>
+        <p class="subtitle">Borrower · Financial Overview</p>
+    </div>
 </div>
 
-<br>
-
-<div class="loan-card">
-
-<h2>Risk Analysis</h2>
-
-<p style="font-size:28px;">
-Risk Score : 
-<span id="riskScore" style="font-size:28px; font-weight:bold;">0</span>
-</p>
-
-<p style="font-size:28px;">
-Risk Level : 
-<span id="riskLevel" style="font-size:28px; font-weight:bold;">New</span>
-</p>
-
-
-<h2>Financial Summary</h2>
-
-<table border="1">
-<tr>
-<th>Monthly Income</th>
-<td id="incomeDisplay">-</td>
-</tr>
-
-<tr>
-<th>Total Expenses</th>
-<td id="expenseDisplay">-</td>
-</tr>
-</table>
-
-<br>
-
-<button onclick="openPopup()">Re-enter Expenses</button>
-
-<!-- FIXED: redirects to /apply_loan which collects full loan details -->
-<button onclick="location.href='/apply_loan'" style="margin-left:10px;">Apply for Loan</button>
-
-<div id="statusBox" style="margin-top:20px; font-size:22px; font-weight:bold;"></div>
-
+<!-- STATS ROW -->
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="s-label">Risk Score</span>
+        <span class="s-val" id="riskScore">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="s-label">Risk Level</span>
+        <span class="s-val" id="riskLevel" style="font-size:1.1rem;">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="s-label">Monthly Income</span>
+        <span class="s-val" id="incomeDisplay">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="s-label">Total Expenses</span>
+        <span class="s-val" id="expenseDisplay">—</span>
+    </div>
 </div>
 
+<!-- ACTION BUTTONS -->
+<div class="action-row">
+    <button class="btn-primary" onclick="openPopup()">✏️ Enter / Update Financial Details</button>
+    <button class="btn-outline" onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+</div>
+
+<!-- STATUS BOX -->
+<div id="statusBox"></div>
+
+<!-- CHARTS -->
 <div class="charts">
-
-<div style="width:600px;">
-<h3>Expense Distribution</h3>
-<canvas id="expenseChart"></canvas>
-</div>
-
-<div style="width:700px;">
-<h3>Income vs Expenses</h3>
-<canvas id="incomeChart"></canvas>
-</div>
-
+    <div class="chart-box" style="width:420px;">
+        <h3>Expense Distribution</h3>
+        <canvas id="expenseChart"></canvas>
+    </div>
+    <div class="chart-box" style="width:420px;">
+        <h3>Income vs Expenses</h3>
+        <canvas id="incomeChart"></canvas>
+    </div>
 </div>
 
 </div>
@@ -133,301 +245,165 @@ Risk Level :
 <!-- POPUP -->
 <div id="financePopup" class="popup">
 <div class="popup-content">
+<h2>💰 Enter Financial Details</h2>
 
-<h2>Enter Financial Details</h2>
+<span class="field-label">Monthly Income</span>
+<input type="number" id="income" placeholder="e.g. 50000">
 
-Monthly Income<br>
-<input type="number" id="income"><br><br>
+<span class="field-label">Total Expenses</span>
+<input type="number" id="totalExpense" placeholder="e.g. 30000">
 
-Total Expenses<br>
-<input type="number" id="totalExpense"><br><br>
+<span class="field-label">Phone Number</span>
+<input type="text" id="phone" placeholder="e.g. 9876543210">
 
-Phone Number<br>
-<input type="text" id="phone"><br><br>
+<h3>Expense Breakdown</h3>
+<span class="field-label">Transportation</span>
+<input type="number" id="transport" placeholder="0">
+<span class="field-label">Education</span>
+<input type="number" id="education" placeholder="0">
+<span class="field-label">Food</span>
+<input type="number" id="food" placeholder="0">
+<span class="field-label">Utilities</span>
+<input type="number" id="utilities" placeholder="0">
+<span class="field-label">Other</span>
+<input type="number" id="other" placeholder="0">
 
-<h3>Expense Distribution</h3>
-
-Transportation<br>
-<input type="number" id="transport"><br><br>
-
-Education<br>
-<input type="number" id="education"><br><br>
-
-Food<br>
-<input type="number" id="food"><br><br>
-
-Utilities<br>
-<input type="number" id="utilities"><br><br>
-
-Other<br>
-<input type="number" id="other"><br><br>
-
-<p id="errorMsg" style="color:red;"></p>
-
-<button onclick="saveFinance()">Save</button>
-
+<p id="errorMsg"></p>
+<div class="popup-btn-row">
+    <button class="popup-btn-primary" onclick="saveFinance()">Save Details</button>
+    <button class="popup-btn-secondary" onclick="closePopup()">Cancel</button>
+</div>
 </div>
 </div>
 
 <script>
-
-/* LOAD */
 window.addEventListener("DOMContentLoaded", function(){
-
-Notification.requestPermission();
-
-let currentUser = localStorage.getItem("currentUser");
-
-if(!currentUser){
-    alert("Please login first!");
-    window.location.href="/index";
-    return;
-}
-
-let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-
-if(!userData){
-    alert("User data missing! Please login again.");
-    localStorage.removeItem("currentUser");
-    window.location.href="/index";
-    return;
-}
-
-document.getElementById("welcome").innerText = "Welcome, " + userData.name;
-document.getElementById("userName").innerText = userData.name;
-
-loadSavedData();
-
+    Notification.requestPermission();
+    let currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ alert("Please login first!"); window.location.href="/index"; return; }
+    let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
+    if(!userData){ alert("User data missing!"); localStorage.removeItem("currentUser"); window.location.href="/index"; return; }
+    document.getElementById("welcome").innerText = "Welcome, " + userData.name;
+    document.getElementById("userName").innerText = userData.name + "'s Dashboard";
+    let financeFilled = localStorage.getItem("financeFilled_" + currentUser);
+    if(!financeFilled){ openPopup(); } else { loadSavedData(); }
+    let phone = localStorage.getItem("phone_" + currentUser);
+    if(phone) checkStatus(phone);
 });
 
-
-/* LOAD SAVED DATA */
 function loadSavedData(){
-
-let income = Number(localStorage.getItem("income")) || 0;
-let totalExpense = Number(localStorage.getItem("totalExpense")) || 0;
-
-let transport = Number(localStorage.getItem("transport")) || 0;
-let education = Number(localStorage.getItem("education")) || 0;
-let food = Number(localStorage.getItem("food")) || 0;
-let utilities = Number(localStorage.getItem("utilities")) || 0;
-let other = Number(localStorage.getItem("other")) || 0;
-
-let riskScore = localStorage.getItem("riskScore") || 0;
-let riskLevel = localStorage.getItem("riskLevel") || "New";
-
-/* PHONE LOAD */
-let savedPhone = localStorage.getItem("phone") || "";
-if(document.getElementById("phone")){
-    document.getElementById("phone").value = savedPhone;
+    let currentUser  = localStorage.getItem("currentUser");
+    let income       = Number(localStorage.getItem("income_" + currentUser)) || 0;
+    let totalExpense = Number(localStorage.getItem("totalExpense_" + currentUser)) || 0;
+    let transport    = Number(localStorage.getItem("transport_" + currentUser)) || 0;
+    let education    = Number(localStorage.getItem("education_" + currentUser)) || 0;
+    let food         = Number(localStorage.getItem("food_" + currentUser)) || 0;
+    let utilities    = Number(localStorage.getItem("utilities_" + currentUser)) || 0;
+    let other        = Number(localStorage.getItem("other_" + currentUser)) || 0;
+    let riskScore    = localStorage.getItem("riskScore_" + currentUser) || "—";
+    let riskLevel    = localStorage.getItem("riskLevel_" + currentUser) || "—";
+    document.getElementById("incomeDisplay").innerText  = income ? "₹"+income.toLocaleString() : "—";
+    document.getElementById("expenseDisplay").innerText = totalExpense ? "₹"+totalExpense.toLocaleString() : "—";
+    document.getElementById("riskScore").innerText      = riskScore;
+    let levelEl = document.getElementById("riskLevel");
+    levelEl.innerText = riskLevel;
+    if(riskLevel==="Low Risk")         levelEl.style.color="#34d399";
+    else if(riskLevel==="Medium Risk") levelEl.style.color="#f59e0b";
+    else if(riskLevel==="High Risk")   levelEl.style.color="#f87171";
+    createCharts(income, transport, education, food, utilities, other, totalExpense);
 }
 
-document.getElementById("incomeDisplay").innerText = "₹"+income;
-document.getElementById("expenseDisplay").innerText = "₹"+totalExpense;
-document.getElementById("riskScore").innerText = riskScore;
-
-let levelEl = document.getElementById("riskLevel");
-levelEl.innerText = riskLevel;
-
-if(riskLevel==="Low Risk") levelEl.style.color="green";
-else if(riskLevel==="Medium Risk") levelEl.style.color="orange";
-else levelEl.style.color="red";
-
-createCharts(income, transport, education, food, utilities, other, totalExpense);
-
-}
-
-
-/* LOGOUT */
-function logout(){
-localStorage.removeItem("currentUser");
-window.location.href="/index";
-}
-
-
-/* POPUP */
 function openPopup(){
-document.getElementById("financePopup").classList.add("show");
+    ["income","totalExpense","phone","transport","education","food","utilities","other"].forEach(id=>{ document.getElementById(id).value=""; });
+    document.getElementById("errorMsg").innerText = "";
+    document.getElementById("financePopup").classList.add("show");
 }
+function closePopup(){ document.getElementById("financePopup").classList.remove("show"); }
 
-
-/* SAVE */
 function saveFinance(){
-
-let currentUser = localStorage.getItem("currentUser");
-let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-
-if(!userData){
-    alert("Session expired. Login again.");
-    window.location.href="/index";
-    return;
+    let currentUser  = localStorage.getItem("currentUser");
+    let userData     = JSON.parse(localStorage.getItem("user_" + currentUser));
+    if(!userData){ alert("Session expired."); window.location.href="/index"; return; }
+    let income       = Number(document.getElementById("income").value);
+    let totalExpense = Number(document.getElementById("totalExpense").value);
+    let transport    = Number(document.getElementById("transport").value);
+    let education    = Number(document.getElementById("education").value);
+    let food         = Number(document.getElementById("food").value);
+    let utilities    = Number(document.getElementById("utilities").value);
+    let other        = Number(document.getElementById("other").value);
+    let phone        = document.getElementById("phone").value.trim();
+    let errEl        = document.getElementById("errorMsg");
+    if(!phone){ errEl.innerText="Phone number required!"; return; }
+    if(!income||!totalExpense){ errEl.innerText="Enter valid income and expenses!"; return; }
+    let sum = transport+education+food+utilities+other;
+    if(sum !== totalExpense){ errEl.innerText="⚠ Breakdown must add up to total expenses!"; return; }
+    let ratio = (income-totalExpense)/income;
+    let riskScore, riskLevel, color;
+    if(ratio>0.4)     { riskScore=85; riskLevel="Low Risk";    color="#34d399"; }
+    else if(ratio>0.2){ riskScore=65; riskLevel="Medium Risk"; color="#f59e0b"; }
+    else              { riskScore=40; riskLevel="High Risk";   color="#f87171"; }
+    localStorage.setItem("financeFilled_"+currentUser,"yes");
+    localStorage.setItem("income_"+currentUser,income);
+    localStorage.setItem("totalExpense_"+currentUser,totalExpense);
+    localStorage.setItem("transport_"+currentUser,transport);
+    localStorage.setItem("education_"+currentUser,education);
+    localStorage.setItem("food_"+currentUser,food);
+    localStorage.setItem("utilities_"+currentUser,utilities);
+    localStorage.setItem("other_"+currentUser,other);
+    localStorage.setItem("riskScore_"+currentUser,riskScore);
+    localStorage.setItem("riskLevel_"+currentUser,riskLevel);
+    localStorage.setItem("phone_"+currentUser,phone);
+    localStorage.setItem("riskScore",riskScore);
+    localStorage.setItem("riskLevel",riskLevel);
+    localStorage.setItem("phone",phone);
+    document.getElementById("incomeDisplay").innerText  = "₹"+income.toLocaleString();
+    document.getElementById("expenseDisplay").innerText = "₹"+totalExpense.toLocaleString();
+    document.getElementById("riskScore").innerText      = riskScore;
+    let levelEl = document.getElementById("riskLevel");
+    levelEl.innerText   = riskLevel;
+    levelEl.style.color = color;
+    closePopup();
+    createCharts(income,transport,education,food,utilities,other,totalExpense);
 }
 
-let income = Number(document.getElementById("income").value);
-let totalExpense = Number(document.getElementById("totalExpense").value);
-
-let transport = Number(document.getElementById("transport").value);
-let education = Number(document.getElementById("education").value);
-let food = Number(document.getElementById("food").value);
-let utilities = Number(document.getElementById("utilities").value);
-let other = Number(document.getElementById("other").value);
-
-let phone = document.getElementById("phone").value;
-
-if(!phone){
-    document.getElementById("errorMsg").innerText = "Phone required!";
-    return;
+function createCharts(income,transport,education,food,utilities,other,totalExpense){
+    if(window.expenseChartObj) window.expenseChartObj.destroy();
+    if(window.incomeChartObj)  window.incomeChartObj.destroy();
+    window.expenseChartObj = new Chart(document.getElementById("expenseChart"),{
+        type:'pie',
+        data:{ labels:["Transport","Education","Food","Utilities","Other"],
+               datasets:[{ data:[transport,education,food,utilities,other],
+               backgroundColor:["#3b82f6","#8b5cf6","#f59e0b","#10b981","#e6d5b8"] }] }
+    });
+    window.incomeChartObj = new Chart(document.getElementById("incomeChart"),{
+        type:'bar',
+        data:{ labels:["Income","Expenses"],
+               datasets:[{ data:[income,totalExpense],
+               backgroundColor:["rgba(16,185,129,0.7)","rgba(239,68,68,0.7)"],
+               borderRadius:8 }] },
+        options:{ plugins:{legend:{display:false}}, scales:{ x:{grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#888"}}, y:{grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#888"}} } }
+    });
 }
 
-let sum = transport + education + food + utilities + other;
-
-if(sum !== totalExpense){
-    document.getElementById("errorMsg").innerText = "⚠ Must match total expenses!";
-    return;
-}
-
-if(!income || !totalExpense){
-    document.getElementById("errorMsg").innerText = "Enter valid values!";
-    return;
-}
-
-let savings = income - totalExpense;
-let ratio = savings / income;
-
-let riskScore, riskLevel, color;
-
-if(ratio > 0.4){
-riskScore = 85; riskLevel="Low Risk"; color="green";
-}
-else if(ratio > 0.2){
-riskScore = 65; riskLevel="Medium Risk"; color="orange";
-}
-else{
-riskScore = 40; riskLevel="High Risk"; color="red";
-}
-
-/* DISPLAY */
-document.getElementById("incomeDisplay").innerText = "₹"+income;
-document.getElementById("expenseDisplay").innerText = "₹"+totalExpense;
-document.getElementById("riskScore").innerText = riskScore;
-document.getElementById("errorMsg").innerText = "";
-
-let levelEl = document.getElementById("riskLevel");
-levelEl.innerText = riskLevel;
-levelEl.style.color = color;
-
-/* SAVE LOCAL */
-localStorage.setItem("financeFilled","yes");
-localStorage.setItem("income", income);
-localStorage.setItem("totalExpense", totalExpense);
-localStorage.setItem("transport", transport);
-localStorage.setItem("education", education);
-localStorage.setItem("food", food);
-localStorage.setItem("utilities", utilities);
-localStorage.setItem("other", other);
-localStorage.setItem("riskScore", riskScore);
-localStorage.setItem("riskLevel", riskLevel);
-localStorage.setItem("phone", phone);
-
-/* CLOSE */
-document.getElementById("financePopup").classList.remove("show");
-
-/* CHARTS */
-createCharts(income, transport, education, food, utilities, other, totalExpense);
-
-}
-
-
-/* CHARTS */
-function createCharts(income, transport, education, food, utilities, other, totalExpense){
-
-if(window.expenseChartObj) window.expenseChartObj.destroy();
-if(window.incomeChartObj) window.incomeChartObj.destroy();
-
-window.expenseChartObj = new Chart(document.getElementById("expenseChart"),{
-type:'pie',
-data:{
-labels:["Transport","Education","Food","Utilities","Other"],
-datasets:[{
-data:[transport,education,food,utilities,other]
-}]
-}
-});
-
-window.incomeChartObj = new Chart(document.getElementById("incomeChart"),{
-type:'bar',
-data:{
-labels:["Income","Expenses"],
-datasets:[{
-data:[income,totalExpense]
-}]
-}
-});
-
-}
-
-
-/* STATUS - auto poll for loan decision */
 function checkStatus(phone){
-
-fetch(`/get_status/${phone}`)
-.then(res=>res.json())
-.then(data=>{
-
-let msg="";
-
-if(data.status==="Approved"){
-msg="✅ Loan Approved!";
+    fetch(`/get_status/${phone}`).then(res=>res.json()).then(data=>{
+        let box = document.getElementById("statusBox");
+        if(data.status==="No Application"||!data.status){ box.style.display="none"; return; }
+        box.style.display="block";
+        let msg="", bg="";
+        if(data.status==="Pending")           { msg="⏳ Request sent. Awaiting a banker to pick it up."; bg="rgba(245,158,11,0.1)"; box.style.border="1px solid rgba(245,158,11,0.3)"; box.style.color="#fbbf24"; }
+        else if(data.status==="Picked Up")    { msg=`📋 <b>${data.banker}</b> has picked up your loan request and is reviewing it.`; bg="rgba(59,130,246,0.1)"; box.style.border="1px solid rgba(59,130,246,0.3)"; box.style.color="#60a5fa"; }
+        else if(data.status==="Approved")     { msg=`✅ <b>${data.banker}</b> has approved your loan!`; bg="rgba(16,185,129,0.1)"; box.style.border="1px solid rgba(16,185,129,0.3)"; box.style.color="#34d399"; }
+        else if(data.status==="Rejected")     { msg=`❌ <b>${data.banker}</b> rejected your loan. Reason: ${data.reason}`; bg="rgba(239,68,68,0.1)"; box.style.border="1px solid rgba(239,68,68,0.3)"; box.style.color="#f87171"; }
+        else if(data.status==="Manual Review"){ msg=`⚠ <b>${data.banker}</b> placed your loan under manual review.`; bg="rgba(139,92,246,0.1)"; box.style.border="1px solid rgba(139,92,246,0.3)"; box.style.color="#a78bfa"; }
+        box.style.background = bg;
+        box.innerHTML = msg;
+        if(window.lastStatus!==data.status){ if(window.lastStatus!==undefined) showNotification(box.innerText); window.lastStatus=data.status; }
+    });
 }
-else if(data.status==="Rejected"){
-msg="❌ Rejected: "+data.reason;
-}
-else if(data.status==="Manual Review"){
-msg="⚠ Under Manual Review";
-}
-else{
-msg="⏳ Pending";
-}
-
-document.getElementById("statusBox").innerText = msg;
-
-if(window.lastStatus === undefined){
-window.lastStatus = data.status;
-}
-else if(window.lastStatus !== data.status){
-showNotification(msg);
-window.lastStatus = data.status;
-}
-
-});
-
-}
-
-
-/* NOTIFICATION */
-function showNotification(message){
-
-if(!("Notification" in window)){
-return;
-}
-
-if(Notification.permission === "granted"){
-new Notification(message);
-}
-
-}
-
-
-/* AUTO UPDATE every 5 seconds */
-setInterval(()=>{
-let phone = localStorage.getItem("phone");
-if(phone){
-    checkStatus(phone);
-}
-},5000);
-
-
+function showNotification(msg){ if(Notification.permission==="granted") new Notification("FinRisk",{body:msg}); }
+function logout(){ localStorage.removeItem("currentUser"); window.location.href="/index"; }
+setInterval(()=>{ let cu=localStorage.getItem("currentUser"); let p=localStorage.getItem("phone_"+cu); if(p) checkStatus(p); },5000);
 </script>
-
 </body>
 </html>
