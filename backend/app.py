@@ -107,20 +107,16 @@ def admin_profile():
 def banker_review():
     return render_template('banker_review.html')
 
-# ------------------ SAVE LOAN APPLICATION ------------------
 # ------------------ APPLY LOAN ------------------
 @app.route('/apply_loan', methods=['GET', 'POST'])
 def apply_loan():
     if request.method == 'GET':
-        # Serve the loan form page
         return render_template('apply_loan.html')
     
-    # POST: save loan application and assign banker
     data = request.json
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     
-    # Assign a banker randomly
     c.execute("SELECT name FROM bankers ORDER BY RANDOM() LIMIT 1")
     banker = c.fetchone()
     allocated_banker = banker[0] if banker else None
@@ -271,6 +267,7 @@ def reset_all():
     c.execute("DELETE FROM bankers")
     conn.commit()
     conn.close()
+    return jsonify({"message": "Reset successful"})  # ✅ FIXED: was missing return
 
 # ------------------ UPDATE STATUS ------------------
 @app.route('/update_status', methods=['POST'])
@@ -321,6 +318,81 @@ def get_status(phone):
             "status": "No Application",
             "reason": ""
         })
+
+# ------------------ API FOR BANKER DASHBOARD ------------------
+@app.route('/users')
+def api_users():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    rows = c.fetchall()
+    conn.close()
+
+    users = []
+    for r in rows:
+        users.append([
+            r[0],
+            r[1],
+            r[3],
+            r[4] if r[4] else 0,
+            r[5] if r[5] else "",
+            r[6] if r[6] else 0,
+            r[7] if r[7] else 0,
+            r[8] if r[8] else 0,
+            r[9] if r[9] else "",
+            r[10] if r[10] else "Pending",
+            r[11] if r[11] else ""
+        ])
+    return jsonify(users)
+
+
+# ------------------ GET BORROWERS FOR ADMIN ------------------
+@app.route('/api/borrowers')
+def api_borrowers():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    rows = c.fetchall()
+    conn.close()
+    borrowers = []
+    for r in rows:
+        borrowers.append({
+            "id": r[0],
+            "name": r[1],
+            "age": r[2],
+            "phone": r[3],
+            "loanAmount": r[4],
+            "loanType": r[5],
+            "tenure": r[6],
+            "emi": r[7],
+            "risk_score": r[8],
+            "allocated_banker": r[9],
+            "loan_status": r[10],
+            "reason": r[11]
+        })
+    return jsonify(borrowers)
+
+# ------------------ GET BANKERS FOR ADMIN ------------------
+@app.route('/api/admin_bankers')
+def api_admin_bankers():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM bankers")
+    rows = c.fetchall()
+    conn.close()
+    bankers = []
+    for b in rows:
+        bankers.append({
+            "id": b[0],
+            "name": b[1],
+            "bank_name": b[2],
+            "ifsc": b[3],
+            "total_customers": b[4],
+            "approval": b[5],
+            "rejection": b[6],
+            "manual": b[7]
+        })
+    return jsonify(bankers)
 
 # ------------------ RUN ------------------
 if __name__ == '__main__':
