@@ -18,23 +18,25 @@ Loan Amount:<br>
 Loan Type:<br>
 <input type="text" id="loanType"><br><br>
 
-Tenure:<br>
+Tenure (months):<br>
 <input type="number" id="tenure"><br><br>
 
 Risk Score:<br>
-<input type="text" id="score"><br><br>
+<input type="number" id="score"><br><br>
 
 Risk Level:<br>
 <input type="text" id="risk"><br><br>
 
 Bank Account Number:<br>
-<input type="text"><br><br>
+<input type="text" id="accountNumber"><br><br>
 
 IFSC Code:<br>
-<input type="text"><br><br>
+<input type="text" id="ifsc"><br><br>
 
 Account Holder Name:<br>
-<input type="text"><br><br>
+<input type="text" id="accountHolder"><br><br>
+
+<p id="errorMsg" style="color:red;"></p>
 
 <button onclick="submitApplication()">Submit Application</button>
 
@@ -44,9 +46,55 @@ Account Holder Name:<br>
 
 function submitApplication(){
 
-alert("Application sent to banker!");
+    let loan     = document.getElementById("loan").value;
+    let loanType = document.getElementById("loanType").value;
+    let tenure   = document.getElementById("tenure").value;
+    let score    = document.getElementById("score").value;
 
-window.location.href = "/user_dashboard";
+    if(!loan || !loanType || !tenure || !score){
+        document.getElementById("errorMsg").innerText = "Please fill all required fields.";
+        return;
+    }
+
+    let phone = localStorage.getItem("phone") || "";
+    if(!phone){
+        document.getElementById("errorMsg").innerText = "Phone missing. Please fill financial details on dashboard first.";
+        return;
+    }
+
+    let name = "";
+    let currentUser = localStorage.getItem("currentUser");
+    if(currentUser){
+        let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
+        if(userData) name = userData.name || "";
+    }
+
+    let emi = Math.round(Number(loan) / Number(tenure));
+
+    const data = {
+        name:       name,
+        age:        0,
+        phone:      phone,
+        loanAmount: Number(loan),
+        loanType:   loanType,
+        tenure:     Number(tenure),
+        emi:        emi,
+        risk_score: Number(score)
+    };
+
+    fetch("/apply_loan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+        alert("Application sent! Assigned Banker: " + (response.allocated_banker || "Will be assigned"));
+        window.location.href = "/user_dashboard";
+    })
+    .catch(() => {
+        document.getElementById("errorMsg").innerText = "Server error. Check Flask terminal.";
+    });
 
 }
 
