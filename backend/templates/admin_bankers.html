@@ -1,51 +1,45 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
-<title>Bankers Information Table</title>
-
+<title>Admin - Bankers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 #bankerTable{
 font-size:22px;
 border-collapse:collapse;
 }
-
 #bankerTable th, #bankerTable td{
 padding:16px;
 text-align:center;
 }
-
 #bankerTable th{
 font-size:24px;
 background:#333;
 color:white;
 }
+button{
+padding:6px 10px;
+margin:2px;
+}
 </style>
-
 </head>
-
 <body>
 
-<div class="topbar">
-<h2>Bankers Panel</h2>
-</div>
+<div class="topbar"><h2>Bankers Panel</h2></div>
 
 <div class="container">
-
 <div class="sidebar">
-<button onclick="location.href='/admin_dashboard'">Dashboard</button>
+<h2>Admin</h2>
+<button onclick="location.href='/admin_dashboard'">Banks</button>
 <button onclick="location.href='/admin_borrowers'">Borrowers</button>
 <button onclick="location.href='/admin_bankers'">Bankers</button>
+<button onclick="window.location.href='/'">Logout</button>
 </div>
 
 <div class="main">
 
 <h1>Bankers</h1>
-
 <table border="1" width="100%" id="bankerTable">
 <tr>
 <th>Name</th>
@@ -56,22 +50,23 @@ color:white;
 <th>Approval %</th>
 <th>Rejection %</th>
 <th>Manual Review %</th>
+<th>Action</th>
 </tr>
 </table>
+
+<h2>Banker Performance</h2>
+<canvas id="bankerChart" width="400" height="200"></canvas>
 
 </div>
 </div>
 
 <script>
-
+// ================= LOAD BANKERS =================
 async function loadBankers(){
-
-let res = await fetch("/api/bankers");
-let bankers = await res.json();
-
-let table = document.getElementById("bankerTable");
-
-table.innerHTML = `
+    let res = await fetch("/api/bankers");
+    let bankers = await res.json();
+    let table = document.getElementById("bankerTable");
+    table.innerHTML = `
 <tr>
 <th>Name</th>
 <th>Banker ID</th>
@@ -81,32 +76,62 @@ table.innerHTML = `
 <th>Approval %</th>
 <th>Rejection %</th>
 <th>Manual Review %</th>
-</tr>
-`;
+<th>Action</th>
+</tr>`;
+    let totalApproval=0, totalRejection=0, totalManual=0;
+    bankers.forEach(b=>{
+        totalApproval += b.approval||0;
+        totalRejection += b.rejection||0;
+        totalManual += b.manual||0;
+        let row = table.insertRow();
+        row.innerHTML = `
+<td>${b.name||""}</td>
+<td>${b.id||""}</td>
+<td>${b.bankName||""}</td>
+<td>${b.ifsc||""}</td>
+<td>${b.totalCustomers||0}</td>
+<td>${b.approval||0}%</td>
+<td>${b.rejection||0}%</td>
+<td>${b.manual||0}%</td>
+<td>
+<button onclick="takeAction('${b.name}','Approved')">Approve</button>
+<button onclick="takeAction('${b.name}','Rejected')">Reject</button>
+<button onclick="takeAction('${b.name}','Manual Review')">Manual</button>
+</td>`;
+    });
 
-bankers.forEach(b => {
+    // ================= BANKER CHART =================
+    const ctx = document.getElementById('bankerChart').getContext('2d');
+    new Chart(ctx,{
+        type:'pie',
+        data:{
+            labels:['Approved','Rejected','Manual Review'],
+            datasets:[{
+                data:[totalApproval,totalRejection,totalManual],
+                backgroundColor:['#27ae60','#c0392b','#8e44ad']
+            }]
+        },
+        options:{responsive:true}
+    });
+}
 
-let row = table.insertRow();
-
-row.innerHTML = `
-<td>${b.name || "-"}</td>
-<td>${b.id || "-"}</td>
-<td>${b.bankName || "-"}</td>
-<td>${b.ifsc || "-"}</td>
-<td>${b.totalCustomers || 0}</td>
-<td>${b.approval || 0}%</td>
-<td>${b.rejection || 0}%</td>
-<td>${b.manual || 0}%</td>
-`;
-
-});
-
+// ================= BANKER ACTION =================
+async function takeAction(bankerName,action){
+    let res = await fetch("/api/users");
+    let users = await res.json();
+    let user = users.find(u=>u.banker===bankerName && u.status==="Pending");
+    if(!user){ alert("No pending requests for this banker."); return; }
+    let reason = prompt("Enter reason (optional):","");
+    await fetch("/banker_action",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({user_id:user.id, action:action, reason:reason})
+    });
+    loadBankers();
 }
 
 loadBankers();
-
 </script>
 
 </body>
-
 </html>
