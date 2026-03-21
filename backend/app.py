@@ -73,6 +73,22 @@ def financial_advisory():
 def apply_loan():
     return render_template('apply_loan.html')
 
+@app.route('/user_profile')
+def user_profile():
+    return render_template('user_profile.html')
+
+@app.route('/banker_profile')
+def banker_profile():
+    return render_template('banker_profile.html')
+
+@app.route('/admin_profile')
+def admin_profile():
+    return render_template('admin_profile.html')
+
+@app.route('/banker_review')
+def banker_review():
+    return render_template('banker_review.html')
+
 
 @app.route('/check')
 def check():
