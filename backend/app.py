@@ -108,9 +108,43 @@ def banker_review():
     return render_template('banker_review.html')
 
 # ------------------ SAVE LOAN APPLICATION ------------------
-@app.route('/apply_loan')
+# ------------------ APPLY LOAN ------------------
+@app.route('/apply_loan', methods=['GET', 'POST'])
 def apply_loan():
-    return render_template('apply_loan.html')
+    if request.method == 'GET':
+        # Serve the loan form page
+        return render_template('apply_loan.html')
+    
+    # POST: save loan application and assign banker
+    data = request.json
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    
+    # Assign a banker randomly
+    c.execute("SELECT name FROM bankers ORDER BY RANDOM() LIMIT 1")
+    banker = c.fetchone()
+    allocated_banker = banker[0] if banker else None
+
+    c.execute('''
+        INSERT INTO users
+        (name, age, phone, loanAmount, loanType, tenure, emi, risk_score, allocated_banker, loan_status, reason)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('name'),
+        data.get('age'),
+        data.get('phone'),
+        data.get('loanAmount'),
+        data.get('loanType'),
+        data.get('tenure'),
+        data.get('emi'),
+        data.get('risk_score'),
+        allocated_banker,
+        "Pending",
+        ""
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Loan application submitted", "allocated_banker": allocated_banker})
 
 
 # ------------------ SAVE USER ------------------
