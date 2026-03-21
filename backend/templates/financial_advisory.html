@@ -1,11 +1,405 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <title>Financial Advisory</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
 
+.page-header {
+    display: flex; align-items: center; gap: 18px;
+    margin: 32px 0 28px 0; padding-bottom: 18px;
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+.page-header .icon-wrap {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #10b981, #f59e0b);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(245,158,11,0.35);
+}
+.page-header h1 {
+    font-family: 'Syne', sans-serif; font-size: 2rem;
+    font-weight: 800; margin: 0; color: #e6d5b8;
+}
+.page-header .subtitle {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: #888; letter-spacing: 2px; text-transform: uppercase;
+    margin: 3px 0 0 0;
+}
+
+/* SECTION TITLE */
+.section-title {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: #888;
+    margin: 32px 0 16px 0; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ADVICE CARDS */
+.advice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 8px; }
+.advice-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 20px;
+    transition: all 0.25s; position: relative; overflow: hidden;
+}
+.advice-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; border-radius: 16px 16px 0 0;
+}
+.advice-card.green::before  { background: linear-gradient(90deg,#10b981,#34d399); }
+.advice-card.amber::before  { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+.advice-card.red::before    { background: linear-gradient(90deg,#ef4444,#f87171); }
+.advice-card.blue::before   { background: linear-gradient(90deg,#3b82f6,#60a5fa); }
+.advice-card:hover { transform: translateY(-4px); border-color: rgba(230,213,184,0.15); }
+.advice-card .card-icon { font-size: 28px; margin-bottom: 10px; }
+.advice-card .card-title {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    color: #e6d5b8; margin: 0 0 8px 0;
+}
+.advice-card .card-text {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: #888; line-height: 1.6;
+}
+
+/* SCHEME CARDS */
+.scheme-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 22px;
+    margin-bottom: 14px; transition: all 0.25s;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px;
+}
+.scheme-card:hover { border-color: rgba(230,213,184,0.2); transform: translateX(4px); }
+.scheme-info { flex: 1; }
+.scheme-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.tag-pension    { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
+.tag-scholarship{ background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+.tag-insurance  { background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+.tag-housing    { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.tag-health     { background:rgba(239,68,68,0.15);  color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.tag-women      { background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); }
+.tag-business   { background:rgba(20,184,166,0.15); color:#2dd4bf; border:1px solid rgba(20,184,166,0.3); }
+.tag-agri       { background:rgba(132,204,22,0.15); color:#a3e635; border:1px solid rgba(132,204,22,0.3); }
+
+.scheme-name {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    color: #e6d5b8; margin: 0 0 6px 0;
+}
+.scheme-desc {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: #777; line-height: 1.6; margin: 0 0 10px 0;
+}
+.scheme-benefit {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: #10b981; letter-spacing: 0.5px;
+}
+.scheme-actions { display: flex; flex-direction: column; gap: 8px; min-width: 110px; align-items: flex-end; }
+.btn-apply {
+    padding: 9px 20px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    color: #111; font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap; width: 110px; text-align: center;
+}
+.btn-apply:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(230,213,184,0.25); }
+.btn-review {
+    padding: 9px 20px; border-radius: 10px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #aaa; font-family: 'DM Mono', monospace;
+    font-size: 12px; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap; width: 110px; text-align: center;
+    text-decoration: none; display: block;
+}
+.btn-review:hover { border-color: #e6d5b8; color: #e6d5b8; }
+
+/* LITERACY CARDS */
+.literacy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.literacy-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 20px; transition: transform 0.2s;
+}
+.literacy-card:hover { transform: translateY(-3px); }
+.literacy-card .lc-icon { font-size: 28px; margin-bottom: 10px; }
+.literacy-card .lc-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#e6d5b8; margin:0 0 8px 0; }
+.literacy-card .lc-text  { font-family:'DM Mono',monospace; font-size:13px; color:#777; line-height:1.7; }
+
+/* NO DATA */
+.no-data { text-align:center; padding:40px; color:#555; font-family:'DM Mono',monospace; font-size:14px; }
+</style>
+</head>
 <body>
 
-<h2>Financial Advisory</h2>
+<div class="topbar"><h2>FinRisk - Financial Advisory</h2></div>
+
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/user_dashboard'">Dashboard</button>
+<button onclick="location.href='/loan_check'">Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
+<button onclick="location.href='/apply_loan'">Apply for Loan</button>
+<button onclick="location.href='/user_profile'">Profile</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="main">
+
+<div class="page-header">
+    <div class="icon-wrap">🌟</div>
+    <div>
+        <h1>Financial Advisory</h1>
+        <p class="subtitle">Personalised advice · Government schemes · Financial literacy</p>
+    </div>
+</div>
+
+<!-- PERSONALISED ADVICE -->
+<div class="section-title">📊 Personalised Advice</div>
+<div id="adviceSection">
+    <div class="no-data">Fill your financial details on the dashboard first to get personalised advice.</div>
+</div>
+
+<!-- GOVERNMENT SCHEMES -->
+<div class="section-title">🏛 Government Schemes &amp; Services</div>
+<div id="schemesSection"></div>
+
+<!-- FINANCIAL LITERACY -->
+<div class="section-title">📚 Financial Literacy</div>
+<div class="literacy-grid">
+
+<div class="literacy-card">
+<div class="lc-icon">💰</div>
+<div class="lc-title">What is a CIBIL Score?</div>
+<div class="lc-text">A 3-digit number (300–900) that tells lenders how creditworthy you are. Above 750 is considered excellent. Pay EMIs on time and avoid multiple loan applications to keep it high.</div>
+</div>
+
+<div class="literacy-card">
+<div class="lc-icon">📈</div>
+<div class="lc-title">Rule of 72</div>
+<div class="lc-text">Divide 72 by your annual interest rate to find out how many years it takes to double your money. At 8% interest, your investment doubles in 9 years.</div>
+</div>
+
+<div class="literacy-card">
+<div class="lc-icon">🏦</div>
+<div class="lc-title">FD vs Mutual Funds</div>
+<div class="lc-text">Fixed Deposits offer guaranteed returns (6–7%) with no risk. Mutual Funds offer higher potential returns (10–15%) but with market risk. Choose based on your risk appetite.</div>
+</div>
+
+<div class="literacy-card">
+<div class="lc-icon">🛡</div>
+<div class="lc-title">Emergency Fund</div>
+<div class="lc-text">Always keep 3–6 months of expenses saved in a liquid account. This protects you from sudden job loss, medical emergencies, or unexpected bills without taking loans.</div>
+</div>
+
+<div class="literacy-card">
+<div class="lc-icon">📊</div>
+<div class="lc-title">50-30-20 Rule</div>
+<div class="lc-text">Allocate 50% of income to needs (rent, food, bills), 30% to wants (entertainment, shopping), and 20% to savings and investments. A simple framework for healthy finances.</div>
+</div>
+
+<div class="literacy-card">
+<div class="lc-icon">🔄</div>
+<div class="lc-title">Compound Interest</div>
+<div class="lc-text">Interest earned on both your principal and previously earned interest. Starting early makes a massive difference — ₹10,000 at 10% for 30 years grows to ₹1.75 lakh.</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+const SCHEMES = [
+    {
+        name: "Atal Pension Yojana (APY)",
+        tag: "tag-pension", tagLabel: "Pension",
+        desc: "Government-backed pension scheme for unorganised sector workers. Get a guaranteed pension of ₹1,000–₹5,000/month after age 60.",
+        benefit: "✦ Guaranteed monthly pension after 60",
+        url: "https://www.npscra.nsdl.co.in/scheme-details.php",
+        eligibility: "all"
+    },
+    {
+        name: "PM Jan Dhan Yojana",
+        tag: "tag-insurance", tagLabel: "Banking",
+        desc: "Zero-balance bank account with RuPay debit card, ₹2 lakh accident insurance, and ₹30,000 life cover for unbanked citizens.",
+        benefit: "✦ Free accident insurance + life cover",
+        url: "https://pmjdy.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "PM Jeevan Jyoti Bima Yojana",
+        tag: "tag-insurance", tagLabel: "Insurance",
+        desc: "Life insurance cover of ₹2 lakh at just ₹436/year for ages 18–50. Renewable annually with auto-debit from bank account.",
+        benefit: "✦ ₹2 lakh life cover at ₹436/year",
+        url: "https://www.jansuraksha.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "PM Suraksha Bima Yojana",
+        tag: "tag-insurance", tagLabel: "Insurance",
+        desc: "Accident insurance of ₹2 lakh for death/total disability and ₹1 lakh for partial disability at just ₹20/year.",
+        benefit: "✦ ₹2 lakh accident cover at ₹20/year",
+        url: "https://www.jansuraksha.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "National Scholarship Portal",
+        tag: "tag-scholarship", tagLabel: "Scholarship",
+        desc: "Central hub for all government scholarships — pre-matric, post-matric, merit-cum-means. Covers SC/ST/OBC/minority students.",
+        benefit: "✦ Up to ₹50,000/year in scholarships",
+        url: "https://scholarships.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "PM Awas Yojana (Urban)",
+        tag: "tag-housing", tagLabel: "Housing",
+        desc: "Affordable housing scheme for EWS, LIG and MIG categories. Interest subsidy of 3–6.5% on home loans up to ₹12 lakh.",
+        benefit: "✦ Home loan interest subsidy",
+        url: "https://pmaymis.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "Ayushman Bharat (PM-JAY)",
+        tag: "tag-health", tagLabel: "Health",
+        desc: "World's largest health assurance scheme providing ₹5 lakh/year health cover per family for secondary and tertiary care.",
+        benefit: "✦ ₹5 lakh free hospital cover/year",
+        url: "https://pmjay.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "PM Mudra Yojana",
+        tag: "tag-business", tagLabel: "Business",
+        desc: "Loans for small businesses — Shishu (up to ₹50K), Kishor (₹50K–5L), Tarun (₹5L–10L). No collateral required.",
+        benefit: "✦ Collateral-free business loans",
+        url: "https://www.mudra.org.in",
+        eligibility: "all"
+    },
+    {
+        name: "PM Kisan Samman Nidhi",
+        tag: "tag-agri", tagLabel: "Agriculture",
+        desc: "Direct income support of ₹6,000/year in three instalments to small and marginal farmer families holding up to 2 hectares.",
+        benefit: "✦ ₹6,000/year direct bank transfer",
+        url: "https://pmkisan.gov.in",
+        eligibility: "agri"
+    },
+    {
+        name: "Sukanya Samriddhi Yojana",
+        tag: "tag-women", tagLabel: "Women & Girl Child",
+        desc: "High-interest savings scheme (8.2% p.a.) for girl children below 10 years. Tax-free maturity amount for education/marriage.",
+        benefit: "✦ 8.2% interest · Tax-free returns",
+        url: "https://www.nsiindia.gov.in",
+        eligibility: "all"
+    },
+    {
+        name: "Stand Up India",
+        tag: "tag-business", tagLabel: "Business",
+        desc: "Bank loans between ₹10 lakh and ₹1 crore for SC/ST and women entrepreneurs to set up greenfield enterprises.",
+        benefit: "✦ Loans up to ₹1 crore for entrepreneurs",
+        url: "https://www.standupmitra.in",
+        eligibility: "all"
+    },
+    {
+        name: "National Pension System (NPS)",
+        tag: "tag-pension", tagLabel: "Pension",
+        desc: "Voluntary retirement savings scheme with market-linked returns. Tax deduction up to ₹2 lakh under Section 80C + 80CCD.",
+        benefit: "✦ Tax savings + retirement corpus",
+        url: "https://www.npstrust.org.in",
+        eligibility: "all"
+    }
+];
+
+window.addEventListener("DOMContentLoaded", function(){
+    let currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ window.location.href="/"; return; }
+
+    let income   = Number(localStorage.getItem("income_" + currentUser)) || Number(localStorage.getItem("income")) || 0;
+    let expense  = Number(localStorage.getItem("totalExpense_" + currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
+    let score    = Number(localStorage.getItem("riskScore_" + currentUser)) || Number(localStorage.getItem("riskScore")) || 0;
+    let savings  = income - expense;
+    let ratio    = income > 0 ? savings / income : 0;
+
+    if(income > 0) generateAdvice(income, expense, savings, ratio, score);
+    renderSchemes();
+});
+
+function generateAdvice(income, expense, savings, ratio, score){
+    let cards = [];
+
+    /* Savings advice */
+    if(ratio > 0.4){
+        cards.push({ color:"green", icon:"🌱", title:"Excellent Savings Rate!", text:`You save ${Math.round(ratio*100)}% of your income (₹${savings.toLocaleString()}/month). Consider investing in SIP mutual funds or NPS to grow your wealth further.` });
+    } else if(ratio > 0.2){
+        cards.push({ color:"amber", icon:"📊", title:"Moderate Savings", text:`You save ${Math.round(ratio*100)}% of income. Try to push this to 30%+ by cutting discretionary expenses. Even ₹2,000/month extra in SIP makes a big difference over 10 years.` });
+    } else if(ratio > 0){
+        cards.push({ color:"red", icon:"⚠", title:"Low Savings — Action Needed", text:`Only ${Math.round(ratio*100)}% of income saved. Review your expenses immediately. Try the 50-30-20 rule — 50% needs, 30% wants, 20% savings.` });
+    } else {
+        cards.push({ color:"red", icon:"🚨", title:"Spending Exceeds Income!", text:`You are spending more than you earn. This is unsustainable. Avoid taking new loans and focus on reducing expenses immediately.` });
+    }
+
+    /* Risk score advice */
+    if(score >= 75){
+        cards.push({ color:"green", icon:"✅", title:"Strong Credit Profile", text:`Your risk score of ${score} is excellent. You are likely eligible for low-interest loans. Maintain this by paying bills on time and avoiding unnecessary credit.` });
+    } else if(score >= 55){
+        cards.push({ color:"amber", icon:"📋", title:"Moderate Risk Profile", text:`Risk score ${score} — lenders may offer loans with higher interest rates. Improve by reducing existing EMIs and maintaining a consistent payment history.` });
+    } else {
+        cards.push({ color:"red", icon:"❗", title:"High Risk — Loan Caution", text:`Risk score ${score} is low. Avoid taking new loans right now. Focus on clearing existing debts and building savings before reapplying.` });
+    }
+
+    /* EMI advice */
+    let maxSafeEmi = income * 0.4;
+    cards.push({ color:"blue", icon:"🏦", title:"Safe EMI Limit", text:`Based on your income of ₹${income.toLocaleString()}, your safe monthly EMI should not exceed ₹${Math.round(maxSafeEmi).toLocaleString()} (40% of income). Going beyond this strains your finances.` });
+
+    /* Emergency fund */
+    let emergencyTarget = expense * 6;
+    cards.push({ color:"blue", icon:"🛡", title:"Emergency Fund Target", text:`Based on your expenses, you should have ₹${emergencyTarget.toLocaleString()} saved as an emergency fund (6 months of expenses). Keep this in a savings account or liquid fund.` });
+
+    let html = '<div class="advice-grid">';
+    cards.forEach(c => {
+        html += `<div class="advice-card ${c.color}">
+<div class="card-icon">${c.icon}</div>
+<div class="card-title">${c.title}</div>
+<div class="card-text">${c.text}</div>
+</div>`;
+    });
+    html += '</div>';
+    document.getElementById("adviceSection").innerHTML = html;
+}
+
+function renderSchemes(){
+    let html = "";
+    SCHEMES.forEach(s => {
+        html += `<div class="scheme-card">
+<div class="scheme-info">
+    <span class="scheme-tag ${s.tag}">${s.tagLabel}</span>
+    <div class="scheme-name">${s.name}</div>
+    <div class="scheme-desc">${s.desc}</div>
+    <div class="scheme-benefit">${s.benefit}</div>
+</div>
+<div class="scheme-actions">
+    <button class="btn-apply" onclick="window.open('${s.url}','_blank')">Apply →</button>
+    <a class="btn-review" href="${s.url}" target="_blank">Learn More</a>
+</div>
+</div>`;
+    });
+    document.getElementById("schemesSection").innerHTML = html;
+}
+
+function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href = "/";
+}
+
+</script>
+</body>
+</html>
