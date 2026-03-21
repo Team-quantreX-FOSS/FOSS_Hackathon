@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Review Queue</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<h1>🧠 Manual Review Queue</h1>
+
+<table border="1" width="100%" id="reviewTable"></table>
+
+<script>
+
+const API = "http://127.0.0.1:5050";
+
+function loadReview(){
+
+fetch(API + "/users")
+.then(res=>res.json())
+.then(data=>{
+
+let table = document.getElementById("reviewTable");
+
+table.innerHTML = `
+<tr>
+<th>Name</th>
+<th>Score</th>
+<th>Status</th>
+<th>Reason</th>
+</tr>
+`;
+
+data
+.filter(u => u[11] === "Manual Review")
+.forEach(u=>{
+
+let row = table.insertRow();
+
+row.innerHTML = `
+<td>${u[1]}</td>
+<td>${u[9]}</td>
+<td>${u[11]}</td>
+<td>${u[12]}</td>
+`;
+
+});
+
+});
+}
+
+loadReview();
+
+</script>
+
+</body>
+</html>
