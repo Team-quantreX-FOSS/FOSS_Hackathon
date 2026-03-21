@@ -1,38 +1,26 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
 
 <title>Admin Dashboard</title>
-
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <style>
-
-/* 🔥 BIGGER TABLE */
-#adminTable{
-font-size:22px;
+table{
+font-size:20px;
 border-collapse:collapse;
+width:100%;
 }
 
-#adminTable th, #adminTable td{
-padding:16px;
+th, td{
+padding:14px;
 text-align:center;
 }
 
-#adminTable th{
-font-size:24px;
+th{
 background:#333;
 color:white;
 }
-
-/* Buttons */
-button{
-font-size:20px;
-padding:10px 16px;
-}
-
 </style>
 
 </head>
@@ -40,27 +28,33 @@ padding:10px 16px;
 <body>
 
 <div class="topbar">
-<h2>FinRisk - Admin Panel</h2>
+<h2>FinRisk - Bank Overview</h2>
 </div>
 
 <div class="container">
 
 <div class="sidebar">
 <h2>Admin</h2>
-<button onclick="location.href='/admin_dashboard'">Dashboard</button>
-<button onclick="clearAll()">Reset System</button>
+
+<button onclick="location.href='/admin_dashboard'">Banks</button>
+<button onclick="location.href='/admin_borrowers'">Borrowers</button>
+<button onclick="location.href='/admin_bankers'">Bankers</button>
+<button onclick="logout()">Logout</button>
+
 </div>
 
 <div class="main">
 
-<h1>System Users</h1>
+<h1>Registered Banks</h1>
 
-<table border="1" width="100%" id="adminTable">
+<table id="bankTable">
 <tr>
-<th>Name</th>
-<th>Phone</th>
-<th>Score</th>
-<th>Action</th>
+<th>Bank Name</th>
+<th>Branch</th>
+<th>IFSC</th>
+<th>Registered in App</th>
+<th>% Bankers Using App</th>
+<th>% Loans via App</th>
 </tr>
 </table>
 
@@ -69,68 +63,37 @@ padding:10px 16px;
 
 <script>
 
-let users = JSON.parse(localStorage.getItem("users")) || [];
+async function loadBanks(){
 
-let table = document.getElementById("adminTable");
+let res = await fetch("/api/banks");
+let banks = await res.json();
 
-function loadUsers(){
+let table = document.getElementById("bankTable");
 
-table.innerHTML = `
-<tr>
-<th>Name</th>
-<th>Phone</th>
-<th>Score</th>
-<th>Action</th>
-</tr>
-`;
-
-users.forEach(u => {
+banks.forEach(b => {
 
 let row = table.insertRow();
 
 row.innerHTML = `
-<td>${u.name}</td>
-<td>${u.phone}</td>
-<td style="font-size:24px; font-weight:bold;">${u.score}</td>
-<td>
-<button onclick="deleteUser('${u.id}')">Delete</button>
-</td>
+<td>${b.name}</td>
+<td>${b.branch}</td>
+<td>${b.ifsc}</td>
+<td>Yes</td>
+<td>${Math.floor(Math.random()*100)}%</td>
+<td>${Math.floor(Math.random()*100)}%</td>
 `;
 
 });
 
 }
 
-loadUsers();
-
-/* DELETE USER */
-function deleteUser(id){
-
-users = users.filter(u => u.id != id);
-
-localStorage.setItem("users", JSON.stringify(users));
-
-loadUsers();
-}
-
-/* RESET SYSTEM */
-function clearAll(){
-
-if(confirm("Are you sure?")){
-localStorage.clear();
-location.reload();
-}
-
-/* LOGOUT */
 function logout(){
-window.location.href = "/";
+window.location.href="/";
 }
 
-}
+loadBanks();
 
 </script>
 
 </body>
-
 </html>
-
