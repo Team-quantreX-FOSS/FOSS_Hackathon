@@ -1,0 +1,3 @@
+python reset_db.py
+python add_bankers.py
+python app.py
