@@ -1,240 +1,253 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <title>Loan Eligibility</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+.page-header { display:flex; align-items:center; gap:18px; margin-bottom:28px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.06); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 4px 20px rgba(59,130,246,0.3); }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#666; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
 
+/* METHOD TOGGLE */
+.method-toggle { display:flex; gap:12px; margin-bottom:28px; }
+.method-btn {
+    flex:1; padding:14px; border-radius:12px; cursor:pointer;
+    border:1.5px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.03);
+    font-family:'Syne',sans-serif; font-size:15px; font-weight:700;
+    color:#888; transition:all 0.2s; text-align:center;
+}
+.method-btn.active { background:rgba(59,130,246,0.1); border-color:#3b82f6; color:#60a5fa; }
+.method-btn input[type=radio] { display:none; }
+
+/* FORM */
+.form-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:28px; margin-bottom:20px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group { margin-bottom:4px; }
+.form-group label { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; margin-bottom:8px; }
+.form-group input, .form-group select {
+    width:100%; padding:13px 16px;
+    font-family:'DM Mono',monospace; font-size:16px;
+    border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05); color:#e6d5b8; transition:border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { outline:none; border-color:#3b82f6; }
+.form-group input::placeholder { color:#444; }
+.file-label {
+    display:flex; align-items:center; gap:10px;
+    padding:12px 16px; border-radius:10px;
+    border:1.5px dashed rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.02);
+    font-family:'DM Mono',monospace; font-size:13px; color:#666;
+    cursor:pointer; transition:all 0.2s;
+}
+.file-label:hover { border-color:#3b82f6; color:#60a5fa; }
+.form-group input[type=file] { display:none; }
+
+/* CHECK BUTTON */
+.check-btn {
+    width:100%; padding:16px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+    color:white; font-family:'Syne',sans-serif; font-size:18px;
+    font-weight:800; cursor:pointer; transition:all 0.2s; margin-bottom:16px;
+}
+.check-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(59,130,246,0.35); }
+
+/* RESULT CARD */
+.result-card {
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:28px; display:none;
+}
+.result-card.show { display:block; animation:fadeUp 0.4s ease; }
+.result-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:20px; }
+.result-box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:18px; text-align:center; }
+.result-box .rb-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; margin-bottom:8px; display:block; }
+.result-box .rb-val { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; color:#e6d5b8; }
+.risk-bar-wrap { margin:20px 0; }
+.risk-bar-bg { width:100%; height:10px; border-radius:99px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.risk-bar-fill { height:100%; border-radius:99px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+.result-label { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; margin-bottom:6px; }
+.result-sub { font-family:'DM Mono',monospace; font-size:13px; color:#888; }
+.apply-btn {
+    width:100%; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#e6d5b8,#bfa980);
+    color:#111; font-family:'Syne',sans-serif; font-size:16px;
+    font-weight:800; cursor:pointer; transition:all 0.2s; margin-top:16px;
+}
+.apply-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(230,213,184,0.3); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
 <body>
 
-<h1>AI-Based Loan Risk Analysis System</h1>
+<div class="topbar"><h2>FinRisk - Loan Eligibility</h2></div>
 
-<div class="loan-card">
-
-<h2>Loan Eligibility Check</h2>
-
-<h3>Select Evaluation Method</h3>
-
-<input type="radio" name="method" value="credit" onclick="toggleMethod()" checked> Use Credit Score
-<input type="radio" name="method" value="alt" onclick="toggleMethod()"> Use Alternative Data
-
-<br><br>
-
-<div id="creditSection">
-
-<!-- CREDIT SCORE METHOD -->
-Monthly Income:<br>
-<input type="number" id="income"><br><br>
-
-Monthly Expenses:<br>
-<input type="number" id="expenses"><br><br>
-
-Age:<br>
-<input type="number" id="age"><br><br>
-
-Existing EMI:<br>
-<input type="number" id="existingEmi"><br><br>
-
-Loan Type:<br>
-<select id="loanTypeSelect">
-<option>Personal Loan</option>
-<option>Education Loan</option>
-<option>Business Loan</option>
-<option>Micro Loan</option>
-</select><br><br>
-
-Loan Amount Requested:<br>
-<input type="number" id="loan"><br><br>
-
-Loan Tenure (months):<br>
-<input type="number" id="tenure"><br><br>
-
-Credit Score:<br>
-<input type="number" id="creditScore"><br><br>
-
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
-<div id="altSection" style="display:none;">
+<div class="main">
 
-<!-- ALTERNATIVE DATA METHOD -->
-
-<h3>Alternative Credit Data</h3>
-
-Monthly Income:<br>
-<input type="number" id="income_alt"><br><br>
-
-Monthly Expenses:<br>
-<input type="number" id="expenses_alt"><br><br>
-
-Age:<br>
-<input type="number" id="age_alt"><br><br>
-
-Existing EMI:<br>
-<input type="number" id="existingEmi_alt"><br><br>
-
-Loan Type:<br>
-<select id="loanTypeSelect_alt">
-<option>Personal Loan</option>
-<option>Education Loan</option>
-<option>Business Loan</option>
-<option>Micro Loan</option>
-</select><br><br>
-
-Loan Amount Requested:<br>
-<input type="number" id="loan_alt"><br><br>
-
-Loan Tenure (months):<br>
-<input type="number" id="tenure_alt"><br><br>
-
-Upload Rent Payment Proof:<br>
-<input type="file"><br><br>
-
-Upload Electricity Bill:<br>
-<input type="file"><br><br>
-
-Upload Mobile Recharge Bill:<br>
-<input type="file"><br><br>
-
-Upload Water Bill:<br>
-<input type="file"><br><br>
-
+<div class="page-header">
+    <div class="icon-wrap">🔍</div>
+    <div>
+        <h1>Loan Eligibility Check</h1>
+        <p class="subtitle">AI-Based Risk Analysis · Two Methods</p>
+    </div>
 </div>
 
-<button onclick="checkRisk()">Check Eligibility</button>
+<!-- METHOD TOGGLE -->
+<div class="method-toggle">
+    <label class="method-btn active" id="btnCredit">
+        <input type="radio" name="method" value="credit" checked onclick="toggleMethod()">
+        🏦 Credit Score Method
+    </label>
+    <label class="method-btn" id="btnAlt">
+        <input type="radio" name="method" value="alt" onclick="toggleMethod()">
+        📄 Alternative Data Method
+    </label>
+</div>
 
-<br><br>
-Phone Number<br>
-<input type="text" id="phone"><br><br>
-<button onclick="applyLoan()">Apply for Loan</button>
+<!-- CREDIT SECTION -->
+<div class="form-card" id="creditSection">
+<div class="form-grid">
+    <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="income" placeholder="e.g. 50000"></div>
+    <div class="form-group"><label>Monthly Expenses (₹)</label><input type="number" id="expenses" placeholder="e.g. 30000"></div>
+    <div class="form-group"><label>Age</label><input type="number" id="age" placeholder="e.g. 30"></div>
+    <div class="form-group"><label>Existing EMI (₹)</label><input type="number" id="existingEmi" placeholder="e.g. 5000"></div>
+    <div class="form-group"><label>Loan Type</label>
+        <select id="loanTypeSelect">
+            <option>Personal Loan</option>
+            <option>Education Loan</option>
+            <option>Business Loan</option>
+            <option>Micro Loan</option>
+        </select>
+    </div>
+    <div class="form-group"><label>Credit Score</label><input type="number" id="creditScore" placeholder="300–900"></div>
+    <div class="form-group"><label>Loan Amount Requested (₹)</label><input type="number" id="loan" placeholder="e.g. 500000"></div>
+    <div class="form-group"><label>Loan Tenure (months)</label><input type="number" id="tenure" placeholder="e.g. 60"></div>
+</div>
+</div>
 
-<h3>Risk Score</h3>
-<p id="score">Your score will appear here</p>
+<!-- ALT SECTION -->
+<div class="form-card" id="altSection" style="display:none;">
+<div class="form-grid">
+    <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="income_alt" placeholder="e.g. 50000"></div>
+    <div class="form-group"><label>Monthly Expenses (₹)</label><input type="number" id="expenses_alt" placeholder="e.g. 30000"></div>
+    <div class="form-group"><label>Age</label><input type="number" id="age_alt" placeholder="e.g. 30"></div>
+    <div class="form-group"><label>Existing EMI (₹)</label><input type="number" id="existingEmi_alt" placeholder="e.g. 5000"></div>
+    <div class="form-group"><label>Loan Type</label>
+        <select id="loanTypeSelect_alt">
+            <option>Personal Loan</option>
+            <option>Education Loan</option>
+            <option>Business Loan</option>
+            <option>Micro Loan</option>
+        </select>
+    </div>
+    <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="loan_alt" placeholder="e.g. 500000"></div>
+    <div class="form-group"><label>Tenure (months)</label><input type="number" id="tenure_alt" placeholder="e.g. 60"></div>
+</div>
+<div style="margin-top:16px;">
+<div class="form-group" style="margin-bottom:12px;">
+    <label>Rent Payment Proof</label>
+    <label class="file-label" for="f1">📎 Upload file<input type="file" id="f1"></label>
+</div>
+<div class="form-group" style="margin-bottom:12px;">
+    <label>Electricity Bill</label>
+    <label class="file-label" for="f2">📎 Upload file<input type="file" id="f2"></label>
+</div>
+<div class="form-group" style="margin-bottom:12px;">
+    <label>Mobile Recharge Bill</label>
+    <label class="file-label" for="f3">📎 Upload file<input type="file" id="f3"></label>
+</div>
+<div class="form-group">
+    <label>Water Bill</label>
+    <label class="file-label" for="f4">📎 Upload file<input type="file" id="f4"></label>
+</div>
+</div>
+</div>
 
-<h3>Loan Risk Result</h3>
-<p id="result">Your risk result will appear here.</p>
+<button class="check-btn" onclick="checkRisk()">Check Eligibility →</button>
 
-<div id="riskColor" style="width:200px;height:20px;margin:auto;"></div>
+<!-- RESULT -->
+<div class="result-card" id="resultCard">
+    <div class="result-grid">
+        <div class="result-box"><span class="rb-label">Risk Score</span><span class="rb-val" id="score">—</span></div>
+        <div class="result-box"><span class="rb-label">Est. Monthly EMI</span><span class="rb-val" id="emiResult">—</span></div>
+    </div>
+    <div class="risk-bar-wrap">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span class="result-label" id="result">—</span>
+        </div>
+        <div class="risk-bar-bg"><div class="risk-bar-fill" id="riskBar" style="width:0%"></div></div>
+    </div>
+    <div class="result-sub" id="loanType">—</div>
+    <button class="apply-btn" onclick="window.location.href='/apply_loan'">Apply for This Loan →</button>
+</div>
 
-<h3>Loan Recommendation</h3>
-<p id="loanType">Recommended loan will appear here.</p>
-
-<h3>Estimated Monthly EMI</h3> 
-<p id="emiResult">EMI will appear here</p>
-
+</div>
 </div>
 
 <script>
-
 function toggleMethod(){
-
-let method = document.querySelector('input[name="method"]:checked').value;
-
-if(method === "credit"){
-    document.getElementById("creditSection").style.display = "block";
-    document.getElementById("altSection").style.display = "none";
-}
-else{
-    document.getElementById("creditSection").style.display = "none";
-    document.getElementById("altSection").style.display = "block";
-}
-
+    let method = document.querySelector('input[name="method"]:checked').value;
+    document.getElementById("creditSection").style.display = method==="credit" ? "block" : "none";
+    document.getElementById("altSection").style.display    = method==="alt"    ? "block" : "none";
+    document.getElementById("btnCredit").classList.toggle("active", method==="credit");
+    document.getElementById("btnAlt").classList.toggle("active", method==="alt");
 }
 
 function checkRisk(){
-let method = document.querySelector('input[name="method"]:checked').value;
+    let method = document.querySelector('input[name="method"]:checked').value;
+    let income, expenses, age, loan, tenure;
+    if(method==="credit"){
+        income=parseFloat(document.getElementById("income").value)||0;
+        expenses=parseFloat(document.getElementById("expenses").value)||0;
+        age=parseFloat(document.getElementById("age").value)||0;
+        loan=parseFloat(document.getElementById("loan").value)||0;
+        tenure=parseFloat(document.getElementById("tenure").value)||1;
+    } else {
+        income=parseFloat(document.getElementById("income_alt").value)||0;
+        expenses=parseFloat(document.getElementById("expenses_alt").value)||0;
+        age=parseFloat(document.getElementById("age_alt").value)||0;
+        loan=parseFloat(document.getElementById("loan_alt").value)||0;
+        tenure=parseFloat(document.getElementById("tenure_alt").value)||1;
+    }
+    let emi=loan/tenure;
+    let ratio=income>0?expenses/income:1;
+    let score,result,loanType,color,barColor;
+    if(ratio<0.4&&age>=21&&age<=60){ score=80; result="✅ Low Risk Borrower"; loanType="Eligible for Personal Loan or Business Loan"; color="#34d399"; barColor="#10b981"; }
+    else if(ratio<0.7){ score=60; result="⚠ Medium Risk Borrower"; loanType="Eligible for Small Personal Loan"; color="#f59e0b"; barColor="#f59e0b"; }
+    else { score=35; result="❌ High Risk Borrower"; loanType="Only Micro Loan Recommended"; color="#f87171"; barColor="#ef4444"; }
 
-let income, expenses, age, loan, tenure;
-let creditScore = 0;
+    document.getElementById("score").innerText    = score;
+    document.getElementById("score").style.color  = color;
+    document.getElementById("result").innerText   = result;
+    document.getElementById("result").style.color = color;
+    document.getElementById("loanType").innerText = loanType;
+    document.getElementById("emiResult").innerText = "₹"+Math.round(emi).toLocaleString();
+    document.getElementById("riskBar").style.width = score+"%";
+    document.getElementById("riskBar").style.background = barColor;
+    document.getElementById("resultCard").classList.add("show");
 
-if(method === "credit"){
-    income = parseFloat(document.getElementById("income").value) || 0;
-    expenses = parseFloat(document.getElementById("expenses").value) || 0;
-    age = parseFloat(document.getElementById("age").value) || 0;
-    loan = parseFloat(document.getElementById("loan").value) || 0;
-    tenure = parseFloat(document.getElementById("tenure").value) || 1;
-let creditScore = parseFloat(document.getElementById("creditScore").value) || 0;
-} else {
-    income = parseFloat(document.getElementById("income_alt").value) || 0;
-    expenses = parseFloat(document.getElementById("expenses_alt").value) || 0;
-    age = parseFloat(document.getElementById("age_alt").value) || 0;
-    loan = parseFloat(document.getElementById("loan_alt").value) || 0;
-    tenure = parseFloat(document.getElementById("tenure_alt").value) || 1;
+    let apps=JSON.parse(localStorage.getItem("applications"))||[];
+    apps.push({income,expenses,age,loan,tenure,emi,score,result,loanType});
+    localStorage.setItem("applications",JSON.stringify(apps));
+    localStorage.setItem("riskScore",score);
 }
 
-let emi = loan / tenure;
-let ratio = income > 0 ? expenses / income : 1;
-
-let score = 0;
-let result = "";
-let loanType = "";
-let color = "";
-
-// SAME LOGIC + AGE FACTOR ADDED
-if(ratio < 0.4 && age >= 21 && age <= 60){
-    score = 80;
-    result = "Low Risk Borrower";
-    loanType = "Eligible for Personal Loan or Business Loan";
-    color = "green";
-}
-else if(ratio < 0.7){
-    score = 60;
-    result = "Medium Risk Borrower";
-    loanType = "Eligible for Small Personal Loan";
-    color = "yellow";
-}
-else{
-    score = 35;
-    result = "High Risk Borrower";
-    loanType = "Only Micro Loan Recommended";
-    color = "red";
-}
-
-
-// UI UPDATE (UNCHANGED STYLE)
-document.getElementById("riskColor").style.backgroundColor = color;
-document.getElementById("score").innerText = "Risk Score: " + score;
-document.getElementById("result").innerText = result;
-document.getElementById("loanType").innerText = loanType;
-document.getElementById("emiResult").innerText = "Estimated EMI: ₹" + emi;
-
-// 🔥 STORE FOR BANKER
-let application = {
-    income,
-    expenses,
-    age,
-    loan,
-    tenure,
-    emi,
-    score,
-    result,
-    loanType,
-    creditScore
-
-};
-
-let applications = JSON.parse(localStorage.getItem("applications")) || [];
-applications.push(application);
-localStorage.setItem("applications", JSON.stringify(applications));
-
-}
-
-/* APPLY */
-function applyLoan(){
-
-let phone = document.getElementById("phone").value;
-
-if(!phone){
-alert("Enter phone number!");
-return;
-}
-
-// redirect to new page
-window.location.href = "/apply_loan";
-
-}
-
+function logout(){ localStorage.removeItem("currentUser"); window.location.href="/"; }
 </script>
-
 </body>
 </html>
