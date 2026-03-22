@@ -281,10 +281,18 @@ function openRegister(){
     } else if(role === "banker"){
         document.getElementById("registerFields").innerHTML = `
 <input id="name" placeholder="Full Name">
-<input id="bankId" placeholder="Banker ID" oninput="checkBankerIdAvail(this.value)">
+<input id="bankId" placeholder="Banker ID (Employee ID)" oninput="checkBankerIdAvail(this.value)">
 <input id="bankName" placeholder="Bank Name">
 <input id="branch" placeholder="Branch Name">
-<input id="ifsc" placeholder="IFSC Code">
+<div style="position:relative;">
+  <input id="ifsc" placeholder="IFSC Code" oninput="verifyIFSC(this.value)" style="width:100%;padding:12px 14px;font-family:DM Mono,monospace;font-size:17px;border-radius:10px;border:1.5px solid rgba(230,213,184,0.18);background:rgba(230,213,184,0.05);color:#e6d5b8;margin-bottom:12px;box-sizing:border-box;">
+  <div id="ifscStatus" style="font-family:DM Mono,monospace;font-size:13px;margin-top:-8px;margin-bottom:12px;min-height:18px;"></div>
+</div>
+<label style="display:block;font-family:DM Mono,monospace;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#888;margin-bottom:6px;">Employee ID Card / Bank Letter (Proof)</label>
+<label id="bankerDocLabel" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;border:1.5px dashed rgba(230,213,184,0.2);background:rgba(230,213,184,0.03);font-family:DM Mono,monospace;font-size:14px;color:#bfa980;cursor:pointer;margin-bottom:12px;">
+  <span id="bankerDocIcon">📎</span><span id="bankerDocTxt">Upload proof of employment</span>
+  <input type="file" id="bankerDocFile" accept="image/*,.pdf" style="display:none;" onchange="handleBankerDoc()">
+</label>
 <input id="pass" type="password" placeholder="Password">
 <input id="confirm" type="password" placeholder="Confirm Password">`;
     } else {
@@ -347,6 +355,51 @@ function checkBankerIdAvail(val){
 }
 
 /* ── REGISTER ───────────────────────────────────────────── */
+let ifscTimer = null;
+let bankerDocData = null;
+
+function verifyIFSC(val){
+    clearTimeout(ifscTimer);
+    let status = document.getElementById("ifscStatus");
+    if(!status) return;
+    val = val.toUpperCase();
+    document.getElementById("ifsc").value = val;
+    if(val.length < 11){ status.innerText=""; return; }
+    status.innerHTML = '<span style="color:#bfa980;">⏳ Verifying IFSC...</span>';
+    ifscTimer = setTimeout(function(){
+        fetch("https://ifsc.razorpay.com/"+val)
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(data.BANK){
+                status.innerHTML = '<span style="color:#34d399;">✅ Verified — '+data.BANK+', '+data.BRANCH+'</span>';
+                /* Auto-fill bank name and branch */
+                let bn = document.getElementById("bankName");
+                let br = document.getElementById("branch");
+                if(bn && !bn.value) bn.value = data.BANK;
+                if(br && !br.value) br.value = data.BRANCH;
+            } else {
+                status.innerHTML = '<span style="color:#fbbf24;">⚠ Could not verify IFSC — please double check</span>';
+            }
+        })
+        .catch(function(){
+            status.innerHTML = '<span style="color:#fbbf24;">⚠ Could not verify — you can still register</span>';
+        });
+    }, 600);
+}
+
+function handleBankerDoc(){
+    let file = document.getElementById("bankerDocFile").files[0];
+    if(!file) return;
+    document.getElementById("bankerDocLabel").style.borderColor = "#34d399";
+    document.getElementById("bankerDocLabel").style.color = "#34d399";
+    document.getElementById("bankerDocIcon").innerText = "✅";
+    let name = file.name.length > 24 ? file.name.substring(0,22)+"…" : file.name;
+    document.getElementById("bankerDocTxt").innerText = name;
+    let reader = new FileReader();
+    reader.onload = function(e){ bankerDocData = e.target.result; };
+    reader.readAsDataURL(file);
+}
+
 function register(){
     let regMsg   = document.getElementById("regMsg");
     let warn     = document.getElementById("dupWarn");
@@ -412,7 +465,7 @@ function register(){
                 regMsg.innerText=""; return;
             }
             let branch=document.getElementById("branch").value.trim();
-            localStorage.setItem("banker_"+id,JSON.stringify({name,bankId:id,bankName,branch,ifsc,pass:password}));
+            localStorage.setItem("banker_"+id,JSON.stringify({name,bankId:id,bankName,branch,ifsc,pass:password,proofDoc:bankerDocData}));
             regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered! You can now login.";
             warn.classList.remove("show");
             setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
