@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinRisk - Borrower Risk Analyzer</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -9,106 +10,85 @@
 <style>
 * { box-sizing: border-box; }
 body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 0; }
-
-.hero {
-    padding: 80px 20px 60px;
-    position: relative;
-}
+.hero { padding: 80px 20px 60px; position: relative; }
 .hero-tag {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
+    display: inline-block; font-family: 'DM Mono', monospace;
     font-size: 16px; letter-spacing: 3px; text-transform: uppercase;
     color: #e6d5b8; border: 1.5px solid rgba(230,213,184,0.4);
     padding: 8px 22px; border-radius: 999px; margin-bottom: 28px;
-    animation: fadeIn 0.6s ease;
-    background: rgba(230,213,184,0.08);
+    animation: fadeIn 0.6s ease; background: rgba(230,213,184,0.08);
 }
 .hero h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 4rem; font-weight: 800;
-    color: #e6d5b8; margin: 0 0 16px 0;
-    letter-spacing: -1px; line-height: 1.1;
+    font-family: 'Syne', sans-serif; font-size: 4rem; font-weight: 800;
+    color: #e6d5b8; margin: 0 0 16px 0; letter-spacing: -1px; line-height: 1.1;
     animation: fadeIn 0.8s ease;
 }
 .hero h1 span { color: #bfa980; }
 .hero p {
-    font-family: 'DM Mono', monospace;
-    font-size: 20px; color: #bfa980;
-    letter-spacing: 1px; margin: 0 0 48px 0;
-    animation: fadeIn 1s ease;
+    font-family: 'DM Mono', monospace; font-size: 20px; color: #bfa980;
+    letter-spacing: 1px; margin: 0 0 48px 0; animation: fadeIn 1s ease;
 }
-
-/* ROLE CARDS */
-.role-cards {
-    display: flex; justify-content: center; gap: 28px;
-    flex-wrap: wrap; margin-bottom: 60px;
-    animation: fadeUp 0.8s ease;
-}
+.role-cards { display:flex; justify-content:center; gap:28px; flex-wrap:wrap; margin-bottom:60px; animation:fadeUp 0.8s ease; }
 .role-card {
-    width: 240px; padding: 36px 24px;
-    background: rgba(230,213,184,0.06);
-    border: 2px solid rgba(230,213,184,0.2);
-    border-radius: 20px; cursor: pointer;
-    transition: all 0.3s; position: relative; overflow: hidden;
+    width:240px; padding:36px 24px;
+    background:rgba(230,213,184,0.06); border:2px solid rgba(230,213,184,0.2);
+    border-radius:20px; cursor:pointer; transition:all 0.3s; position:relative; overflow:hidden;
 }
 .role-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 4px; border-radius: 20px 20px 0 0;
-    transition: opacity 0.3s; opacity: 0.4;
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    border-radius:20px 20px 0 0; transition:opacity 0.3s; opacity:0.4;
 }
-.role-card.user::before   { background: linear-gradient(90deg,#10b981,#34d399); }
-.role-card.banker::before { background: linear-gradient(90deg,#3b82f6,#8b5cf6); }
-.role-card.admin::before  { background: linear-gradient(90deg,#f59e0b,#ef4444); }
-.role-card:hover { border-color: rgba(230,213,184,0.5); transform: translateY(-8px); box-shadow: 0 24px 48px rgba(0,0,0,0.4); background: rgba(230,213,184,0.1); }
-.role-card:hover::before { opacity: 1; }
-.role-icon { font-size: 48px; margin-bottom: 16px; }
-.role-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: #e6d5b8; margin: 0 0 10px 0; }
-.role-desc  { font-family: 'DM Mono', monospace; font-size: 15px; color: #bfa980; letter-spacing: 0.5px; line-height: 1.5; }
-
-/* POPUP */
-.close { float: right; font-size: 26px; cursor: pointer; color: #bfa980; line-height: 1; }
-.close:hover { color: #e6d5b8; }
-.popup-content { background: #1a1614 !important; border: 2px solid rgba(230,213,184,0.2) !important; width: 400px !important; }
-.popup-content h2 { font-family: 'Syne', sans-serif; text-align: left; margin: 0 0 24px 0; color: #e6d5b8; font-size: 1.8rem !important; }
+.role-card.user::before   { background:linear-gradient(90deg,#10b981,#34d399); }
+.role-card.banker::before { background:linear-gradient(90deg,#3b82f6,#8b5cf6); }
+.role-card.admin::before  { background:linear-gradient(90deg,#f59e0b,#ef4444); }
+.role-card:hover { border-color:rgba(230,213,184,0.5); transform:translateY(-8px); box-shadow:0 24px 48px rgba(0,0,0,0.4); background:rgba(230,213,184,0.1); }
+.role-card:hover::before { opacity:1; }
+.role-icon { font-size:48px; margin-bottom:16px; }
+.role-title { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:#e6d5b8; margin:0 0 10px 0; }
+.role-desc  { font-family:'DM Mono',monospace; font-size:15px; color:#bfa980; letter-spacing:0.5px; line-height:1.5; }
+.close { float:right; font-size:26px; cursor:pointer; color:#bfa980; line-height:1; }
+.close:hover { color:#e6d5b8; }
+.popup-content { background:#1a1614 !important; border:2px solid rgba(230,213,184,0.2) !important; width:420px !important; }
+.popup-content h2 { font-family:'Syne',sans-serif; text-align:left; margin:0 0 20px 0; color:#e6d5b8; font-size:1.6rem !important; }
 .popup-content input {
-    display: block; width: 100%; margin-bottom: 14px;
-    font-family: 'DM Mono', monospace; font-size: 20px !important;
-    padding: 14px 16px; border-radius: 10px;
-    border: 1.5px solid rgba(230,213,184,0.2);
-    background: rgba(230,213,184,0.05); color: #e6d5b8;
+    display:block; width:100%; margin-bottom:12px;
+    font-family:'DM Mono',monospace; font-size:18px !important;
+    padding:12px 16px; border-radius:10px;
+    border:1.5px solid rgba(230,213,184,0.2);
+    background:rgba(230,213,184,0.05); color:#e6d5b8;
 }
-.popup-content input::placeholder { color: #666; }
-.popup-content input:focus { outline: none; border-color: #bfa980; }
+.popup-content input::placeholder { color:#666; }
+.popup-content input:focus { outline:none; border-color:#bfa980; }
+.popup-content input.input-error { border-color:#f87171 !important; }
+.popup-content input.input-ok    { border-color:#34d399 !important; }
 .popup-content button {
-    width: 100%; margin-top: 8px;
-    background: linear-gradient(135deg, #e6d5b8, #bfa980);
-    color: #111; font-family: 'Syne', sans-serif;
-    font-size: 20px !important; font-weight: 800; padding: 15px;
-    border: none; border-radius: 10px; cursor: pointer;
-    transition: all 0.2s;
+    width:100%; margin-top:8px;
+    background:linear-gradient(135deg,#e6d5b8,#bfa980);
+    color:#111; font-family:'Syne',sans-serif;
+    font-size:18px !important; font-weight:800; padding:14px;
+    border:none; border-radius:10px; cursor:pointer; transition:all 0.2s;
 }
-.popup-content button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(230,213,184,0.3); }
-.popup-content .switch-link {
-    font-family: 'DM Mono', monospace; font-size: 16px;
-    color: #bfa980; margin-top: 18px; text-align: center;
+.popup-content button:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(230,213,184,0.3); }
+.popup-content .switch-link { font-family:'DM Mono',monospace; font-size:15px; color:#bfa980; margin-top:16px; text-align:center; }
+.popup-content .switch-link a { color:#e6d5b8; text-decoration:none; font-weight:600; }
+.switch-link a:hover { color:#fff; }
+#loginMsg, #regMsg { font-family:'DM Mono',monospace; font-size:15px; margin-top:10px; text-align:center; }
+.warn-box {
+    display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3);
+    border-radius:8px; padding:10px 14px; margin-bottom:10px;
+    font-family:'DM Mono',monospace; font-size:14px; color:#f87171; text-align:left;
 }
-.popup-content .switch-link a { color: #e6d5b8; text-decoration: none; font-weight: 600; }
-.popup-content .switch-link a:hover { color: #fff; }
-#loginMsg, #regMsg {
-    font-family: 'DM Mono', monospace; font-size: 16px;
-    margin-top: 10px; text-align: center;
+.warn-box.show { display:block; }
+.ok-box {
+    display:none; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);
+    border-radius:8px; padding:10px 14px; margin-bottom:10px;
+    font-family:'DM Mono',monospace; font-size:14px; color:#34d399; text-align:left;
 }
-
-/* FEATURES BAR */
-.features {
-    display: flex; justify-content: center; gap: 48px;
-    flex-wrap: wrap; padding: 40px 20px;
-    border-top: 1px solid rgba(230,213,184,0.1);
-}
-.feature { text-align: center; }
-.feature .fi { font-size: 32px; margin-bottom: 10px; }
-.feature .ft { font-family: 'DM Mono', monospace; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; color: #bfa980; }
-
+.ok-box.show { display:block; }
+.features { display:flex; justify-content:center; gap:48px; flex-wrap:wrap; padding:40px 20px; border-top:1px solid rgba(230,213,184,0.1); }
+.feature { text-align:center; }
+.feature .fi { font-size:32px; margin-bottom:10px; }
+.feature .ft { font-family:'DM Mono',monospace; font-size:15px; letter-spacing:1.5px; text-transform:uppercase; color:#bfa980; }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 </style>
@@ -121,6 +101,7 @@ body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 
     <p>Smart financial risk assessment · Government schemes · Advisory</p>
 
     <div class="role-cards">
+        <!-- CHANGED: User → Borrower -->
         <div class="role-card user" onclick="openLogin('user')">
             <div class="role-icon">👤</div>
             <div class="role-title">Borrower</div>
@@ -165,6 +146,8 @@ body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 
 <span class="close" onclick="closePopup('registerPopup')">&times;</span>
 <h2 id="registerTitle"></h2>
 <div id="registerFields"></div>
+<div id="dupWarn" class="warn-box"></div>
+<div id="dupOk"   class="ok-box"></div>
 <button onclick="register()">Register</button>
 <p id="regMsg" style="color:#f87171;"></p>
 <div class="switch-link">Already registered? <a href="#" onclick="switchToLogin()">Login</a></div>
@@ -178,7 +161,7 @@ function openLogin(r){
     role = r;
     document.getElementById("loginMsg").innerText = "";
     document.getElementById("loginPopup").classList.add("show");
-    document.getElementById("loginTitle").innerText = r.charAt(0).toUpperCase()+r.slice(1)+" Login";
+    document.getElementById("loginTitle").innerText = (r==="user"?"Borrower":r.charAt(0).toUpperCase()+r.slice(1)) + " Login";
     if(r === "user"){
         document.getElementById("loginFields").innerHTML = `
 <input id="loginUser" placeholder="Username">
@@ -192,21 +175,24 @@ function openLogin(r){
 
 function openRegister(){
     document.getElementById("regMsg").innerText = "";
+    document.getElementById("dupWarn").classList.remove("show");
+    document.getElementById("dupOk").classList.remove("show");
     document.getElementById("loginPopup").classList.remove("show");
     document.getElementById("registerPopup").classList.add("show");
-    document.getElementById("registerTitle").innerText = role.charAt(0).toUpperCase()+role.slice(1)+" Register";
+    document.getElementById("registerTitle").innerText = (role==="user"?"Borrower":role.charAt(0).toUpperCase()+role.slice(1)) + " Register";
     if(role === "user"){
         document.getElementById("registerFields").innerHTML = `
 <input id="name" placeholder="Full Name">
 <input id="phone" placeholder="Phone Number">
-<input id="username" placeholder="Username">
+<input id="username" placeholder="Username" oninput="checkUsernameAvail(this.value)">
 <input id="pass" type="password" placeholder="Password">
 <input id="confirm" type="password" placeholder="Confirm Password">`;
     } else if(role === "banker"){
         document.getElementById("registerFields").innerHTML = `
 <input id="name" placeholder="Full Name">
-<input id="bankId" placeholder="Banker ID">
+<input id="bankId" placeholder="Banker ID" oninput="checkBankerIdAvail(this.value)">
 <input id="bankName" placeholder="Bank Name">
+<input id="branch" placeholder="Branch Name">
 <input id="ifsc" placeholder="IFSC Code">
 <input id="pass" type="password" placeholder="Password">
 <input id="confirm" type="password" placeholder="Confirm Password">`;
@@ -220,95 +206,186 @@ function openRegister(){
 }
 
 function closePopup(id){ document.getElementById(id).classList.remove("show"); }
+function switchToLogin(){ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); }
 
-function switchToLogin(){
-    closePopup('registerPopup');
-    document.getElementById("loginPopup").classList.add("show");
+/* ── LIVE DUPLICATE CHECKS ─────────────────────────────── */
+let usernameCheckTimer = null;
+function checkUsernameAvail(val){
+    clearTimeout(usernameCheckTimer);
+    let warn = document.getElementById("dupWarn");
+    let ok   = document.getElementById("dupOk");
+    let inp  = document.getElementById("username");
+    if(!val){ warn.classList.remove("show"); ok.classList.remove("show"); inp.classList.remove("input-error","input-ok"); return; }
+    usernameCheckTimer = setTimeout(()=>{
+        /* Check localStorage first */
+        if(localStorage.getItem("user_"+val)){
+            warn.innerText = "⚠ Username \"" + val + "\" is already taken. Please choose another.";
+            warn.classList.add("show"); ok.classList.remove("show");
+            inp.classList.add("input-error"); inp.classList.remove("input-ok"); return;
+        }
+        /* Check DB */
+        fetch("/check_username",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:val})})
+        .then(r=>r.json()).then(d=>{
+            if(d.exists){
+                warn.innerText = "⚠ Username \"" + val + "\" is already taken. Please choose another.";
+                warn.classList.add("show"); ok.classList.remove("show");
+                inp.classList.add("input-error"); inp.classList.remove("input-ok");
+            } else {
+                ok.innerText = "✓ Username \"" + val + "\" is available!";
+                ok.classList.add("show"); warn.classList.remove("show");
+                inp.classList.add("input-ok"); inp.classList.remove("input-error");
+            }
+        }).catch(()=>{});
+    }, 400);
 }
 
+function checkBankerIdAvail(val){
+    let warn = document.getElementById("dupWarn");
+    let ok   = document.getElementById("dupOk");
+    let inp  = document.getElementById("bankId");
+    if(!val){ warn.classList.remove("show"); ok.classList.remove("show"); inp.classList.remove("input-error","input-ok"); return; }
+    if(localStorage.getItem("banker_"+val)){
+        warn.innerText = "⚠ Banker ID \"" + val + "\" is already registered.";
+        warn.classList.add("show"); ok.classList.remove("show");
+        inp.classList.add("input-error"); inp.classList.remove("input-ok");
+    } else {
+        ok.innerText = "✓ Banker ID \"" + val + "\" is available.";
+        ok.classList.add("show"); warn.classList.remove("show");
+        inp.classList.add("input-ok"); inp.classList.remove("input-error");
+    }
+}
+
+/* ── REGISTER ───────────────────────────────────────────── */
 function register(){
     let regMsg   = document.getElementById("regMsg");
+    let warn     = document.getElementById("dupWarn");
+    let ok       = document.getElementById("dupOk");
     let password = document.getElementById("pass").value.trim();
     let confirm  = document.getElementById("confirm").value.trim();
     regMsg.style.color = "#f87171";
     if(!password){ regMsg.innerText="Enter a password."; return; }
     if(password !== confirm){ regMsg.innerText="Passwords do not match."; return; }
 
+    /* BORROWER */
     if(role === "user"){
         let username = document.getElementById("username").value.trim();
         let name     = document.getElementById("name").value.trim();
         let phone    = document.getElementById("phone").value.trim();
-        if(!username||!name){ regMsg.innerText="Fill all fields."; return; }
-        localStorage.setItem("user_"+username, JSON.stringify({name,phone,username,pass:password}));
-        regMsg.style.color="#34d399"; regMsg.innerText="Registered!";
-        setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
+        if(!name||!username||!phone){ regMsg.innerText="Please fill all fields."; return; }
+
+        /* Block if duplicate detected */
+        if(document.getElementById("username").classList.contains("input-error")){
+            regMsg.innerText="Username already taken. Choose another."; return;
+        }
+
+        regMsg.style.color="#bfa980"; regMsg.innerText="Checking username...";
+        fetch("/check_username",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username})})
+        .then(r=>r.json()).then(d=>{
+            if(d.exists){
+                warn.innerText="⚠ Username \""+username+"\" is already taken.";
+                warn.classList.add("show"); ok.classList.remove("show");
+                regMsg.innerText=""; return;
+            }
+            fetch("/register_user",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({name,phone,username})})
+            .then(r=>r.json()).then(data=>{
+                if(data.error){ regMsg.style.color="#f87171"; regMsg.innerText=data.error; return; }
+                localStorage.setItem("user_"+username,JSON.stringify({name,phone,username,pass:password}));
+                regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered successfully!";
+                warn.classList.remove("show"); ok.classList.remove("show");
+                setTimeout(()=>{ closePopup("registerPopup"); document.getElementById("loginPopup").classList.add("show"); },1200);
+            }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error."; });
+        }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error."; });
     }
+
+    /* BANKER */
     else if(role === "banker"){
-        let name=document.getElementById("name").value.trim();
-        let id=document.getElementById("bankId").value.trim();
-        let bankName=document.getElementById("bankName").value.trim();
-        let ifsc=document.getElementById("ifsc").value.trim();
-        if(!name||!id||!bankName||!ifsc){ regMsg.innerText="Fill all fields."; return; }
+        let name     = document.getElementById("name").value.trim();
+        let id       = document.getElementById("bankId").value.trim();
+        let bankName = document.getElementById("bankName").value.trim();
+        let ifsc     = document.getElementById("ifsc").value.trim();
+        if(!name||!id||!bankName||!ifsc){ regMsg.innerText="Please fill all fields."; return; }
+
+        /* Block if duplicate detected */
+        if(localStorage.getItem("banker_"+id)){
+            warn.innerText="⚠ Banker ID \""+id+"\" is already registered.";
+            warn.classList.add("show"); regMsg.innerText=""; return;
+        }
+
         fetch("/register_banker",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({name,banker_id:id,bank_name:bankName,ifsc,pass:password})})
+            body:JSON.stringify({name,banker_id:id,bank_name:bankName,branch:document.getElementById("branch").value.trim(),ifsc,pass:password})})
         .then(r=>r.json()).then(data=>{
-            if(data.error){regMsg.innerText=data.error;return;}
-            localStorage.setItem("banker_"+id,JSON.stringify({name,bankId:id,bankName,ifsc,pass:password}));
-            regMsg.style.color="#34d399"; regMsg.innerText="Registered! You can now login.";
+            if(data.error){
+                warn.innerText="⚠ "+data.error;
+                warn.classList.add("show"); ok.classList.remove("show");
+                regMsg.innerText=""; return;
+            }
+            let branch=document.getElementById("branch").value.trim();
+            localStorage.setItem("banker_"+id,JSON.stringify({name,bankId:id,bankName,branch,ifsc,pass:password}));
+            regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered! You can now login.";
+            warn.classList.remove("show");
             setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
-        }).catch(()=>{regMsg.innerText="Server error. Is Flask running?";});
+        }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error. Is Flask running?"; });
     }
+
+    /* ADMIN */
     else{
-        let name=document.getElementById("name").value.trim();
-        let email=document.getElementById("email").value.trim();
-        if(!name||!email){ regMsg.innerText="Fill all fields."; return; }
-        let adminId="ADM"+Math.floor(Math.random()*100000);
+        let name  = document.getElementById("name").value.trim();
+        let email = document.getElementById("email").value.trim();
+        if(!name||!email){ regMsg.innerText="Please fill all fields."; return; }
+        let adminId = "ADM"+Math.floor(Math.random()*100000);
         fetch("/register_admin",{method:"POST",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({name,email,admin_id:adminId})})
         .then(r=>r.json()).then(data=>{
-            if(data.error){regMsg.innerText=data.error;return;}
+            if(data.error){ regMsg.style.color="#f87171"; regMsg.innerText=data.error; return; }
             localStorage.setItem("admin_"+adminId,JSON.stringify({name,email,adminId,pass:password}));
-            alert("Your Admin ID: "+adminId+"\nSave this — you need it to login!");
-            regMsg.style.color="#34d399"; regMsg.innerText="Registered!";
+            alert("Your Admin ID: "+adminId+"\n\nSave this — you need it to login!");
+            regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered!";
             setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
-        }).catch(()=>{regMsg.innerText="Server error.";});
+        }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error."; });
     }
 }
 
+/* ── LOGIN ──────────────────────────────────────────────── */
 function login(){
-    let loginMsg=document.getElementById("loginMsg");
-    loginMsg.style.color="#f87171";
-    if(role==="user"){
-        let username=document.getElementById("loginUser").value.trim();
-        let password=document.getElementById("loginPass").value.trim();
-        if(!username||!password){loginMsg.innerText="Enter all fields!";return;}
-        let stored=localStorage.getItem("user_"+username);
-        if(!stored){loginMsg.innerText="Not registered!";return;}
-        let data=JSON.parse(stored);
-        if(data.pass===password){ localStorage.setItem("currentUser",username); window.location.href="/user_dashboard"; }
-        else loginMsg.innerText="Wrong password!";
+    let loginMsg = document.getElementById("loginMsg");
+    loginMsg.style.color = "#f87171";
+
+    if(role === "user"){
+        let username = document.getElementById("loginUser").value.trim();
+        let password = document.getElementById("loginPass").value.trim();
+        if(!username||!password){ loginMsg.innerText="Enter all fields!"; return; }
+        let stored = localStorage.getItem("user_"+username);
+        if(!stored){ loginMsg.innerText="Username not found. Please register first."; return; }
+        let data = JSON.parse(stored);
+        if(data.pass === password){
+            localStorage.setItem("currentUser", username);
+            window.location.href = "/user_dashboard";
+        } else { loginMsg.innerText="Wrong password!"; }
     }
-    else if(role==="banker"){
-        let id=document.getElementById("loginId").value.trim();
-        let password=document.getElementById("loginPass").value.trim();
-        if(!id||!password){loginMsg.innerText="Enter all fields!";return;}
-        let stored=localStorage.getItem("banker_"+id);
-        if(!stored){loginMsg.innerText="Not registered!";return;}
-        let data=JSON.parse(stored);
-        if(data.pass===password){
-            localStorage.setItem("currentBanker",id);
-            window.location.href="/banker_dashboard";
-        } else loginMsg.innerText="Wrong password!";
+    else if(role === "banker"){
+        let id       = document.getElementById("loginId").value.trim();
+        let password = document.getElementById("loginPass").value.trim();
+        if(!id||!password){ loginMsg.innerText="Enter all fields!"; return; }
+        let stored = localStorage.getItem("banker_"+id);
+        if(!stored){ loginMsg.innerText="Banker ID not found. Please register first."; return; }
+        let data = JSON.parse(stored);
+        if(data.pass === password){
+            localStorage.setItem("currentBanker", id);
+            window.location.href = "/banker_dashboard";
+        } else { loginMsg.innerText="Wrong password!"; }
     }
     else{
-        let id=document.getElementById("loginId").value.trim();
-        let password=document.getElementById("loginPass").value.trim();
-        if(!id||!password){loginMsg.innerText="Enter all fields!";return;}
-        let stored=localStorage.getItem("admin_"+id);
-        if(!stored){loginMsg.innerText="Not registered!";return;}
-        let data=JSON.parse(stored);
-        if(data.pass===password){ window.location.href="/admin_dashboard"; }
-        else loginMsg.innerText="Wrong password!";
+        let id       = document.getElementById("loginId").value.trim();
+        let password = document.getElementById("loginPass").value.trim();
+        if(!id||!password){ loginMsg.innerText="Enter all fields!"; return; }
+        let stored = localStorage.getItem("admin_"+id);
+        if(!stored){ loginMsg.innerText="Admin ID not found. Please register first."; return; }
+        let data = JSON.parse(stored);
+        if(data.pass === password){
+            localStorage.setItem("currentAdmin", id);
+            window.location.href = "/admin_dashboard";
+        } else { loginMsg.innerText="Wrong password!"; }
     }
 }
 </script>
