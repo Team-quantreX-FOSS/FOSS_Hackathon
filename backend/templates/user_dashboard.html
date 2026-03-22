@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<style>
+* { box-sizing: border-box; }
+.popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:999; }
+.popup.show { display:flex; }
+.popup-content { background:#1a1614; border:1px solid rgba(230,213,184,0.15); padding:32px; border-radius:20px; width:420px; max-height:90vh; overflow-y:auto; }
+.popup-content h2 { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:#e6d5b8; margin:0 0 20px 0; }
+.popup-content h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#bfa980; margin:20px 0 12px 0; }
+.field-label { font-family:'DM Mono',monospace; font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:#888; display:block; margin-bottom:6px; }
+.popup-content input { display:block; width:100%; margin-bottom:14px; font-family:'DM Mono',monospace; font-size:18px; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#e6d5b8; }
+.popup-content input:focus { outline:none; border-color:#bfa980; }
+.popup-content input::placeholder { color:#444; }
+.popup-btn-row { display:flex; gap:10px; margin-top:8px; }
+.popup-btn-primary { flex:1; padding:13px; border:none; border-radius:10px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.popup-btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(230,213,184,0.25); }
+.popup-btn-secondary { padding:13px 20px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#888; font-family:'DM Mono',monospace; font-size:14px; cursor:pointer; }
+#errorMsg { font-family:'DM Mono',monospace; font-size:13px; color:#f87171; margin-top:8px; }
+
+.page-header { display:flex; align-items:center; gap:18px; margin-bottom:28px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.06); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#e6d5b8,#bfa980); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 4px 20px rgba(230,213,184,0.2); flex-shrink:0; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#666; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
+
+.stats-row { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.stat-card { flex:1; min-width:140px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:18px 20px; transition:transform 0.2s; }
+.stat-card:hover { transform:translateY(-3px); }
+.stat-card .s-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; margin-bottom:8px; display:block; }
+.stat-card .s-val { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; color:#e6d5b8; }
+
+.action-row { display:flex; gap:12px; margin:20px 0; flex-wrap:wrap; }
+.btn-primary { padding:12px 24px; border:none; border-radius:10px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(230,213,184,0.25); }
+.btn-outline { padding:12px 24px; border-radius:10px; border:1px solid rgba(230,213,184,0.3); background:transparent; color:#e6d5b8; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.btn-outline:hover { background:rgba(230,213,184,0.08); }
+
+/* STATUS BOX - always visible when there's a loan */
+#statusBox {
+    margin-top:20px;
+    font-size:17px;
+    font-weight:600;
+    padding:18px 22px;
+    border-radius:12px;
+    font-family:'DM Mono',monospace;
+    line-height:1.6;
+    display:none;
+    transition:all 0.3s;
+}
+
+.chart-box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:20px; }
+.chart-box h3 { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:0 0 16px 0; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<h2>FinRisk - Borrower Analytics</h2>
+<h2 id="welcome"></h2>
+</div>
+
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/loan_tracking'">📁 Loan History</button>
+<button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="main">
+
+<div class="page-header">
+    <div class="icon-wrap">📊</div>
+    <div>
+        <h1 id="userName">Dashboard</h1>
+        <p class="subtitle">Borrower · Financial Overview</p>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card"><span class="s-label">Risk Score</span><span class="s-val" id="riskScore">—</span></div>
+    <div class="stat-card"><span class="s-label">Risk Level</span><span class="s-val" id="riskLevel" style="font-size:1.1rem;">—</span></div>
+    <div class="stat-card"><span class="s-label">Monthly Income</span><span class="s-val" id="incomeDisplay">—</span></div>
+    <div class="stat-card"><span class="s-label">Total Expenses</span><span class="s-val" id="expenseDisplay">—</span></div>
+</div>
+
+<div class="action-row">
+    <button class="btn-primary" onclick="openPopup()">✏️ Enter / Update Financial Details</button>
+    <button class="btn-outline" onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+</div>
+
+<!-- LOAN STATUS NOTIFICATION BOX -->
+<div id="statusBox"></div>
+<div id="statusAction" style="display:none;margin-top:8px;">
+    <button onclick="location.href='/loan_tracking'" style="padding:9px 20px;background:linear-gradient(135deg,#e6d5b8,#bfa980);color:#111;font-family:Syne,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:8px;cursor:pointer;">View Full History & Track Spending →</button>
+</div>
+
+<div class="charts" style="margin-top:24px;">
+    <div class="chart-box" style="width:420px;"><h3>Expense Distribution</h3><canvas id="expenseChart"></canvas></div>
+    <div class="chart-box" style="width:420px;"><h3>Income vs Expenses</h3><canvas id="incomeChart"></canvas></div>
+</div>
+
+</div>
+</div>
+
+<!-- POPUP -->
+<div id="financePopup" class="popup">
+<div class="popup-content">
+<h2>💰 Enter Financial Details</h2>
+<span class="field-label">Monthly Income</span>
+<input type="number" id="income" placeholder="e.g. 50000">
+<span class="field-label">Total Expenses</span>
+<input type="number" id="totalExpense" placeholder="e.g. 30000">
+<span class="field-label">Phone Number</span>
+<input type="text" id="phone" placeholder="e.g. 9876543210">
+<h3>Expense Breakdown</h3>
+<span class="field-label">Transportation</span><input type="number" id="transport" placeholder="0">
+<span class="field-label">Education</span><input type="number" id="education" placeholder="0">
+<span class="field-label">Food</span><input type="number" id="food" placeholder="0">
+<span class="field-label">Utilities</span><input type="number" id="utilities" placeholder="0">
+<span class="field-label">Other</span><input type="number" id="other" placeholder="0">
+<p id="errorMsg"></p>
+<div class="popup-btn-row">
+    <button class="popup-btn-primary" onclick="saveFinance()">Save Details</button>
+    <button class="popup-btn-secondary" onclick="closePopup()">Cancel</button>
+</div>
+</div>
+</div>
+
+<script>
+
+let currentUser = "";
+
+window.addEventListener("DOMContentLoaded", function(){
+    Notification.requestPermission();
+
+    currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ alert("Please login first!"); window.location.href="/index"; return; }
+
+    let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
+    if(!userData){ alert("User data missing!"); localStorage.removeItem("currentUser"); window.location.href="/index"; return; }
+
+    document.getElementById("welcome").innerText  = "Welcome, " + userData.name;
+    document.getElementById("userName").innerText = userData.name + "'s Dashboard";
+
+    let financeFilled = localStorage.getItem("financeFilled_" + currentUser);
+    if(!financeFilled){ openPopup(); } else { loadSavedData(); }
+
+    /* Start polling immediately */
+    pollStatus();
+});
+
+function getPhone(){
+    /* Try per-user key first, fallback to generic key */
+    let p = localStorage.getItem("phone_" + currentUser) || localStorage.getItem("phone") || "";
+    return p;
+}
+
+function loadSavedData(){
+    let income       = Number(localStorage.getItem("income_"       + currentUser)) || 0;
+    let totalExpense = Number(localStorage.getItem("totalExpense_" + currentUser)) || 0;
+    let transport    = Number(localStorage.getItem("transport_"    + currentUser)) || 0;
+    let education    = Number(localStorage.getItem("education_"    + currentUser)) || 0;
+    let food         = Number(localStorage.getItem("food_"         + currentUser)) || 0;
+    let utilities    = Number(localStorage.getItem("utilities_"    + currentUser)) || 0;
+    let other        = Number(localStorage.getItem("other_"        + currentUser)) || 0;
+    let riskScore    = localStorage.getItem("riskScore_" + currentUser) || "—";
+    let riskLevel    = localStorage.getItem("riskLevel_" + currentUser) || "—";
+
+    document.getElementById("incomeDisplay").innerText  = income       ? "₹"+income.toLocaleString()       : "—";
+    document.getElementById("expenseDisplay").innerText = totalExpense ? "₹"+totalExpense.toLocaleString() : "—";
+    document.getElementById("riskScore").innerText      = riskScore;
+
+    let levelEl = document.getElementById("riskLevel");
+    levelEl.innerText = riskLevel;
+    if(riskLevel==="Low Risk")         levelEl.style.color="#34d399";
+    else if(riskLevel==="Medium Risk") levelEl.style.color="#f59e0b";
+    else if(riskLevel==="High Risk")   levelEl.style.color="#f87171";
+
+    createCharts(income, transport, education, food, utilities, other, totalExpense);
+}
+
+function openPopup(){
+    ["income","totalExpense","phone","transport","education","food","utilities","other"].forEach(id=>{
+        let el = document.getElementById(id);
+        if(el) el.value="";
+    });
+    document.getElementById("errorMsg").innerText = "";
+    document.getElementById("financePopup").classList.add("show");
+}
+function closePopup(){ document.getElementById("financePopup").classList.remove("show"); }
+
+function saveFinance(){
+    let income       = Number(document.getElementById("income").value);
+    let totalExpense = Number(document.getElementById("totalExpense").value);
+    let transport    = Number(document.getElementById("transport").value);
+    let education    = Number(document.getElementById("education").value);
+    let food         = Number(document.getElementById("food").value);
+    let utilities    = Number(document.getElementById("utilities").value);
+    let other        = Number(document.getElementById("other").value);
+    let phone        = document.getElementById("phone").value.trim();
+    let errEl        = document.getElementById("errorMsg");
+
+    if(!phone)                { errEl.innerText="Phone number required!"; return; }
+    if(!income||!totalExpense){ errEl.innerText="Enter valid income and expenses!"; return; }
+
+    let sum = transport+education+food+utilities+other;
+    if(sum !== totalExpense){ errEl.innerText="⚠ Breakdown must add up to total expenses!"; return; }
+
+    let ratio = (income-totalExpense)/income;
+    let riskScore, riskLevel, color;
+    if(ratio>0.4)     { riskScore=85; riskLevel="Low Risk";    color="#34d399"; }
+    else if(ratio>0.2){ riskScore=65; riskLevel="Medium Risk"; color="#f59e0b"; }
+    else              { riskScore=40; riskLevel="High Risk";   color="#f87171"; }
+
+    /* Save per-user */
+    localStorage.setItem("financeFilled_"+currentUser, "yes");
+    localStorage.setItem("income_"+currentUser,        income);
+    localStorage.setItem("totalExpense_"+currentUser,  totalExpense);
+    localStorage.setItem("transport_"+currentUser,     transport);
+    localStorage.setItem("education_"+currentUser,     education);
+    localStorage.setItem("food_"+currentUser,          food);
+    localStorage.setItem("utilities_"+currentUser,     utilities);
+    localStorage.setItem("other_"+currentUser,         other);
+    localStorage.setItem("riskScore_"+currentUser,     riskScore);
+    localStorage.setItem("riskLevel_"+currentUser,     riskLevel);
+    localStorage.setItem("phone_"+currentUser,         phone);
+    /* Generic keys for apply_loan */
+    localStorage.setItem("riskScore", riskScore);
+    localStorage.setItem("riskLevel", riskLevel);
+    localStorage.setItem("phone",     phone);
+
+    document.getElementById("incomeDisplay").innerText  = "₹"+income.toLocaleString();
+    document.getElementById("expenseDisplay").innerText = "₹"+totalExpense.toLocaleString();
+    document.getElementById("riskScore").innerText      = riskScore;
+    let levelEl = document.getElementById("riskLevel");
+    levelEl.innerText   = riskLevel;
+    levelEl.style.color = color;
+    errEl.innerText = "";
+
+    closePopup();
+    createCharts(income,transport,education,food,utilities,other,totalExpense);
+    pollStatus();
+}
+
+function createCharts(income,transport,education,food,utilities,other,totalExpense){
+    if(window.expenseChartObj) window.expenseChartObj.destroy();
+    if(window.incomeChartObj)  window.incomeChartObj.destroy();
+    window.expenseChartObj = new Chart(document.getElementById("expenseChart"),{
+        type:'pie',
+        data:{ labels:["Transport","Education","Food","Utilities","Other"],
+               datasets:[{ data:[transport,education,food,utilities,other],
+               backgroundColor:["#3b82f6","#8b5cf6","#f59e0b","#10b981","#e6d5b8"] }] }
+    });
+    window.incomeChartObj = new Chart(document.getElementById("incomeChart"),{
+        type:'bar',
+        data:{ labels:["Income","Expenses"],
+               datasets:[{ data:[income,totalExpense],
+               backgroundColor:["rgba(16,185,129,0.7)","rgba(239,68,68,0.7)"],
+               borderRadius:8 }] },
+        options:{ plugins:{legend:{display:false}},
+                  scales:{ x:{grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#888"}},
+                           y:{grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#888"}} } }
+    });
+}
+
+/* ── STATUS NOTIFICATION ─────────────────────────────────── */
+function saveLoanNotification(data){
+    let key = "loanHistory_" + currentUser;
+    let history = JSON.parse(localStorage.getItem(key) || "[]");
+    /* Avoid duplicate entries for same status */
+    let exists = history.find(function(h){ return h.status === data.status && h.banker === data.banker; });
+    if(!exists){
+        history.push({
+            status:    data.status,
+            banker:    data.banker || "",
+            reason:    data.reason || "",
+            timestamp: new Date().toLocaleString()
+        });
+        localStorage.setItem(key, JSON.stringify(history));
+    }
+}
+
+function pollStatus(){
+    let phone = getPhone();
+    if(!phone) return;
+    checkStatus(phone);
+}
+
+function checkStatus(phone){
+    let userData = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
+    let name = userData.name || "";
+    fetch("/get_status/" + phone + (name ? "?name="+encodeURIComponent(name) : ""))
+    .then(res => res.json())
+    .then(data => {
+        let box = document.getElementById("statusBox");
+
+        if(!data.status || data.status === "No Application"){
+            box.style.display = "none";
+            return;
+        }
+
+        box.style.display = "block";
+
+        let msg="", bg="", border="", color="";
+
+        if(data.status === "Pending"){
+            msg    = "⏳ Your loan request has been sent. Waiting for a banker to pick it up.";
+            bg     = "rgba(245,158,11,0.1)";
+            border = "1px solid rgba(245,158,11,0.4)";
+            color  = "#fbbf24";
+        }
+        else if(data.status === "Picked Up"){
+            msg    = "📋 <b>" + (data.banker||"A banker") + "</b> has picked up your loan request and is reviewing it.";
+            bg     = "rgba(59,130,246,0.1)";
+            border = "1px solid rgba(59,130,246,0.4)";
+            color  = "#60a5fa";
+        }
+        else if(data.status === "Approved"){
+            msg    = "✅ <b>" + (data.banker||"Your banker") + "</b> has approved your loan!";
+            bg     = "rgba(16,185,129,0.12)";
+            border = "1px solid rgba(16,185,129,0.5)";
+            color  = "#34d399";
+        }
+        else if(data.status === "Rejected"){
+            msg    = "❌ <b>" + (data.banker||"Your banker") + "</b> has rejected your loan." + (data.reason ? " Reason: " + data.reason : "");
+            bg     = "rgba(239,68,68,0.1)";
+            border = "1px solid rgba(239,68,68,0.4)";
+            color  = "#f87171";
+        }
+        else if(data.status === "Manual Review"){
+            msg    = "⚠ <b>" + (data.banker||"Your banker") + "</b> has placed your loan under manual review.";
+            bg     = "rgba(139,92,246,0.1)";
+            border = "1px solid rgba(139,92,246,0.4)";
+            color  = "#a78bfa";
+        }
+
+        box.style.background = bg;
+        box.style.border     = border;
+        box.style.color      = color;
+        box.style.opacity    = "1";
+        box.innerHTML        = msg;
+
+        let isFinal = ['Approved','Rejected','Manual Review'].includes(data.status);
+        let act = document.getElementById('statusAction');
+        if(act) act.style.display = isFinal ? 'block' : 'none';
+
+        /* Browser notification on status change */
+        if(window.lastLoanStatus !== undefined && window.lastLoanStatus !== data.status){
+            showNotification("FinRisk Loan Update", box.innerText || msg.replace(/<[^>]+>/g,''));
+        }
+        window.lastLoanStatus = data.status;
+
+        if(isFinal){
+            saveLoanNotification(data);
+            /* STOP polling so interval never redraws the box */
+            clearInterval(window.pollTimer);
+            window.pollTimer = null;
+            /* Fade out after 6 seconds */
+            setTimeout(function(){
+                box.style.transition = 'opacity 1.5s ease';
+                box.style.opacity    = '0';
+                if(act){ act.style.transition='opacity 1.5s ease'; act.style.opacity='0'; }
+                setTimeout(function(){
+                    box.style.display = 'none';
+                    if(act) act.style.display = 'none';
+                }, 1500);
+            }, 6000);
+        }
+    })
+    .catch(function(err){ console.error("Status poll error:", err); });
+}
+
+function showNotification(title, body){
+    if(!("Notification" in window)) return;
+    if(Notification.permission === "granted"){
+        new Notification(title, { body: body, icon: "/static/icon.png" });
+    } else if(Notification.permission !== "denied"){
+        Notification.requestPermission().then(function(p){
+            if(p === "granted") new Notification(title, { body: body });
+        });
+    }
+}
+
+function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href = "/index";
+}
+
+/* Poll every 5 seconds — stored in window.pollTimer so we can stop it */
+window.pollTimer = setInterval(function(){ pollStatus(); }, 5000);
+
+</script>
+</body>
+</html>

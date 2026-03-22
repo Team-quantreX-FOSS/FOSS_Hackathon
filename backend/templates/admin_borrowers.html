@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin - Borrowers</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+#userTable{
+font-size:22px;
+border-collapse:collapse;
+width:100%;
+}
+#userTable th, #userTable td{
+padding:16px;
+text-align:center;
+border:1px solid #ccc;
+}
+#userTable th{
+font-size:24px;
+background:#333;
+color:white;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><h2>Borrowers Panel</h2></div>
+
+<div class="container">
+<div class="sidebar">
+<h2>Admin</h2>
+<button onclick="location.href='/admin_dashboard'">🏛 Banks</button>
+<button onclick="location.href='/admin_borrowers'">👥 Borrowers</button>
+<button onclick="location.href='/admin_bankers'">🏦 Bankers</button>
+<button onclick="location.href='/admin_profile'">⚙ Profile</button>
+<button onclick="window.location.href='/'">🚪 Logout</button>
+</div>
+
+<div class="main">
+
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);">
+<div style="width:54px;height:54px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(16,185,129,0.3);">👥</div>
+<div><h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Borrowers</h1>
+<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">All Registered Loan Applications</p></div></div>
+<table id="userTable">
+<tr>
+<th>Name</th>
+<th>Age</th>
+<th>Phone</th>
+<th>Loan Amount</th>
+<th>Loan Type</th>
+<th>Tenure</th>
+<th>EMI</th>
+<th>Risk Score</th>
+<th>Allocated Banker</th>
+<th>Status</th>
+</tr>
+</table>
+
+<h2>Borrower Loan Status</h2>
+<canvas id="borrowerChart" width="400" height="200"></canvas>
+
+</div>
+</div>
+
+<script>
+async function loadUsers(){
+    let res   = await fetch("/api/users");
+    let users = await res.json();
+
+    let table = document.getElementById("userTable");
+    table.innerHTML = `
+<tr>
+<th>Name</th><th>Age</th><th>Phone</th><th>Loan Amount</th>
+<th>Loan Type</th><th>Tenure</th><th>EMI</th><th>Risk Score</th>
+<th>Allocated Banker</th><th>Status</th>
+</tr>`;
+
+    let statusCount = {Pending:0, Approved:0, Rejected:0, "Manual Review":0};
+
+    if(users.length === 0){
+        table.innerHTML += "<tr><td colspan='10'>No borrowers registered yet.</td></tr>";
+    } else {
+        users.forEach(u => {
+            let row = table.insertRow();
+            row.innerHTML = `
+<td>${u.name||""}</td>
+<td>${u.age||"N/A"}</td>
+<td>${u.phone||""}</td>
+<td>${u.loanAmount ? "₹"+u.loanAmount : "-"}</td>
+<td>${u.loanType||"-"}</td>
+<td>${u.tenure||"-"}</td>
+<td>${u.emi ? "₹"+u.emi : "-"}</td>
+<td>${u.score||"-"}</td>
+<td>${u.banker||"-"}</td>
+<td>${u.status||"Pending"}${u.reason ? "<br><small>("+u.reason+")</small>" : ""}</td>`;
+            statusCount[u.status||"Pending"]++;
+        });
+    }
+
+    const ctx = document.getElementById('borrowerChart').getContext('2d');
+    new Chart(ctx,{
+        type:'pie',
+        data:{
+            labels:['Pending','Approved','Rejected','Manual Review'],
+            datasets:[{
+                data:[statusCount.Pending, statusCount.Approved, statusCount.Rejected, statusCount["Manual Review"]],
+                backgroundColor:['#f39c12','#27ae60','#c0392b','#8e44ad']
+            }]
+        },
+        options:{responsive:true}
+    });
+}
+
+loadUsers();
+loadRegisteredUsers();
+
+async function loadRegisteredUsers(){
+    try {
+        let res   = await fetch("/api/user_accounts");
+        let users = await res.json();
+        let body  = document.getElementById("usersBody");
+        if(!body) return;
+        if(users.length === 0){
+            body.innerHTML = "<tr><td colspan='3' style='text-align:center;padding:20px;color:#bfa980;'>No users registered yet.</td></tr>";
+            return;
+        }
+        users.forEach(u => {
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#e6d5b8;">${u.name||"—"}</td>
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#bfa980;">${u.username||"—"}</td>
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#bfa980;">${u.phone||"—"}</td>`;
+            body.appendChild(tr);
+        });
+    } catch(e){ console.error(e); }
+}
+</script>
+
+</body>
+</html>

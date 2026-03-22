@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Apply for Loan</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+.form-wrap { max-width: 600px; margin: 40px auto; }
+.page-header { display:flex; align-items:center; gap:18px; margin-bottom:32px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.08); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#e6d5b8,#bfa980); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#888; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
+.form-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; }
+.form-section { margin-bottom:28px; }
+.form-section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:0 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:8px; }
+.form-group input, .form-group select {
+    width:100%; padding:13px 16px;
+    font-family:'DM Mono',monospace; font-size:16px;
+    border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05); color:#e6d5b8;
+    transition:border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { outline:none; border-color:#bfa980; }
+.form-group input::placeholder { color:#555; }
+.emi-display { background:rgba(230,213,184,0.08); border:1px solid rgba(230,213,184,0.15); border-radius:10px; padding:16px; text-align:center; margin-bottom:20px; }
+.emi-display .emi-label { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#888; }
+.emi-display .emi-val { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:#e6d5b8; }
+.submit-btn { width:100%; padding:16px; border:none; border-radius:12px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:18px; font-weight:800; cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; }
+.submit-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(230,213,184,0.3); }
+#errorMsg { font-family:'DM Mono',monospace; font-size:14px; color:#f87171; margin-top:12px; text-align:center; }
+#successMsg { font-family:'DM Mono',monospace; font-size:14px; color:#34d399; margin-top:12px; text-align:center; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="topbar"><h2>FinRisk - Loan Application</h2></div>
+
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/user_dashboard'">Dashboard</button>
+<button onclick="location.href='/loan_check'">Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
+<button onclick="location.href='/apply_loan'">Apply for Loan</button>
+<button onclick="location.href='/user_profile'">Profile</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="main">
+<div class="form-wrap">
+
+<div class="page-header">
+    <div class="icon-wrap">📝</div>
+    <div>
+        <h1>Loan Application</h1>
+        <p class="subtitle">Fill details · Submit · Banker reviews</p>
+    </div>
+</div>
+
+<div class="form-card">
+
+<div class="form-section">
+<div class="form-section-title">Loan Details</div>
+<div class="form-row">
+    <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="loan" placeholder="e.g. 500000" oninput="calcEmi()"></div>
+    <div class="form-group"><label>Age</label><input type="number" id="age" placeholder="e.g. 28"></div>
+    <div class="form-group"><label>Loan Type</label>
+    <select id="loanType">
+        <option value="">Select type</option>
+        <option>Home Loan</option>
+        <option>Personal Loan</option>
+        <option>Education Loan</option>
+        <option>Vehicle Loan</option>
+        <option>Business Loan</option>
+        <option>Gold Loan</option>
+    </select></div>
+</div>
+<div class="form-row">
+    <div class="form-group"><label>Tenure (months)</label><input type="number" id="tenure" placeholder="e.g. 60" oninput="calcEmi()"></div>
+    <div class="form-group"><label>Risk Score</label><input type="number" id="score" placeholder="Auto-filled"></div>
+</div>
+</div>
+
+<div class="form-section">
+<div class="form-section-title">Bank Details</div>
+<div class="form-group"><label>Account Holder Name</label><input type="text" id="accountHolder" placeholder="As per bank records"></div>
+<div class="form-row">
+    <div class="form-group"><label>Bank Account Number</label><input type="text" id="accountNumber" placeholder="e.g. 1234567890"></div>
+    <div class="form-group"><label>IFSC Code</label><input type="text" id="ifsc" placeholder="e.g. SBIN0000001"></div>
+</div>
+</div>
+
+<div class="emi-display">
+    <div class="emi-label">Estimated Monthly EMI</div>
+    <div class="emi-val" id="emiDisplay">₹ —</div>
+</div>
+
+<button class="submit-btn" onclick="submitApplication()">Submit Application →</button>
+<p id="errorMsg"></p>
+<p id="successMsg"></p>
+
+</div>
+</div>
+</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function(){
+    let score = localStorage.getItem("riskScore") || "";
+    document.getElementById("score").value = score;
+});
+
+function calcEmi(){
+    let loan   = Number(document.getElementById("loan").value);
+    let tenure = Number(document.getElementById("tenure").value);
+    if(loan && tenure){
+        let emi = Math.round(loan / tenure);
+        document.getElementById("emiDisplay").innerText = "₹ " + emi.toLocaleString();
+    } else {
+        document.getElementById("emiDisplay").innerText = "₹ —";
+    }
+}
+
+function submitApplication(){
+    let loan     = document.getElementById("loan").value;
+    let loanType = document.getElementById("loanType").value;
+    let tenure   = document.getElementById("tenure").value;
+    let score    = document.getElementById("score").value;
+    let errEl    = document.getElementById("errorMsg");
+    let sucEl    = document.getElementById("successMsg");
+
+    errEl.innerText = ""; sucEl.innerText = "";
+
+    if(!loan||!loanType||!tenure||!score){ errEl.innerText="Please fill all required fields."; return; }
+
+    let phone = localStorage.getItem("phone") || "";
+    if(!phone){ errEl.innerText="Phone missing. Fill financial details on dashboard first."; return; }
+
+    let name = "";
+    let currentUser = localStorage.getItem("currentUser");
+    if(currentUser){
+        let ud = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
+        name = ud.name || "";
+    }
+
+    let emi = Math.round(Number(loan)/Number(tenure));
+
+    fetch("/apply_loan",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ name, age:Number(document.getElementById("age").value)||0, phone, loanAmount:Number(loan), loanType, tenure:Number(tenure), emi, risk_score:Number(score) })
+    })
+    .then(r=>r.json())
+    .then(res=>{
+        if(res.message==="no_banker"){
+            sucEl.innerText="✅ Request sent! No banker is available yet — your application will be picked up once a banker registers.";
+        } else {
+            sucEl.innerText="✅ Application submitted! A banker will pick it up from the Loan Requests page.";
+        }
+        setTimeout(()=>{ window.location.href="/user_dashboard"; }, 2500);
+    })
+    .catch(()=>{ errEl.innerText="Server error. Please try again."; });
+}
+
+function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href="/";
+}
+</script>
+</body>
+</html>

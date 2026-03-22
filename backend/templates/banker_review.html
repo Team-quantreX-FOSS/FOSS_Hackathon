@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Review Queue</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+/* ── DESIGN LAYER (does not touch style.css background/layout) ── */
+
+* { box-sizing: border-box; }
+
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 32px 0 10px 0;
+    padding-bottom: 18px;
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+
+.review-header .icon-wrap {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+    
+}
+
+@keyframes pulse-glow {
+    0%,100% { box-shadow: 0 4px 20px rgba(230,213,184,0.25); }
+    50%      { box-shadow: 0 4px 32px rgba(245,158,11,0.65); }
+}
+
+.review-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin: 0;
+    color: #e6d5b8;
+}
+
+.review-header .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    color: #bfa980;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 2px 0 0 0;
+}
+
+/* FILTER TABS */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0 24px 0;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: #e6d5b8;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.filter-tab:hover,
+.filter-tab.active {
+    background: linear-gradient(135deg, #f59e0b22, #ef444422);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+/* STATS ROW */
+.stats-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 120px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover { transform: translateY(-3px); }
+
+.stat-card .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    display: block;
+}
+
+.stat-card .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #bfa980;
+    margin-top: 4px;
+    display: block;
+}
+
+.stat-card.amber .stat-num { color: #f59e0b; }
+.stat-card.green .stat-num { color: #10b981; }
+.stat-card.red   .stat-num { color: #ef4444; }
+.stat-card.purple .stat-num { color: #8b5cf6; }
+
+/* TABLE */
+#reviewTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+}
+
+#reviewTable th {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1.5px solid rgba(255,255,255,0.08);
+    text-align: left;
+    color: #e6d5b8;
+}
+
+#reviewTable td {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: middle;
+    transition: background 0.15s;
+}
+
+#reviewTable tr:hover td {
+    background: rgba(245,158,11,0.04);
+}
+
+/* STATUS BADGE */
+.badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.badge-manual  { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+.badge-approved{ background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.badge-rejected{ background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.badge-pending { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+/* SCORE BAR */
+.score-wrap { display: flex; align-items: center; gap: 10px; }
+.score-bar-bg {
+    flex: 1; height: 6px; border-radius: 99px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+.score-bar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+/* EMPTY STATE */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #bfa980;
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+/* ENTRY ANIMATION */
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.anim-row { animation: fadeSlideIn 0.4s ease both; }
+
+/* CHART SECTION */
+.chart-section {
+    margin-top: 36px;
+    padding: 24px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+}
+.chart-section h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #bfa980;
+    margin: 0 0 20px 0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar"><h2>FinRisk - Review Queue</h2></div>
+
+<div class="container">
+
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/banker_dashboard'">📋 Dashboard</button>
+<button onclick="location.href='/loan_requests'">📥 Loan Requests</button>
+<button onclick="location.href='/banker_review'">🧠 Review Queue</button>
+<button onclick="location.href='/banker_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="main">
+
+<!-- HEADER -->
+<div class="review-header">
+    <div class="icon-wrap">📊</div>
+    <div>
+        <h1>Manual Review Queue</h1>
+        <p class="subtitle">Cases requiring closer inspection</p>
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+    <div class="stat-card amber">
+        <span class="stat-num" id="statTotal">0</span>
+        <span class="stat-label">Total Cases</span>
+    </div>
+    <div class="stat-card green">
+        <span class="stat-num" id="statApproved">0</span>
+        <span class="stat-label">Approved</span>
+    </div>
+    <div class="stat-card red">
+        <span class="stat-num" id="statRejected">0</span>
+        <span class="stat-label">Rejected</span>
+    </div>
+    <div class="stat-card purple">
+        <span class="stat-num" id="statManual">0</span>
+        <span class="stat-label">Still Under Review</span>
+    </div>
+</div>
+
+<!-- FILTER TABS -->
+<div class="filter-tabs">
+    <button class="filter-tab active" onclick="applyFilter('all', this)">All Cases</button>
+    <button class="filter-tab" onclick="applyFilter('Manual Review', this)">Under Review</button>
+    <button class="filter-tab" onclick="applyFilter('Approved', this)">Approved</button>
+    <button class="filter-tab" onclick="applyFilter('Rejected', this)">Rejected</button>
+    <button class="filter-tab" onclick="applyFilter('month', this)">This Month</button>
+    <button class="filter-tab" onclick="applyFilter('year', this)">This Year</button>
+</div>
+
+<!-- TABLE -->
+<table id="reviewTable">
+    <thead>
+    <tr>
+        <th>Borrower</th>
+        <th>Phone</th>
+        <th>Loan Amount</th>
+        <th>Risk Score</th>
+        <th>Status</th>
+        <th>Reason</th>
+        <th>Banker</th>
+    </tr>
+    </thead>
+    <tbody id="reviewBody"></tbody>
+</table>
+
+<!-- CHART -->
+<div class="chart-section">
+    <h3>Case Distribution</h3>
+    <canvas id="reviewChart" height="80"></canvas>
+</div>
+
+</div>
+</div>
+
+<script>
+
+let allData   = [];
+let myBanker  = "";
+let chartObj  = null;
+
+/* Get logged-in banker name */
+let currentBankerId = localStorage.getItem("currentBanker") || "";
+if(currentBankerId){
+    let bd = JSON.parse(localStorage.getItem("banker_" + currentBankerId) || "{}");
+    myBanker = bd.name || "";
+    /* If empty, fetch from DB */
+    if(!myBanker){
+        fetch("/api/get_banker/" + currentBankerId)
+        .then(r=>r.json())
+        .then(data=>{ if(data.name){ myBanker=data.name; loadReview(); } })
+        .catch(()=>{});
+    }
+}
+
+function loadReview(){
+    fetch("/users")
+    .then(res => res.json())
+    .then(data => {
+        /* Filter only cases this banker handled */
+        allData = data
+            .map(u => ({
+                id:      u[0],
+                name:    u[1],
+                phone:   u[2],
+                loan:    u[3],
+                score:   u[7],
+                banker:  u[8],
+                status:  u[9],
+                reason:  u[10]
+            }))
+            .filter(u => u.banker === myBanker);
+
+        updateStats(allData);
+        renderTable(allData);
+        renderChart(allData);
+    });
+}
+
+function updateStats(data){
+    document.getElementById("statTotal").innerText    = data.length;
+    document.getElementById("statApproved").innerText = data.filter(u=>u.status==="Approved").length;
+    document.getElementById("statRejected").innerText = data.filter(u=>u.status==="Rejected").length;
+    document.getElementById("statManual").innerText   = data.filter(u=>u.status==="Manual Review").length;
+}
+
+function applyFilter(type, btn){
+    document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    let now      = new Date();
+    let filtered = allData;
+
+    if(type === "month"){
+        filtered = allData; /* No date stored, show all as fallback */
+    } else if(type === "year"){
+        filtered = allData;
+    } else if(type !== "all"){
+        filtered = allData.filter(u => u.status === type);
+    }
+
+    renderTable(filtered);
+    renderChart(filtered);
+}
+
+function renderTable(data){
+    let body = document.getElementById("reviewBody");
+    body.innerHTML = "";
+
+    if(data.length === 0){
+        body.innerHTML = `
+<tr><td colspan="7">
+<div class="empty-state">
+<div class="empty-icon">📭</div>
+<p>No cases found in this filter</p>
+</div>
+</td></tr>`;
+        return;
+    }
+
+    data.forEach((u, i) => {
+        let scoreColor = u.score >= 75 ? "#10b981" : u.score >= 55 ? "#f59e0b" : "#ef4444";
+        let badgeClass = {
+            "Approved":      "badge-approved",
+            "Rejected":      "badge-rejected",
+            "Manual Review": "badge-manual",
+            "Pending":       "badge-pending",
+            "Picked Up":     "badge-pending"
+        }[u.status] || "badge-pending";
+
+        let row = document.createElement("tr");
+        row.className = "anim-row";
+        row.style.animationDelay = (i * 0.05) + "s";
+        row.innerHTML = `
+<td><b style="font-family:'Syne',sans-serif;">${u.name||"-"}</b></td>
+<td style="color:#888;">${u.phone||"-"}</td>
+<td>₹${u.loan ? Number(u.loan).toLocaleString() : "-"}</td>
+<td>
+  <div class="score-wrap">
+    <span style="color:${scoreColor}; font-weight:600; min-width:28px;">${u.score||0}</span>
+    <div class="score-bar-bg">
+      <div class="score-bar-fill" style="width:${u.score||0}%; background:${scoreColor};"></div>
+    </div>
+  </div>
+</td>
+<td><span class="badge ${badgeClass}">${u.status||"Pending"}</span></td>
+<td style="color:#888; font-size:13px;">${u.reason||"-"}</td>
+<td style="color:#888;">${u.banker||"-"}</td>`;
+        body.appendChild(row);
+    });
+}
+
+function renderChart(data){
+    let approved = data.filter(u=>u.status==="Approved").length;
+    let rejected = data.filter(u=>u.status==="Rejected").length;
+    let manual   = data.filter(u=>u.status==="Manual Review").length;
+    let pending  = data.filter(u=>u.status==="Pending"||u.status==="Picked Up").length;
+
+    if(chartObj) chartObj.destroy();
+
+    chartObj = new Chart(document.getElementById("reviewChart"), {
+        type: "bar",
+        data: {
+            labels: ["Approved", "Rejected", "Manual Review", "Pending"],
+            datasets:[{
+                data: [approved, rejected, manual, pending],
+                backgroundColor: ["rgba(16,185,129,0.7)","rgba(239,68,68,0.7)","rgba(139,92,246,0.7)","rgba(245,158,11,0.7)"],
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options:{
+            plugins:{ legend:{ display:false } },
+            scales:{
+                x:{ grid:{ color:"rgba(255,255,255,0.05)" }, ticks:{ color:"#888", font:{ family:"DM Mono" } } },
+                y:{ grid:{ color:"rgba(255,255,255,0.05)" }, ticks:{ color:"#888", font:{ family:"DM Mono" }, stepSize:1 } }
+            }
+        }
+    });
+}
+
+function logout(){
+    localStorage.removeItem("currentBanker");
+    window.location.href = "/";
+}
+
+loadReview();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan History & Tracking</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { box-sizing: border-box; }
+.page-header { display:flex; align-items:center; gap:18px; margin-bottom:28px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.06); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#666; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
+.section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#666; margin:28px 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
+
+/* LOAN HISTORY CARDS */
+.loan-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:14px; transition:all 0.2s; position:relative; overflow:hidden; }
+.loan-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
+.loan-card.approved::before { background:#34d399; }
+.loan-card.rejected::before { background:#f87171; }
+.loan-card.pending::before  { background:#fbbf24; }
+.loan-card.manual::before   { background:#a78bfa; }
+.loan-card:hover { background:rgba(255,255,255,0.05); }
+.loan-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+.loan-type { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:#e6d5b8; }
+.loan-amount { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:800; color:#bfa980; }
+.loan-status-badge { display:inline-block; font-family:'DM Mono',monospace; font-size:12px; padding:5px 12px; border-radius:8px; font-weight:700; }
+.badge-approved { background:rgba(16,185,129,0.15); color:#34d399; }
+.badge-rejected { background:rgba(239,68,68,0.15); color:#f87171; }
+.badge-pending  { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.badge-manual   { background:rgba(139,92,246,0.15); color:#a78bfa; }
+.badge-pickedup { background:rgba(59,130,246,0.15); color:#60a5fa; }
+.loan-meta { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:12px; }
+.meta-item { font-family:'DM Mono',monospace; font-size:13px; color:#888; }
+.meta-item span { color:#bfa980; }
+.loan-reason { font-family:'DM Mono',monospace; font-size:13px; color:#666; font-style:italic; margin-top:6px; }
+
+/* TIMELINE */
+.timeline { margin:16px 0 0 0; padding:0; list-style:none; border-left:2px solid rgba(255,255,255,0.08); padding-left:20px; }
+.timeline li { position:relative; margin-bottom:12px; font-family:'DM Mono',monospace; font-size:13px; color:#888; }
+.timeline li::before { content:''; position:absolute; left:-26px; top:4px; width:8px; height:8px; border-radius:50%; background:#444; }
+.timeline li.done::before { background:#34d399; box-shadow:0 0 8px rgba(52,211,153,0.4); }
+.timeline li.active::before { background:#fbbf24; box-shadow:0 0 8px rgba(251,191,36,0.4); }
+.timeline li.fail::before { background:#f87171; box-shadow:0 0 8px rgba(248,113,113,0.4); }
+.timeline li strong { color:#e6d5b8; }
+
+/* TRACKING SECTION */
+.tracking-box { background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:16px; padding:24px; margin-top:16px; }
+.tracking-box h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#60a5fa; margin:0 0 16px 0; }
+.spend-summary { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.spend-card { flex:1; min-width:140px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; text-align:center; }
+.spend-card .sc-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; display:block; margin-bottom:6px; }
+.spend-card .sc-val { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; }
+
+/* UPLOAD BILL */
+.upload-section { margin-top:20px; }
+.upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.upload-group label { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:6px; }
+.upload-group input[type=text], .upload-group input[type=number], .upload-group select {
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:14px;
+}
+.upload-group input:focus, .upload-group select:focus { outline:none; border-color:#3b82f6; }
+.upload-group select option { background:#1a1a2e; }
+.file-upload-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1.5px dashed rgba(59,130,246,0.3); background:rgba(59,130,246,0.04); font-family:'DM Mono',monospace; font-size:14px; color:#60a5fa; cursor:pointer; transition:all 0.2s; }
+.file-upload-label:hover { border-color:#3b82f6; background:rgba(59,130,246,0.08); }
+.file-upload-label.uploaded { border-style:solid; border-color:#34d399; background:rgba(16,185,129,0.06); color:#34d399; }
+.file-upload-label input[type=file] { display:none; }
+.btn-add-expense { padding:11px 24px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; border:none; border-radius:10px; cursor:pointer; transition:all 0.2s; }
+.btn-add-expense:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(59,130,246,0.3); }
+
+/* EXPENSE LIST */
+.expense-list { margin-top:20px; }
+.expense-item { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; margin-bottom:8px; }
+.expense-item .ei-cat { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#e6d5b8; }
+.expense-item .ei-desc { font-family:'DM Mono',monospace; font-size:12px; color:#666; margin-top:2px; }
+.expense-item .ei-amt { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:#f87171; }
+.expense-item .ei-date { font-family:'DM Mono',monospace; font-size:11px; color:#555; }
+.expense-item .ei-img { font-family:'DM Mono',monospace; font-size:11px; color:#60a5fa; cursor:pointer; margin-left:8px; }
+.del-btn { background:none; border:none; color:#555; cursor:pointer; font-size:16px; padding:4px 8px; }
+.del-btn:hover { color:#f87171; }
+
+/* CHART */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+.chart-box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:16px; }
+.chart-box h4 { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#666; margin:0 0 14px 0; }
+
+/* ADVICE BOX */
+.advice-banner { padding:16px 20px; border-radius:12px; margin-top:16px; font-family:'DM Mono',monospace; font-size:14px; line-height:1.7; }
+.advice-banner.good { background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); color:#6ee7b7; }
+.advice-banner.warn { background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); color:#fde68a; }
+.advice-banner.bad  { background:rgba(239,68,68,0.08);  border:1px solid rgba(239,68,68,0.2);  color:#fca5a5; }
+
+.empty-state { text-align:center; padding:48px; color:#555; font-family:'DM Mono',monospace; font-size:15px; }
+
+/* MODAL for bill image */
+.img-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; }
+.img-modal.show { display:flex; }
+.img-modal img { max-width:90vw; max-height:85vh; border-radius:12px; }
+.img-modal-close { position:fixed; top:20px; right:24px; font-size:32px; color:#e6d5b8; cursor:pointer; background:none; border:none; }
+</style>
+</head>
+<body>
+
+<div class="topbar"><h2>FinRisk - Loan History & Tracking</h2></div>
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_tracking'">📁 Loan History</button>
+<button onclick="location.href='/loan_check'">🔍 Eligibility</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/apply_loan'">📝 Apply</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="main">
+
+<div class="page-header">
+    <div class="icon-wrap">📁</div>
+    <div>
+        <h1>Loan History & Tracking</h1>
+        <p class="subtitle">All Applications · Spending Tracker · Bill Upload</p>
+    </div>
+</div>
+
+<div class="section-title">Your Loan Applications</div>
+<div id="loanHistory"><div class="empty-state">No loan applications found.</div></div>
+
+<div id="trackingSection" style="display:none;">
+    <div class="section-title">Loan Spending Tracker</div>
+    <p style="font-family:'DM Mono',monospace;font-size:14px;color:#666;margin-bottom:20px;">Track how you spend your approved loan. Upload bills, log expenses, and see a breakdown — so you stay on budget and spend wisely.</p>
+
+    <div class="tracking-box">
+        <h3>💰 Spending Overview</h3>
+        <div class="spend-summary">
+            <div class="spend-card"><span class="sc-label">Loan Amount</span><span class="sc-val" id="totalLoan" style="color:#e6d5b8;">₹0</span></div>
+            <div class="spend-card"><span class="sc-label">Total Spent</span><span class="sc-val" id="totalSpent" style="color:#f87171;">₹0</span></div>
+            <div class="spend-card"><span class="sc-label">Remaining</span><span class="sc-val" id="totalRemaining" style="color:#34d399;">₹0</span></div>
+            <div class="spend-card"><span class="sc-label">% Used</span><span class="sc-val" id="pctUsed" style="color:#fbbf24;">0%</span></div>
+        </div>
+
+        <div id="adviceBanner"></div>
+
+        <div class="chart-row">
+            <div class="chart-box"><h4>Spending by Category</h4><canvas id="catChart"></canvas></div>
+            <div class="chart-box"><h4>Loan Utilisation</h4><canvas id="utilChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- ADD EXPENSE -->
+    <div class="section-title" style="margin-top:28px;">Log a New Expense</div>
+    <div class="upload-grid">
+        <div class="upload-group">
+            <label>Category</label>
+            <select id="expCat">
+                <option value="Essential">Essential (rent, food, utilities)</option>
+                <option value="Education">Education / Upskilling</option>
+                <option value="Medical">Medical / Health</option>
+                <option value="Business">Business / Investment</option>
+                <option value="Debt Repayment">Debt Repayment / EMI</option>
+                <option value="Transport">Transport / Vehicle</option>
+                <option value="Home">Home Improvement</option>
+                <option value="Personal">Personal / Lifestyle</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="upload-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="expAmt" placeholder="e.g. 15000">
+        </div>
+        <div class="upload-group" style="grid-column:1/-1;">
+            <label>Description</label>
+            <input type="text" id="expDesc" placeholder="e.g. Paid college semester fees">
+        </div>
+        <div class="upload-group">
+            <label>Bill / Receipt (optional)</label>
+            <label class="file-upload-label" id="billLabel" for="billFile">
+                <span id="billIcon">📎</span>
+                <span id="billTxt">Upload bill image</span>
+                <input type="file" id="billFile" accept="image/*,.pdf" onchange="handleBillUpload()">
+            </label>
+        </div>
+        <div class="upload-group">
+            <label>Date</label>
+            <input type="date" id="expDate">
+        </div>
+    </div>
+    <button class="btn-add-expense" onclick="addExpense()">+ Log Expense</button>
+
+    <!-- EXPENSE LIST -->
+    <div class="section-title" style="margin-top:28px;">Expense Log</div>
+    <div id="expenseList"><div class="empty-state">No expenses logged yet. Start tracking your loan spending above.</div></div>
+</div>
+
+</div>
+</div>
+
+<!-- BILL IMAGE MODAL -->
+<div class="img-modal" id="imgModal">
+    <button class="img-modal-close" onclick="closeModal()">✕</button>
+    <img id="modalImg" src="" alt="Bill">
+</div>
+
+<script>
+let currentUser = "";
+let approvedLoan = null;
+let expenses = [];
+let catChartObj = null, utilChartObj = null;
+let billDataURL = null;
+
+window.addEventListener("DOMContentLoaded", function(){
+    currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ window.location.href="/"; return; }
+
+    // Set today's date
+    document.getElementById("expDate").valueAsDate = new Date();
+
+    loadLoanHistory();
+    loadExpenses();
+});
+
+/* ── LOAD LOAN HISTORY FROM DB ── */
+function loadLoanHistory(){
+    let userData = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
+    let userName = userData.name || "";
+    let phone    = localStorage.getItem("phone_"+currentUser) || localStorage.getItem("phone") || "";
+
+    if(!phone && !userName){ document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No phone or user data found. Please update your profile.</div>'; return; }
+
+    fetch("/api/users")
+    .then(r=>r.json())
+    .then(function(users){
+        // Filter by name matching current user
+        let myLoans = users.filter(function(u){
+            return u.name && userData.name && u.name.toLowerCase() === userData.name.toLowerCase()
+                   || u.phone === phone;
+        });
+
+        if(myLoans.length === 0){
+            document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No loan applications found. <a href="/apply_loan" style="color:#e6d5b8;">Apply for a loan →</a></div>';
+            return;
+        }
+
+        // Sort newest first
+        myLoans.sort(function(a,b){ return b.id - a.id; });
+
+        // Check for approved loan for tracking
+        approvedLoan = myLoans.find(function(u){ return u.status === "Approved"; });
+        if(approvedLoan){
+            document.getElementById("trackingSection").style.display = "block";
+            document.getElementById("totalLoan").innerText = "₹" + Number(approvedLoan.loanAmount||0).toLocaleString();
+            updateTrackingSummary();
+        }
+
+        let html = "";
+        myLoans.forEach(function(loan){
+            let statusClass = "pending";
+            let badgeClass  = "badge-pending";
+            let statusLabel = loan.status || "Pending";
+            if(loan.status==="Approved")      { statusClass="approved"; badgeClass="badge-approved"; }
+            else if(loan.status==="Rejected") { statusClass="rejected"; badgeClass="badge-rejected"; }
+            else if(loan.status==="Manual Review"){ statusClass="manual"; badgeClass="badge-manual"; }
+            else if(loan.status==="Picked Up"){ statusClass="pending"; badgeClass="badge-pickedup"; statusLabel="Under Review"; }
+
+            // Timeline
+            let t_applied  = "done", t_picked = "", t_review = "", t_decision = "";
+            if(loan.status==="Picked Up"){ t_picked="active"; }
+            else if(loan.status==="Manual Review"){ t_picked="done"; t_review="active"; }
+            else if(loan.status==="Approved"){ t_picked="done"; t_review="done"; t_decision="done"; }
+            else if(loan.status==="Rejected"){ t_picked="done"; t_review="done"; t_decision="fail"; }
+
+            html += '<div class="loan-card '+statusClass+'">' +
+                '<div class="loan-card-header">' +
+                    '<div>' +
+                        '<div class="loan-type">'+(loan.loanType||"Loan")+'</div>' +
+                        '<div class="loan-amount">₹'+Number(loan.loanAmount||0).toLocaleString()+'</div>' +
+                    '</div>' +
+                    '<span class="loan-status-badge '+badgeClass+'">'+statusLabel+'</span>' +
+                '</div>' +
+                '<div class="loan-meta">' +
+                    '<div class="meta-item">EMI: <span>₹'+Number(loan.emi||0).toLocaleString()+'/mo</span></div>' +
+                    '<div class="meta-item">Tenure: <span>'+(loan.tenure||"—")+' months</span></div>' +
+                    '<div class="meta-item">Risk Score: <span>'+(loan.score||"—")+'</span></div>' +
+                    '<div class="meta-item">Banker: <span>'+(loan.banker||"Not assigned")+'</span></div>' +
+                '</div>' +
+                (loan.reason ? '<div class="loan-reason">Reason: '+loan.reason+'</div>' : '') +
+                '<ul class="timeline">' +
+                    '<li class="'+t_applied+'"><strong>Applied</strong> — Loan application submitted</li>' +
+                    '<li class="'+(t_picked||"")+'"><strong>Picked Up</strong> — Banker assigned and reviewing</li>' +
+                    '<li class="'+(t_review||"")+'"><strong>Under Review</strong> — Manual verification in progress</li>' +
+                    '<li class="'+(t_decision||"")+'"><strong>Decision</strong> — '+(loan.status==="Approved"?"Loan approved ✓":loan.status==="Rejected"?"Loan rejected":"Awaiting final decision")+'</li>' +
+                '</ul>' +
+            '</div>';
+        });
+
+        document.getElementById("loanHistory").innerHTML = html;
+    })
+    .catch(function(){
+        document.getElementById("loanHistory").innerHTML = '<div class="empty-state">Could not load loan history. Is Flask running?</div>';
+    });
+}
+
+/* ── EXPENSES ── */
+function loadExpenses(){
+    let saved = localStorage.getItem("loanExpenses_"+currentUser);
+    expenses = saved ? JSON.parse(saved) : [];
+    renderExpenses();
+}
+
+function saveExpenses(){
+    localStorage.setItem("loanExpenses_"+currentUser, JSON.stringify(expenses));
+}
+
+function handleBillUpload(){
+    let file = document.getElementById("billFile").files[0];
+    let lbl  = document.getElementById("billLabel");
+    if(file){
+        let reader = new FileReader();
+        reader.onload = function(e){ billDataURL = e.target.result; };
+        reader.readAsDataURL(file);
+        lbl.classList.add("uploaded");
+        document.getElementById("billIcon").innerText = "✅";
+        let name = file.name.length > 20 ? file.name.substring(0,18)+"…" : file.name;
+        document.getElementById("billTxt").innerText = name;
+    }
+}
+
+function addExpense(){
+    let cat   = document.getElementById("expCat").value;
+    let amt   = Number(document.getElementById("expAmt").value);
+    let desc  = document.getElementById("expDesc").value.trim();
+    let date  = document.getElementById("expDate").value;
+    if(!amt || amt <= 0){ alert("Please enter a valid amount."); return; }
+    if(!desc){ alert("Please enter a description."); return; }
+
+    // Check if exceeds remaining loan
+    let loanAmt = approvedLoan ? Number(approvedLoan.loanAmount||0) : 0;
+    let totalSpent = expenses.reduce(function(s,e){ return s+e.amt; }, 0);
+    if(loanAmt > 0 && (totalSpent + amt) > loanAmt){
+        if(!confirm("This expense exceeds your loan amount. Are you sure you want to log it?")){
+            return;
+        }
+    }
+
+    expenses.push({
+        id:   Date.now(),
+        cat:  cat,
+        amt:  amt,
+        desc: desc,
+        date: date,
+        bill: billDataURL || null
+    });
+    saveExpenses();
+    renderExpenses();
+    updateTrackingSummary();
+
+    // Reset form
+    document.getElementById("expAmt").value  = "";
+    document.getElementById("expDesc").value = "";
+    document.getElementById("expDate").valueAsDate = new Date();
+    document.getElementById("billFile").value = "";
+    document.getElementById("billLabel").classList.remove("uploaded");
+    document.getElementById("billIcon").innerText = "📎";
+    document.getElementById("billTxt").innerText  = "Upload bill image";
+    billDataURL = null;
+}
+
+function deleteExpense(id){
+    expenses = expenses.filter(function(e){ return e.id !== id; });
+    saveExpenses();
+    renderExpenses();
+    updateTrackingSummary();
+}
+
+function renderExpenses(){
+    if(expenses.length === 0){
+        document.getElementById("expenseList").innerHTML = '<div class="empty-state">No expenses logged yet.</div>';
+        return;
+    }
+    let sorted = [...expenses].sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    let html = "";
+    sorted.forEach(function(e){
+        html += '<div class="expense-item">' +
+            '<div>' +
+                '<div class="ei-cat">'+e.cat+'</div>' +
+                '<div class="ei-desc">'+e.desc+'</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+                (e.bill ? '<span class="ei-img" onclick="viewBill(\''+e.id+'\')">📄 Bill</span>' : '') +
+                '<div style="text-align:right;">' +
+                    '<div class="ei-amt">-₹'+Number(e.amt).toLocaleString()+'</div>' +
+                    '<div class="ei-date">'+e.date+'</div>' +
+                '</div>' +
+                '<button class="del-btn" onclick="deleteExpense('+e.id+')">✕</button>' +
+            '</div>' +
+        '</div>';
+    });
+    document.getElementById("expenseList").innerHTML = html;
+}
+
+function viewBill(id){
+    let exp = expenses.find(function(e){ return e.id === id; });
+    if(exp && exp.bill){
+        document.getElementById("modalImg").src = exp.bill;
+        document.getElementById("imgModal").classList.add("show");
+    }
+}
+function closeModal(){ document.getElementById("imgModal").classList.remove("show"); }
+document.getElementById("imgModal").addEventListener("click", function(e){ if(e.target===this) closeModal(); });
+
+function updateTrackingSummary(){
+    let loanAmt    = approvedLoan ? Number(approvedLoan.loanAmount||0) : 0;
+    let totalSpent = expenses.reduce(function(s,e){ return s+e.amt; }, 0);
+    let remaining  = Math.max(0, loanAmt - totalSpent);
+    let pct        = loanAmt > 0 ? Math.round((totalSpent/loanAmt)*100) : 0;
+
+    document.getElementById("totalLoan").innerText      = "₹"+loanAmt.toLocaleString();
+    document.getElementById("totalSpent").innerText     = "₹"+totalSpent.toLocaleString();
+    document.getElementById("totalRemaining").innerText = "₹"+remaining.toLocaleString();
+    document.getElementById("pctUsed").innerText        = pct+"%";
+
+    // Advice banner
+    let banner = document.getElementById("adviceBanner");
+    if(expenses.length === 0){
+        banner.innerHTML = "";
+    } else {
+        // Check category breakdown for advice
+        let personal = expenses.filter(function(e){ return e.cat==="Personal"; }).reduce(function(s,e){return s+e.amt;},0);
+        let productive = expenses.filter(function(e){ return ["Education","Business","Debt Repayment","Medical"].includes(e.cat); }).reduce(function(s,e){return s+e.amt;},0);
+        let personalPct = totalSpent > 0 ? Math.round(personal/totalSpent*100) : 0;
+        let productivePct = totalSpent > 0 ? Math.round(productive/totalSpent*100) : 0;
+
+        let msg="", cls="good";
+        if(pct > 100){
+            msg = "⚠ You have spent more than your loan amount. Review your expenses carefully — avoid taking on more debt to cover this overspend.";
+            cls = "bad";
+        } else if(personalPct > 40){
+            msg = "⚠ "+personalPct+"% of your loan is going to personal/lifestyle expenses. For better financial health, try to limit this to under 20% and redirect toward productive or essential use.";
+            cls = "warn";
+        } else if(productivePct > 60){
+            msg = "✅ "+productivePct+"% of your loan is going toward productive use (education, business, debt repayment). Excellent! Keep tracking and maintain this pattern.";
+            cls = "good";
+        } else if(pct > 80){
+            msg = "📊 You have used "+pct+"% of your loan. ₹"+remaining.toLocaleString()+" remaining. Plan your remaining spending carefully.";
+            cls = "warn";
+        } else {
+            msg = "✅ Good tracking! You have used "+pct+"% of your loan so far. Continue logging expenses to stay on budget.";
+            cls = "good";
+        }
+        banner.innerHTML = '<div class="advice-banner '+cls+'">'+msg+'</div>';
+    }
+
+    renderCharts();
+}
+
+function renderCharts(){
+    // Category chart
+    let cats = {};
+    expenses.forEach(function(e){
+        cats[e.cat] = (cats[e.cat]||0) + e.amt;
+    });
+    let catLabels = Object.keys(cats);
+    let catData   = catLabels.map(function(k){ return cats[k]; });
+    let colors    = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#ec4899","#06b6d4","#84cc16","#f97316"];
+
+    if(catChartObj) catChartObj.destroy();
+    if(catLabels.length > 0){
+        catChartObj = new Chart(document.getElementById("catChart"),{
+            type:"doughnut",
+            data:{ labels:catLabels, datasets:[{ data:catData, backgroundColor:colors.slice(0,catLabels.length), borderWidth:2, borderColor:"#1a1a1a" }] },
+            options:{ plugins:{ legend:{ labels:{ color:"#888", font:{ family:"DM Mono", size:11 } } } }, responsive:true }
+        });
+    }
+
+    // Utilisation chart
+    let loanAmt    = approvedLoan ? Number(approvedLoan.loanAmount||0) : 0;
+    let totalSpent = expenses.reduce(function(s,e){ return s+e.amt; },0);
+    let remaining  = Math.max(0, loanAmt - totalSpent);
+    if(utilChartObj) utilChartObj.destroy();
+    utilChartObj = new Chart(document.getElementById("utilChart"),{
+        type:"doughnut",
+        data:{ labels:["Spent","Remaining"], datasets:[{ data:[Math.min(totalSpent,loanAmt), remaining], backgroundColor:["#f87171","#34d399"], borderWidth:2, borderColor:"#1a1a1a" }] },
+        options:{ plugins:{ legend:{ labels:{ color:"#888", font:{ family:"DM Mono", size:12 } } } }, responsive:true }
+    });
+}
+
+function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href="/";
+}
+</script>
+</body>
+</html>

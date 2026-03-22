@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banker Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+.page-header { display:flex; align-items:center; gap:18px; margin-bottom:28px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.06); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#e6d5b8,#bfa980); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:13px; color:#bfa980; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
+.controls { margin:0 0 24px 0; display:flex; gap:10px; flex-wrap:wrap; }
+.ctrl-btn { font-family:'DM Mono',monospace; font-size:14px; padding:9px 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#bfa980; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
+.ctrl-btn:hover, .ctrl-btn.active { background:rgba(230,213,184,0.12); border-color:#e6d5b8; color:#e6d5b8; }
+#userTable { width:100%; border-collapse:collapse; font-size:17px; }
+#userTable th { background:#2a2d33; color:#e6d5b8; padding:14px; text-align:center; font-size:17px; border:1px solid rgba(230,213,184,0.15); }
+#userTable td { padding:14px; text-align:center; border:1px solid rgba(230,213,184,0.08); font-size:16px; color:#e6d5b8; vertical-align:middle; }
+#userTable tr:hover td { background:rgba(230,213,184,0.03); }
+.action-btn { padding:8px 14px; border-radius:8px; border:none; font-family:'DM Mono',monospace; font-size:13px; cursor:pointer; margin:2px; transition:all 0.2s; }
+.btn-approve { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+.btn-approve:hover:not([disabled]) { background:rgba(16,185,129,0.3); }
+.btn-reject  { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.btn-reject:hover:not([disabled])  { background:rgba(239,68,68,0.3); }
+.btn-manual  { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
+.btn-manual:hover:not([disabled])  { background:rgba(139,92,246,0.3); }
+button[disabled] { opacity:0.35; cursor:not-allowed; transform:none !important; }
+.popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; }
+.popup-content { background:#1a1a2e; padding:28px; width:340px; margin:120px auto; border-radius:16px; text-align:center; font-family:'DM Mono',monospace; border:1px solid rgba(255,255,255,0.1); }
+.popup-content h3 { font-family:'Syne',sans-serif; font-size:1.2rem; margin:0 0 8px 0; color:#e6d5b8; }
+.popup-content p { font-size:14px; color:#bfa980; margin:0 0 20px 0; }
+.popup-content input { width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:15px; margin-bottom:14px; }
+.empty-state { text-align:center; padding:60px; color:#666; font-family:'DM Mono',monospace; font-size:15px; }
+</style>
+</head>
+<body>
+
+<div class="topbar"><h2>FinRisk - Banker Dashboard</h2></div>
+
+<div class="container">
+<div class="sidebar">
+<h2>FinRisk</h2>
+<button onclick="location.href='/banker_dashboard'">📋 Dashboard</button>
+<button onclick="location.href='/loan_requests'">📥 Loan Requests</button>
+<button onclick="location.href='/banker_review'">📊 Review Queue</button>
+<button onclick="location.href='/banker_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="main">
+
+<div class="page-header">
+    <div class="icon-wrap">📋</div>
+    <div>
+        <h1>My Applications</h1>
+        <p class="subtitle">Cases you have claimed</p>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="ctrl-btn active" onclick="filterTable('all',this)">All</button>
+    <button class="ctrl-btn" onclick="filterTable('Picked Up',this)">Pending Review</button>
+    <button class="ctrl-btn" onclick="filterTable('Approved',this)">Approved</button>
+    <button class="ctrl-btn" onclick="filterTable('Rejected',this)">Rejected</button>
+    <button class="ctrl-btn" onclick="filterTable('Manual Review',this)">Manual Review</button>
+    <button class="ctrl-btn" onclick="sortByScore()">↑ Sort by Score</button>
+</div>
+
+<table id="userTable">
+<thead><tr>
+<th>Name</th><th>Phone</th><th>Loan Amount</th><th>Type</th>
+<th>Tenure</th><th>EMI</th><th>Risk Score</th><th>Status</th><th>Action</th>
+</tr></thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+</div>
+</div>
+
+<!-- REJECT POPUP -->
+<div id="rejectPopup" class="popup">
+<div class="popup-content">
+<h3>Reason for Rejection</h3>
+<p>Enter reason for rejecting this loan application</p>
+<input type="text" id="rejectReason" placeholder="Enter reason...">
+<div style="display:flex;gap:10px;justify-content:center;">
+<button class="action-btn btn-reject" onclick="submitReject()" style="padding:10px 20px;">Submit</button>
+<button class="action-btn btn-manual" onclick="closeRejectPopup()" style="padding:10px 20px;">Cancel</button>
+</div>
+</div>
+</div>
+
+<!-- MANUAL REVIEW POPUP -->
+<div id="manualPopup" class="popup">
+<div class="popup-content">
+<h3>Manual Review Decision</h3>
+<p>Choose the final outcome for this loan application</p>
+<div style="display:flex;flex-direction:column;gap:10px;">
+    <button class="action-btn btn-approve" onclick="manualDecision('Approved')" style="padding:13px;font-size:15px;">✅ Approve Loan</button>
+    <button class="action-btn btn-reject"  onclick="manualDecision('Rejected')" style="padding:13px;font-size:15px;">❌ Reject Loan</button>
+    <button class="action-btn btn-manual"  onclick="manualDecision('Manual Review')" style="padding:13px;font-size:15px;">⚠ Keep Under Review</button>
+    <button onclick="closeManualPopup()" style="padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:#888;border-radius:8px;cursor:pointer;font-size:13px;">Cancel</button>
+</div>
+</div>
+</div>
+
+<script>
+
+let applications  = [];
+let selectedId    = null;
+let manualUserId  = null;
+let bankerName    = "";
+let currentBankerId = localStorage.getItem("currentBanker") || "";
+
+/* ── INIT: Load banker name from DB (not localStorage) ── */
+async function init(){
+    if(!currentBankerId){
+        document.getElementById("tableBody").innerHTML =
+            '<tr><td colspan="9" class="empty-state">Not logged in. <a href="/" style="color:#e6d5b8;">Login here</a></td></tr>';
+        return;
+    }
+
+    /* Always fetch from DB to get correct name */
+    try {
+        let res  = await fetch("/api/get_banker/" + encodeURIComponent(currentBankerId));
+        let data = await res.json();
+        if(data.name){
+            bankerName = data.name;
+        }
+    } catch(e){}
+
+    /* Fallback to localStorage if DB fetch failed */
+    if(!bankerName){
+        let stored = localStorage.getItem("banker_" + currentBankerId);
+        if(stored){
+            let bd = JSON.parse(stored);
+            bankerName = bd.name || "";
+        }
+    }
+
+    if(!bankerName){
+        document.getElementById("tableBody").innerHTML =
+            '<tr><td colspan="9" class="empty-state">Could not identify banker. Please <a href="/" style="color:#e6d5b8;">logout and login again</a>.</td></tr>';
+        return;
+    }
+
+    fetchUsers();
+}
+
+/* ── FETCH USERS ── */
+function fetchUsers(){
+    fetch("/users")
+    .then(res => res.json())
+    .then(data => {
+        applications = data
+            .map(u => ({
+                id: u[0], name: u[1], phone: u[2],
+                loan: u[3], loanType: u[4], tenure: u[5],
+                emi: u[6], score: u[7], banker: u[8],
+                status: u[9], reason: u[10]
+            }))
+            .filter(u => {
+                if(!u.banker) return false;
+                return u.banker.trim().toLowerCase() === bankerName.trim().toLowerCase();
+            });
+        renderTable(applications);
+    })
+    .catch(err => {
+        document.getElementById("tableBody").innerHTML =
+            '<tr><td colspan="9" class="empty-state">Error loading applications. Is Flask running?</td></tr>';
+    });
+}
+
+/* ── RENDER TABLE ── */
+function renderTable(data){
+    let body = document.getElementById("tableBody");
+    body.innerHTML = "";
+
+    if(data.length === 0){
+        body.innerHTML = '<tr><td colspan="9" class="empty-state">No applications found.<br>Go to <a href="/loan_requests" style="color:#e6d5b8;">Loan Requests</a> to pick one up.</td></tr>';
+        return;
+    }
+
+    data.forEach((u, i) => {
+        let scoreColor = u.score >= 75 ? "#34d399" : u.score >= 55 ? "#f59e0b" : "#f87171";
+        let riskLabel  = u.score >= 75 ? "Low" : u.score >= 55 ? "Medium" : "High";
+        let statusText = u.status === "Picked Up" ? "Pending Review" : (u.status || "Pending");
+
+        let actionBtns = "";
+        let s = u.status;
+
+        if(s === "Approved"){
+            actionBtns = `
+<button class="action-btn btn-approve" disabled>✓ Approved</button>
+<button class="action-btn btn-reject"  disabled>Reject</button>
+<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+        } else if(s === "Rejected"){
+            actionBtns = `
+<button class="action-btn btn-approve" disabled>Approve</button>
+<button class="action-btn btn-reject"  disabled>✗ Rejected</button>
+<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+        } else if(s === "Manual Review"){
+            actionBtns = `
+<button class="action-btn btn-approve" disabled>Approve</button>
+<button class="action-btn btn-reject"  disabled>Reject</button>
+<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})" style="background:rgba(139,92,246,0.3);">⚠ Under Review</button>`;
+        } else {
+            actionBtns = `
+<button class="action-btn btn-approve" onclick="approve(${u.id})">Approve</button>
+<button class="action-btn btn-reject"  onclick="openRejectPopup(${u.id})">Reject</button>
+<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+        }
+
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+<td><b>${u.name||""}</b></td>
+<td style="color:#bfa980;">${u.phone||""}</td>
+<td>₹${u.loan ? Number(u.loan).toLocaleString() : 0}</td>
+<td>${u.loanType||""}</td>
+<td>${u.tenure||""} mo</td>
+<td>₹${u.emi ? Number(u.emi).toLocaleString() : 0}</td>
+<td style="color:${scoreColor};font-weight:700;">${u.score||0} (${riskLabel})</td>
+<td>${statusText}${u.reason&&u.status!=="Approved"?"<br><small style='color:#666;'>("+u.reason+")</small>":""}</td>
+<td>${actionBtns}</td>`;
+        body.appendChild(tr);
+    });
+}
+
+/* ── FILTERS ── */
+function filterTable(status, btn){
+    document.querySelectorAll(".ctrl-btn").forEach(b => b.classList.remove("active"));
+    if(btn) btn.classList.add("active");
+    if(status === "all") renderTable(applications);
+    else renderTable(applications.filter(u =>
+        u.status === status ||
+        (status === "Picked Up" && (u.status === "Picked Up" || u.status === "Pending"))
+    ));
+}
+
+function sortByScore(){
+    renderTable([...applications].sort((a,b) => b.score - a.score));
+}
+
+/* ── APPROVE ── */
+function approve(id){
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
+    }).then(()=> fetchUsers());
+}
+
+/* ── REJECT ── */
+function openRejectPopup(id){
+    selectedId = id;
+    document.getElementById("rejectReason").value = "";
+    document.getElementById("rejectPopup").style.display = "block";
+}
+function closeRejectPopup(){
+    document.getElementById("rejectPopup").style.display = "none";
+    selectedId = null;
+}
+function submitReject(){
+    let reason = document.getElementById("rejectReason").value.trim() || "Rejected by banker";
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
+    }).then(()=>{ closeRejectPopup(); fetchUsers(); });
+}
+
+/* ── MANUAL POPUP ── */
+function openManualPopup(id){
+    manualUserId = id;
+    document.getElementById("manualPopup").style.display = "block";
+}
+function closeManualPopup(){
+    document.getElementById("manualPopup").style.display = "none";
+    manualUserId = null;
+}
+function manualDecision(action){
+    if(!manualUserId) return;
+    if(action === "Rejected"){
+        closeManualPopup();
+        openRejectPopup(manualUserId);
+        manualUserId = null;
+        return;
+    }
+    let reason = action === "Approved" ? "Approved after manual review" : "Under verification";
+    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ user_id:manualUserId, action:action, reason:reason })
+    }).then(()=>{ closeManualPopup(); fetchUsers(); });
+}
+
+/* ── LOGOUT ── */
+function logout(){
+    localStorage.removeItem("currentBanker");
+    window.location.href = "/";
+}
+
+/* Start */
+init();
+
+</script>
+</body>
+</html>
