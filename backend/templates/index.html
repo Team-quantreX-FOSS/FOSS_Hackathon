@@ -91,10 +91,76 @@ body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 
 .feature .ft { font-family:'DM Mono',monospace; font-size:15px; letter-spacing:1.5px; text-transform:uppercase; color:#bfa980; }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── INTRO ANIMATION ── */
+#intro {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background:#0a0a0a; z-index:9999;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+    cursor: pointer;
+}
+#intro.hide { opacity:0; visibility:hidden; pointer-events:none; }
+#mainContent { opacity:0; transition:opacity 0.8s ease; }
+#mainContent.show { opacity:1; }
+
+.intro-logo { font-family:'Syne',sans-serif; font-size:2.8rem; font-weight:800; color:#e6d5b8; letter-spacing:-1px; margin-bottom:6px; animation:introFadeUp 0.8s ease 0.3s both; }
+.intro-logo span { color:#bfa980; }
+.intro-sub { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#555; margin-bottom:44px; animation:introFadeUp 0.8s ease 0.5s both; }
+.scan-wrap { position:relative; width:260px; height:260px; animation:introFadeUp 0.6s ease 0.7s both; }
+.shield-svg { width:150px; height:150px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+.shield-path { stroke-dasharray:600; stroke-dashoffset:600; animation:drawShield 1.5s ease 0.9s forwards; }
+.shield-fill { opacity:0; animation:fillShield 0.5s ease 2.3s forwards; }
+.shield-check { stroke-dasharray:100; stroke-dashoffset:100; opacity:0; animation:drawCheck 0.5s ease 2.5s forwards; }
+.orbit-ring { position:absolute; top:50%; left:50%; width:210px; height:210px; border:1.5px solid rgba(230,213,184,0.12); border-radius:50%; transform:translate(-50%,-50%); animation:spinOrbit 8s linear infinite; }
+.orbit-dot { position:absolute; width:7px; height:7px; background:#bfa980; border-radius:50%; top:-3.5px; left:50%; margin-left:-3.5px; box-shadow:0 0 8px #bfa980; }
+.scan-line { position:absolute; top:50%; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,#e6d5b8,transparent); opacity:0; animation:scanDown 2s ease 1s infinite; }
+.data-point { position:absolute; font-family:'DM Mono',monospace; font-size:11px; color:#bfa980; opacity:0; animation:dataFloat 3s ease infinite; }
+.dp1{top:8%;left:2%;animation-delay:1.2s;} .dp2{top:18%;right:2%;animation-delay:1.6s;} .dp3{bottom:18%;left:2%;animation-delay:2.0s;} .dp4{bottom:8%;right:2%;animation-delay:2.4s;}
+.intro-progress-wrap { width:180px; height:3px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden; margin-top:36px; animation:introFadeUp 0.5s ease 1.2s both; }
+.intro-progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#bfa980,#e6d5b8); border-radius:99px; animation:fillBar 2.5s ease 1.3s forwards; }
+.intro-status { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#555; margin-top:10px; animation:introFadeUp 0.5s ease 1.2s both; }
+.intro-status span { color:#bfa980; }
+.intro-skip { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#333; margin-top:20px; animation:introFadeUp 0.5s ease 3s both; }
+
+@keyframes introFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes drawShield  { to{stroke-dashoffset:0} }
+@keyframes fillShield  { to{opacity:0.1} }
+@keyframes drawCheck   { 0%{opacity:1;stroke-dashoffset:100} 100%{opacity:1;stroke-dashoffset:0} }
+@keyframes spinOrbit   { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
+@keyframes scanDown    { 0%{opacity:0;top:20%} 20%{opacity:0.7} 80%{opacity:0.7} 100%{opacity:0;top:80%} }
+@keyframes fillBar     { from{width:0%} to{width:100%} }
+@keyframes dataFloat   { 0%{opacity:0;transform:translateY(4px)} 30%{opacity:1} 70%{opacity:1} 100%{opacity:0;transform:translateY(-4px)} }
+
 </style>
 </head>
 <body>
 
+
+<!-- ── INTRO SCREEN ── -->
+<div id="intro" onclick="skipIntro()">
+    <div class="intro-logo">Fin<span>Risk</span></div>
+    <div class="intro-sub">Borrower Risk Analyzer</div>
+    <div class="scan-wrap">
+        <div class="data-point dp1">CIBIL 782</div>
+        <div class="data-point dp2">DTI 34%</div>
+        <div class="data-point dp3">EMI ₹12K</div>
+        <div class="data-point dp4">Score 85</div>
+        <div class="orbit-ring"><div class="orbit-dot"></div></div>
+        <div class="scan-line"></div>
+        <svg class="shield-svg" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="shield-fill" d="M50 5 L90 20 L90 55 Q90 85 50 105 Q10 85 10 55 L10 20 Z" fill="#e6d5b8"/>
+            <path class="shield-path" d="M50 5 L90 20 L90 55 Q90 85 50 105 Q10 85 10 55 L10 20 Z" stroke="#e6d5b8" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+            <path class="shield-check" d="M32 54 L44 66 L68 40" stroke="#e6d5b8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0"/>
+        </svg>
+    </div>
+    <div class="intro-progress-wrap"><div class="intro-progress-fill"></div></div>
+    <div class="intro-status" id="introStatus">Initializing <span>system</span>...</div>
+    <div class="intro-skip">tap anywhere to skip</div>
+</div>
+
+<div id="mainContent">
 <div class="hero">
     <div class="hero-tag">AI-Powered Risk Analysis</div>
     <h1>Borrower <span>Risk</span> Analyzer</h1>
@@ -128,6 +194,8 @@ body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 
     </div>
 </div>
 
+</div><!-- end mainContent -->
+
 <!-- LOGIN POPUP -->
 <div id="loginPopup" class="popup">
 <div class="popup-content">
@@ -155,6 +223,29 @@ body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 
 </div>
 
 <script>
+
+/* ── INTRO LOGIC ── */
+const introMsgs = [
+    "Initializing <span>system</span>...",
+    "Loading <span>risk models</span>...",
+    "Connecting <span>database</span>...",
+    "Verifying <span>security</span>...",
+    "System <span>ready</span>."
+];
+let introIdx = 0;
+const introStatusEl = document.getElementById("introStatus");
+let introMsgTimer = setInterval(()=>{
+    introIdx++;
+    if(introIdx < introMsgs.length) introStatusEl.innerHTML = introMsgs[introIdx];
+    else clearInterval(introMsgTimer);
+}, 600);
+let introTimer = setTimeout(()=>{ showMain(); }, 4000);
+function skipIntro(){ clearTimeout(introTimer); clearInterval(introMsgTimer); showMain(); }
+function showMain(){
+    document.getElementById("intro").classList.add("hide");
+    document.getElementById("mainContent").classList.add("show");
+}
+
 let role = "";
 
 function openLogin(r){
