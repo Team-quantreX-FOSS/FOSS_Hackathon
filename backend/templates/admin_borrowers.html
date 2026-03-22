@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Admin - Borrowers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -85,7 +87,7 @@ async function loadUsers(){
             let row = table.insertRow();
             row.innerHTML = `
 <td>${u.name||""}</td>
-<td>${u.age||""}</td>
+<td>${u.age||"N/A"}</td>
 <td>${u.phone||""}</td>
 <td>${u.loanAmount ? "₹"+u.loanAmount : "-"}</td>
 <td>${u.loanType||"-"}</td>
@@ -113,6 +115,28 @@ async function loadUsers(){
 }
 
 loadUsers();
+loadRegisteredUsers();
+
+async function loadRegisteredUsers(){
+    try {
+        let res   = await fetch("/api/user_accounts");
+        let users = await res.json();
+        let body  = document.getElementById("usersBody");
+        if(!body) return;
+        if(users.length === 0){
+            body.innerHTML = "<tr><td colspan='3' style='text-align:center;padding:20px;color:#bfa980;'>No users registered yet.</td></tr>";
+            return;
+        }
+        users.forEach(u => {
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#e6d5b8;">${u.name||"—"}</td>
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#bfa980;">${u.username||"—"}</td>
+<td style="padding:13px;border:1px solid rgba(230,213,184,0.08);color:#bfa980;">${u.phone||"—"}</td>`;
+            body.appendChild(tr);
+        });
+    } catch(e){ console.error(e); }
+}
 </script>
 
 </body>
