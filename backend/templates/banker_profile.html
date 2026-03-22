@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Banker Profile</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -121,7 +123,9 @@ window.addEventListener("DOMContentLoaded", function(){
     fetch("/api/bankers")
     .then(r => r.json())
     .then(bankers => {
-        let me = bankers.find(b => b.bankerId === bid);
+        // Match by bankerId OR name
+        let bd2 = JSON.parse(localStorage.getItem("banker_"+bid)||"{}");
+        let me = bankers.find(b => b.bankerId === bid || b.bankerId === bid || b.name === bd2.name);
         if(me){
             document.getElementById("pTotal").innerText    = me.totalCustomers || 0;
             document.getElementById("pApproved").innerText = me.approval || 0;
