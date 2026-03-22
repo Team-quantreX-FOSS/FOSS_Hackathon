@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Admin Profile</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -83,17 +85,29 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    /* Try to find admin from localStorage */
+    /* Get the currently logged-in admin from localStorage */
+    /* Admin stores their ID in localStorage during login */
+    let adminData = null;
+    let adminKey  = null;
+
+    /* Search for which admin is currently active by finding most recently set */
     for(let i=0; i<localStorage.length; i++){
         let key = localStorage.key(i);
         if(key && key.startsWith("admin_")){
             let d = JSON.parse(localStorage.getItem(key) || "{}");
-            document.getElementById("pName").innerText    = d.name  || "Admin";
-            document.getElementById("pNameRow").innerText = d.name  || "—";
-            document.getElementById("pEmail").innerText   = d.email || "—";
-            document.getElementById("pId").innerText      = d.adminId || key.replace("admin_","");
-            break;
+            /* Pick the one that matches currentAdmin if set, else last found */
+            if(!adminData || localStorage.getItem("currentAdmin") === d.adminId){
+                adminData = d;
+                adminKey  = key;
+            }
         }
+    }
+
+    if(adminData){
+        document.getElementById("pName").innerText    = adminData.name    || "Admin";
+        document.getElementById("pNameRow").innerText = adminData.name    || "—";
+        document.getElementById("pEmail").innerText   = adminData.email   || "—";
+        document.getElementById("pId").innerText      = adminData.adminId || (adminKey||"").replace("admin_","");
     }
 
     /* Live system stats */
