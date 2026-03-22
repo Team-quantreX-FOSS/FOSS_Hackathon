@@ -73,6 +73,7 @@
 <button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
 <button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
 <button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/loan_tracking'">📁 Loan History</button>
 <button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
 <button onclick="location.href='/user_profile'">👤 Profile</button>
 <button onclick="logout()">🚪 Logout</button>
@@ -102,6 +103,9 @@
 
 <!-- LOAN STATUS NOTIFICATION BOX -->
 <div id="statusBox"></div>
+<div id="statusAction" style="display:none;margin-top:8px;">
+    <button onclick="location.href='/loan_tracking'" style="padding:9px 20px;background:linear-gradient(135deg,#e6d5b8,#bfa980);color:#111;font-family:Syne,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:8px;cursor:pointer;">View Full History & Track Spending →</button>
+</div>
 
 <div class="charts" style="margin-top:24px;">
     <div class="chart-box" style="width:420px;"><h3>Expense Distribution</h3><canvas id="expenseChart"></canvas></div>
@@ -273,6 +277,22 @@ function createCharts(income,transport,education,food,utilities,other,totalExpen
 }
 
 /* ── STATUS NOTIFICATION ─────────────────────────────────── */
+function saveLoanNotification(data){
+    let key = "loanHistory_" + currentUser;
+    let history = JSON.parse(localStorage.getItem(key) || "[]");
+    /* Avoid duplicate entries for same status */
+    let exists = history.find(function(h){ return h.status === data.status && h.banker === data.banker; });
+    if(!exists){
+        history.push({
+            status:    data.status,
+            banker:    data.banker || "",
+            reason:    data.reason || "",
+            timestamp: new Date().toLocaleString()
+        });
+        localStorage.setItem(key, JSON.stringify(history));
+    }
+}
+
 function pollStatus(){
     let phone = getPhone();
     if(!phone) return;
@@ -330,15 +350,37 @@ function checkStatus(phone){
         box.style.background = bg;
         box.style.border     = border;
         box.style.color      = color;
+        box.style.opacity    = "1";
         box.innerHTML        = msg;
+
+        let isFinal = ['Approved','Rejected','Manual Review'].includes(data.status);
+        let act = document.getElementById('statusAction');
+        if(act) act.style.display = isFinal ? 'block' : 'none';
 
         /* Browser notification on status change */
         if(window.lastLoanStatus !== undefined && window.lastLoanStatus !== data.status){
             showNotification("FinRisk Loan Update", box.innerText || msg.replace(/<[^>]+>/g,''));
         }
         window.lastLoanStatus = data.status;
+
+        if(isFinal){
+            saveLoanNotification(data);
+            /* STOP polling so interval never redraws the box */
+            clearInterval(window.pollTimer);
+            window.pollTimer = null;
+            /* Fade out after 6 seconds */
+            setTimeout(function(){
+                box.style.transition = 'opacity 1.5s ease';
+                box.style.opacity    = '0';
+                if(act){ act.style.transition='opacity 1.5s ease'; act.style.opacity='0'; }
+                setTimeout(function(){
+                    box.style.display = 'none';
+                    if(act) act.style.display = 'none';
+                }, 1500);
+            }, 6000);
+        }
     })
-    .catch(err => console.error("Status poll error:", err));
+    .catch(function(err){ console.error("Status poll error:", err); });
 }
 
 function showNotification(title, body){
@@ -346,7 +388,7 @@ function showNotification(title, body){
     if(Notification.permission === "granted"){
         new Notification(title, { body: body, icon: "/static/icon.png" });
     } else if(Notification.permission !== "denied"){
-        Notification.requestPermission().then(p=>{
+        Notification.requestPermission().then(function(p){
             if(p === "granted") new Notification(title, { body: body });
         });
     }
@@ -357,8 +399,8 @@ function logout(){
     window.location.href = "/index";
 }
 
-/* Poll every 5 seconds */
-setInterval(()=>{ pollStatus(); }, 5000);
+/* Poll every 5 seconds — stored in window.pollTimer so we can stop it */
+window.pollTimer = setInterval(function(){ pollStatus(); }, 5050);
 
 </script>
 </body>
