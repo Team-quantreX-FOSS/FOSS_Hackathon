@@ -25,13 +25,31 @@
 .btn-reject:hover:not([disabled])  { background:rgba(239,68,68,0.3); }
 .btn-manual  { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
 .btn-manual:hover:not([disabled])  { background:rgba(139,92,246,0.3); }
-button[disabled] { opacity:0.35; cursor:not-allowed; transform:none !important; }
+.btn-profile { padding:5px 10px; font-family:'DM Mono',monospace; font-size:11px; background:rgba(230,213,184,0.08); border:1px solid rgba(230,213,184,0.2); color:#bfa980; border-radius:6px; cursor:pointer; margin-top:5px; display:block; width:100%; }
+.btn-profile:hover { background:rgba(230,213,184,0.15); color:#e6d5b8; }
+button[disabled] { opacity:0.35; cursor:not-allowed; }
 .popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; }
 .popup-content { background:#1a1a2e; padding:28px; width:340px; margin:120px auto; border-radius:16px; text-align:center; font-family:'DM Mono',monospace; border:1px solid rgba(255,255,255,0.1); }
 .popup-content h3 { font-family:'Syne',sans-serif; font-size:1.2rem; margin:0 0 8px 0; color:#e6d5b8; }
 .popup-content p { font-size:14px; color:#bfa980; margin:0 0 20px 0; }
 .popup-content input { width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:15px; margin-bottom:14px; }
 .empty-state { text-align:center; padding:60px; color:#666; font-family:'DM Mono',monospace; font-size:15px; }
+
+/* PROFILE POPUP */
+#profileOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.82); z-index:9999; overflow-y:auto; }
+#profileBox { background:#1a1614; border:1px solid rgba(230,213,184,0.2); border-radius:20px; width:540px; max-width:95vw; margin:40px auto 60px; padding:28px; }
+#profileHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); }
+#profileHeader h2 { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; color:#e6d5b8; margin:0; }
+#profileClose { background:none; border:none; color:#888; font-size:26px; cursor:pointer; line-height:1; padding:0; }
+#profileClose:hover { color:#e6d5b8; }
+.prof-section { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#666; margin:16px 0 8px 0; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.prof-row { display:flex; justify-content:space-between; align-items:flex-start; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.prof-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#666; white-space:nowrap; margin-right:12px; }
+.prof-val { font-family:'DM Mono',monospace; font-size:13px; color:#e6d5b8; text-align:right; word-break:break-all; }
+.prof-doc { margin:12px 0; }
+.prof-doc-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; margin-bottom:8px; }
+.prof-doc img { width:100%; border-radius:10px; border:1px solid rgba(255,255,255,0.12); cursor:pointer; display:block; }
+.prof-doc-hint { font-family:'DM Mono',monospace; font-size:10px; color:#555; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -49,7 +67,6 @@ button[disabled] { opacity:0.35; cursor:not-allowed; transform:none !important; 
 </div>
 
 <div class="main">
-
 <div class="page-header">
     <div class="icon-wrap">📋</div>
     <div>
@@ -74,7 +91,6 @@ button[disabled] { opacity:0.35; cursor:not-allowed; transform:none !important; 
 </tr></thead>
 <tbody id="tableBody"></tbody>
 </table>
-
 </div>
 </div>
 
@@ -105,38 +121,42 @@ button[disabled] { opacity:0.35; cursor:not-allowed; transform:none !important; 
 </div>
 </div>
 
-<script>
+<!-- PROFILE OVERLAY — completely separate from other popups -->
+<div id="profileOverlay">
+    <div id="profileBox">
+        <div id="profileHeader">
+            <h2>🪪 Borrower Profile</h2>
+            <button id="profileClose" onclick="closeProfile()">✕</button>
+        </div>
+        <div id="profileContent">Loading...</div>
+    </div>
+</div>
 
-let applications  = [];
-let selectedId    = null;
-let manualUserId  = null;
-let bankerName    = "";
+<script>
+let applications = [];
+let selectedId   = null;
+let manualUserId = null;
+let bankerName   = "";
 let currentBankerId = localStorage.getItem("currentBanker") || "";
 
-/* ── INIT: Load banker name from DB (not localStorage) ── */
+/* Store user data for profile lookup */
+let userDataMap = {};
+
 async function init(){
     if(!currentBankerId){
         document.getElementById("tableBody").innerHTML =
             '<tr><td colspan="9" class="empty-state">Not logged in. <a href="/" style="color:#e6d5b8;">Login here</a></td></tr>';
         return;
     }
-
-    /* Always fetch from DB to get correct name */
     try {
         let res  = await fetch("/api/get_banker/" + encodeURIComponent(currentBankerId));
         let data = await res.json();
-        if(data.name){
-            bankerName = data.name;
-        }
+        if(data.name) bankerName = data.name;
     } catch(e){}
 
-    /* Fallback to localStorage if DB fetch failed */
     if(!bankerName){
         let stored = localStorage.getItem("banker_" + currentBankerId);
-        if(stored){
-            let bd = JSON.parse(stored);
-            bankerName = bd.name || "";
-        }
+        if(stored) bankerName = JSON.parse(stored).name || "";
     }
 
     if(!bankerName){
@@ -144,160 +164,247 @@ async function init(){
             '<tr><td colspan="9" class="empty-state">Could not identify banker. Please <a href="/" style="color:#e6d5b8;">logout and login again</a>.</td></tr>';
         return;
     }
-
     fetchUsers();
 }
 
-/* ── FETCH USERS ── */
 function fetchUsers(){
     fetch("/users")
-    .then(res => res.json())
-    .then(data => {
+    .then(function(r){ return r.json(); })
+    .then(function(data){
         applications = data
-            .map(u => ({
-                id: u[0], name: u[1], phone: u[2],
-                loan: u[3], loanType: u[4], tenure: u[5],
-                emi: u[6], score: u[7], banker: u[8],
-                status: u[9], reason: u[10]
-            }))
-            .filter(u => {
-                if(!u.banker) return false;
-                return u.banker.trim().toLowerCase() === bankerName.trim().toLowerCase();
-            });
+            .map(function(u){ return { id:u[0], name:u[1], phone:u[2], loan:u[3], loanType:u[4], tenure:u[5], emi:u[6], score:u[7], banker:u[8], status:u[9], reason:u[10] }; })
+            .filter(function(u){ return u.banker && u.banker.trim().toLowerCase() === bankerName.trim().toLowerCase(); });
+
+        /* Build lookup map */
+        userDataMap = {};
+        applications.forEach(function(u){ userDataMap[u.id] = u; });
+
         renderTable(applications);
     })
-    .catch(err => {
+    .catch(function(){
         document.getElementById("tableBody").innerHTML =
-            '<tr><td colspan="9" class="empty-state">Error loading applications. Is Flask running?</td></tr>';
+            '<tr><td colspan="9" class="empty-state">Error loading. Is Flask running?</td></tr>';
     });
 }
 
-/* ── RENDER TABLE ── */
 function renderTable(data){
     let body = document.getElementById("tableBody");
     body.innerHTML = "";
-
     if(data.length === 0){
         body.innerHTML = '<tr><td colspan="9" class="empty-state">No applications found.<br>Go to <a href="/loan_requests" style="color:#e6d5b8;">Loan Requests</a> to pick one up.</td></tr>';
         return;
     }
-
-    data.forEach((u, i) => {
+    data.forEach(function(u){
         let scoreColor = u.score >= 75 ? "#34d399" : u.score >= 55 ? "#f59e0b" : "#f87171";
         let riskLabel  = u.score >= 75 ? "Low" : u.score >= 55 ? "Medium" : "High";
         let statusText = u.status === "Picked Up" ? "Pending Review" : (u.status || "Pending");
-
-        let actionBtns = "";
         let s = u.status;
-
+        let actionBtns = "";
         if(s === "Approved"){
-            actionBtns = `
-<button class="action-btn btn-approve" disabled>✓ Approved</button>
-<button class="action-btn btn-reject"  disabled>Reject</button>
-<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+            actionBtns = '<button class="action-btn btn-approve" disabled>✓ Approved</button><button class="action-btn btn-reject" disabled>Reject</button><button class="action-btn btn-manual" onclick="openManualPopup('+u.id+')">Manual Review</button>';
         } else if(s === "Rejected"){
-            actionBtns = `
-<button class="action-btn btn-approve" disabled>Approve</button>
-<button class="action-btn btn-reject"  disabled>✗ Rejected</button>
-<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+            actionBtns = '<button class="action-btn btn-approve" disabled>Approve</button><button class="action-btn btn-reject" disabled>✗ Rejected</button><button class="action-btn btn-manual" onclick="openManualPopup('+u.id+')">Manual Review</button>';
         } else if(s === "Manual Review"){
-            actionBtns = `
-<button class="action-btn btn-approve" disabled>Approve</button>
-<button class="action-btn btn-reject"  disabled>Reject</button>
-<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})" style="background:rgba(139,92,246,0.3);">⚠ Under Review</button>`;
+            actionBtns = '<button class="action-btn btn-approve" disabled>Approve</button><button class="action-btn btn-reject" disabled>Reject</button><button class="action-btn btn-manual" onclick="openManualPopup('+u.id+')" style="background:rgba(139,92,246,0.3);">⚠ Under Review</button>';
         } else {
-            actionBtns = `
-<button class="action-btn btn-approve" onclick="approve(${u.id})">Approve</button>
-<button class="action-btn btn-reject"  onclick="openRejectPopup(${u.id})">Reject</button>
-<button class="action-btn btn-manual"  onclick="openManualPopup(${u.id})">Manual Review</button>`;
+            actionBtns = '<button class="action-btn btn-approve" onclick="approve('+u.id+')">Approve</button><button class="action-btn btn-reject" onclick="openRejectPopup('+u.id+')">Reject</button><button class="action-btn btn-manual" onclick="openManualPopup('+u.id+')">Manual Review</button>';
         }
 
         let tr = document.createElement("tr");
-        tr.innerHTML = `
-<td><b>${u.name||""}</b></td>
-<td style="color:#bfa980;">${u.phone||""}</td>
-<td>₹${u.loan ? Number(u.loan).toLocaleString() : 0}</td>
-<td>${u.loanType||""}</td>
-<td>${u.tenure||""} mo</td>
-<td>₹${u.emi ? Number(u.emi).toLocaleString() : 0}</td>
-<td style="color:${scoreColor};font-weight:700;">${u.score||0} (${riskLabel})</td>
-<td>${statusText}${u.reason&&u.status!=="Approved"?"<br><small style='color:#666;'>("+u.reason+")</small>":""}</td>
-<td>${actionBtns}</td>`;
+
+        /* Name cell with profile button — use data attribute to avoid quote issues */
+        let nameCell = document.createElement("td");
+        let nameText = document.createElement("b");
+        nameText.textContent = u.name || "";
+        let profileBtn = document.createElement("button");
+        profileBtn.className = "btn-profile";
+        profileBtn.textContent = "👁 View Profile";
+        profileBtn.dataset.uid  = u.id;
+        profileBtn.dataset.name = u.name || "";
+        profileBtn.dataset.phone = u.phone || "";
+        profileBtn.addEventListener("click", function(){
+            openProfile(this.dataset.name, this.dataset.phone);
+        });
+        nameCell.appendChild(nameText);
+        nameCell.appendChild(document.createElement("br"));
+        nameCell.appendChild(profileBtn);
+
+        function mkTd(html, color){
+            let td = document.createElement("td");
+            if(color) td.style.color = color;
+            td.innerHTML = html;
+            return td;
+        }
+
+        tr.appendChild(nameCell);
+        tr.appendChild(mkTd(u.phone||"", "#bfa980"));
+        tr.appendChild(mkTd("₹" + (u.loan ? Number(u.loan).toLocaleString() : 0)));
+        tr.appendChild(mkTd(u.loanType||""));
+        tr.appendChild(mkTd((u.tenure||"") + " mo"));
+        tr.appendChild(mkTd("₹" + (u.emi ? Number(u.emi).toLocaleString() : 0)));
+        let scoreTd = document.createElement("td");
+        scoreTd.style.color = scoreColor;
+        scoreTd.style.fontWeight = "700";
+        scoreTd.textContent = (u.score||0) + " (" + riskLabel + ")";
+        tr.appendChild(scoreTd);
+        tr.appendChild(mkTd(statusText + (u.reason && u.status !== "Approved" ? "<br><small style='color:#666;'>(" + u.reason + ")</small>" : "")));
+        let actionTd = document.createElement("td");
+        actionTd.innerHTML = actionBtns;
+        tr.appendChild(actionTd);
+
         body.appendChild(tr);
     });
 }
 
+/* ── PROFILE ── */
+function openProfile(name, phone){
+    document.getElementById("profileOverlay").style.display = "block";
+    document.getElementById("profileContent").innerHTML = '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#888;">⏳ Loading profile...</div>';
+
+    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.error){
+            document.getElementById("profileContent").innerHTML =
+                '<p style="font-family:DM Mono,monospace;font-size:14px;color:#666;text-align:center;">No detailed profile uploaded yet.</p>' +
+                profRow("Name", name) + profRow("Phone", phone);
+            return;
+        }
+        let el = document.getElementById("profileContent");
+        el.innerHTML = "";
+
+        appendSection(el, "Personal Details");
+        appendRow(el, "Full Name",  d.name  || name);
+        appendRow(el, "Age",        d.age   || "—");
+        appendRow(el, "Phone",      d.phone || phone);
+        appendRow(el, "Email",      d.email || "—");
+        appendRow(el, "Address",    d.address || "—");
+        appendRow(el, "Employment", d.employment || "—");
+        appendRow(el, "Employer",   d.employer || "—");
+
+        appendSection(el, "KYC Details");
+        appendRow(el, "Aadhar", d.aadhar || "—");
+        appendRow(el, "PAN",    d.pan    || "—");
+
+        appendSection(el, "Bank Details");
+        appendRow(el, "Account Holder", d.account_holder || "—");
+        appendRow(el, "Account Number", d.account_number || "—");
+        appendRow(el, "IFSC Code",      d.ifsc           || "—");
+
+        appendSection(el, "Loan Purpose");
+        appendRow(el, "Purpose", d.purpose || "—");
+
+        if(d.aadhar_img || d.pan_img || d.salary_img || d.bank_stmt){
+            appendSection(el, "Uploaded Documents");
+            if(d.aadhar_img)  appendDoc(el, "Aadhar Card",               d.aadhar_img);
+            if(d.pan_img)     appendDoc(el, "PAN Card",                  d.pan_img);
+            if(d.salary_img)  appendDoc(el, "Salary Slip / Income Proof",d.salary_img);
+            if(d.bank_stmt)   appendDoc(el, "Bank Statement",            d.bank_stmt);
+        } else {
+            let nd = document.createElement("div");
+            nd.style.cssText = "font-family:DM Mono,monospace;font-size:13px;color:#666;margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;";
+            nd.textContent = "No documents uploaded with this application.";
+            el.appendChild(nd);
+        }
+    })
+    .catch(function(){
+        document.getElementById("profileContent").innerHTML =
+            '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#f87171;">Error loading profile. Is Flask running?</div>';
+    });
+}
+
+function closeProfile(){
+    document.getElementById("profileOverlay").style.display = "none";
+}
+
+function appendSection(parent, title){
+    let d = document.createElement("div");
+    d.className = "prof-section";
+    d.textContent = title;
+    parent.appendChild(d);
+}
+
+function appendRow(parent, label, value){
+    let d = document.createElement("div");
+    d.className = "prof-row";
+    let l = document.createElement("span");
+    l.className = "prof-label";
+    l.textContent = label;
+    let v = document.createElement("span");
+    v.className = "prof-val";
+    v.textContent = value;
+    d.appendChild(l);
+    d.appendChild(v);
+    parent.appendChild(d);
+}
+
+function appendDoc(parent, label, src){
+    let wrap = document.createElement("div");
+    wrap.className = "prof-doc";
+    let lbl = document.createElement("div");
+    lbl.className = "prof-doc-label";
+    lbl.textContent = label;
+    let img = document.createElement("img");
+    img.src = src;
+    img.title = "Click to open full size";
+    img.addEventListener("click", function(){ window.open(this.src, "_blank"); });
+    img.addEventListener("error", function(){
+        this.parentElement.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:12px;color:#666;padding:8px;">Could not display image</div>';
+    });
+    let hint = document.createElement("div");
+    hint.className = "prof-doc-hint";
+    hint.textContent = "Click image to open full size";
+    wrap.appendChild(lbl);
+    wrap.appendChild(img);
+    wrap.appendChild(hint);
+    parent.appendChild(wrap);
+}
+
+function profRow(label, value){
+    return '<div class="prof-row"><span class="prof-label">'+label+'</span><span class="prof-val">'+value+'</span></div>';
+}
+
 /* ── FILTERS ── */
 function filterTable(status, btn){
-    document.querySelectorAll(".ctrl-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".ctrl-btn").forEach(function(b){ b.classList.remove("active"); });
     if(btn) btn.classList.add("active");
     if(status === "all") renderTable(applications);
-    else renderTable(applications.filter(u =>
-        u.status === status ||
-        (status === "Picked Up" && (u.status === "Picked Up" || u.status === "Pending"))
-    ));
+    else renderTable(applications.filter(function(u){
+        return u.status === status || (status === "Picked Up" && (u.status === "Picked Up" || u.status === "Pending"));
+    }));
 }
 
-function sortByScore(){
-    renderTable([...applications].sort((a,b) => b.score - a.score));
-}
+function sortByScore(){ renderTable([...applications].sort(function(a,b){ return b.score - a.score; })); }
 
-/* ── APPROVE ── */
 function approve(id){
     fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
-    }).then(()=> fetchUsers());
+    }).then(function(){ fetchUsers(); });
 }
 
-/* ── REJECT ── */
-function openRejectPopup(id){
-    selectedId = id;
-    document.getElementById("rejectReason").value = "";
-    document.getElementById("rejectPopup").style.display = "block";
-}
-function closeRejectPopup(){
-    document.getElementById("rejectPopup").style.display = "none";
-    selectedId = null;
-}
+function openRejectPopup(id){ selectedId=id; document.getElementById("rejectReason").value=""; document.getElementById("rejectPopup").style.display="block"; }
+function closeRejectPopup(){ document.getElementById("rejectPopup").style.display="none"; selectedId=null; }
 function submitReject(){
     let reason = document.getElementById("rejectReason").value.trim() || "Rejected by banker";
     fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
-    }).then(()=>{ closeRejectPopup(); fetchUsers(); });
+    }).then(function(){ closeRejectPopup(); fetchUsers(); });
 }
 
-/* ── MANUAL POPUP ── */
-function openManualPopup(id){
-    manualUserId = id;
-    document.getElementById("manualPopup").style.display = "block";
-}
-function closeManualPopup(){
-    document.getElementById("manualPopup").style.display = "none";
-    manualUserId = null;
-}
+function openManualPopup(id){ manualUserId=id; document.getElementById("manualPopup").style.display="block"; }
+function closeManualPopup(){ document.getElementById("manualPopup").style.display="none"; manualUserId=null; }
 function manualDecision(action){
     if(!manualUserId) return;
-    if(action === "Rejected"){
-        closeManualPopup();
-        openRejectPopup(manualUserId);
-        manualUserId = null;
-        return;
-    }
+    if(action === "Rejected"){ closeManualPopup(); openRejectPopup(manualUserId); manualUserId=null; return; }
     let reason = action === "Approved" ? "Approved after manual review" : "Under verification";
     fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:manualUserId, action:action, reason:reason })
-    }).then(()=>{ closeManualPopup(); fetchUsers(); });
+    }).then(function(){ closeManualPopup(); fetchUsers(); });
 }
 
-/* ── LOGOUT ── */
-function logout(){
-    localStorage.removeItem("currentBanker");
-    window.location.href = "/";
-}
+function logout(){ localStorage.removeItem("currentBanker"); window.location.href="/"; }
 
-/* Start */
 init();
-
 </script>
 </body>
 </html>
