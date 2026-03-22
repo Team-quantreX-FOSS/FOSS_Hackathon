@@ -114,6 +114,7 @@ def register_banker():
     name      = data.get('name', '').strip()
     banker_id = data.get('banker_id', '').strip()
     bank_name = data.get('bank_name', '').strip()
+    branch    = data.get('branch', '').strip()
     ifsc      = data.get('ifsc', '').strip()
 
     if not name or not banker_id or not bank_name or not ifsc:
@@ -121,15 +122,24 @@ def register_banker():
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+
+    # Add branch column if missing
+    c.execute("PRAGMA table_info(bankers)")
+    cols = [col[1] for col in c.fetchall()]
+    if 'banker_id' not in cols:
+        c.execute("ALTER TABLE bankers ADD COLUMN banker_id TEXT")
+    if 'branch' not in cols:
+        c.execute("ALTER TABLE bankers ADD COLUMN branch TEXT")
+
     c.execute("SELECT id FROM bankers WHERE banker_id=?", (banker_id,))
     if c.fetchone():
         conn.close()
         return jsonify({"error": "Banker ID already registered."}), 400
 
     c.execute('''
-        INSERT INTO bankers (name, bank_name, ifsc, banker_id, total_customers, approval, rejection, manual)
-        VALUES (?, ?, ?, ?, 0, 0, 0, 0)
-    ''', (name, bank_name, ifsc, banker_id))
+        INSERT INTO bankers (name, bank_name, branch, ifsc, banker_id, total_customers, approval, rejection, manual)
+        VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0)
+    ''', (name, bank_name, branch, ifsc, banker_id))
 
     conn.commit()
     conn.close()
@@ -256,15 +266,26 @@ def get_users():
 def get_bankers():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+    c.execute("PRAGMA table_info(bankers)")
+    col_info = c.fetchall()
+    cols = [col[1] for col in col_info]
     c.execute("SELECT * FROM bankers")
     rows = c.fetchall()
     conn.close()
     bankers = []
     for b in rows:
+        row = dict(zip(cols, b))
         bankers.append({
-            "id": b[0], "name": b[1], "bankName": b[2],
-            "ifsc": b[3], "bankerId": b[4], "totalCustomers": b[5],
-            "approval": b[6], "rejection": b[7], "manual": b[8]
+            "id":             row.get("id", ""),
+            "name":           row.get("name", ""),
+            "bankName":       row.get("bank_name", ""),
+            "branch":         row.get("branch", ""),
+            "ifsc":           row.get("ifsc", ""),
+            "bankerId":       row.get("banker_id", row.get("ifsc","")),
+            "totalCustomers": row.get("total_customers", 0),
+            "approval":       row.get("approval", 0),
+            "rejection":      row.get("rejection", 0),
+            "manual":         row.get("manual", 0)
         })
     return jsonify(bankers)
 
@@ -273,12 +294,19 @@ def get_bankers():
 def get_banks():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute("SELECT DISTINCT bank_name, ifsc FROM bankers")
+    c.execute("PRAGMA table_info(bankers)")
+    cols = [col[1] for col in c.fetchall()]
+    c.execute("SELECT * FROM bankers")
     rows = c.fetchall()
     conn.close()
+    seen = set()
     banks = []
     for r in rows:
-        banks.append({"name": r[0], "ifsc": r[1]})
+        row = dict(zip(cols, r))
+        key = row.get("bank_name","")
+        if key not in seen:
+            seen.add(key)
+            banks.append({"name": key, "branch": row.get("branch",""), "ifsc": row.get("ifsc","")})
     return jsonify(banks)
 
 # ------------------ BANKER ACTION ------------------
@@ -291,18 +319,45 @@ def banker_action():
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+
+    # Get CURRENT status before updating
+    c.execute("SELECT loan_status, allocated_banker FROM users WHERE id=?", (user_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    current_status = row[0]
+    banker         = row[1]
+
+    # Update the loan status
     c.execute("UPDATE users SET loan_status=?, reason=? WHERE id=?", (action, reason, user_id))
 
-    c.execute("SELECT allocated_banker FROM users WHERE id=?", (user_id,))
-    row = c.fetchone()
-    if row and row[0]:
-        banker = row[0]
+    if banker:
+        # Only count as new customer if this is the FIRST final action
+        # i.e. previous status was Pending or Picked Up (not already Approved/Rejected/Manual)
+        first_action = current_status in ("Pending", "Picked Up")
+
+        # Reset previous counter if status is changing FROM a final state
+        # e.g. was Approved, now setting to Rejected — undo approval, add rejection
+        if current_status == "Approved" and action != "Approved":
+            c.execute("UPDATE bankers SET approval=MAX(0,approval-1) WHERE name=?", (banker,))
+        elif current_status == "Rejected" and action != "Rejected":
+            c.execute("UPDATE bankers SET rejection=MAX(0,rejection-1) WHERE name=?", (banker,))
+        elif current_status == "Manual Review" and action != "Manual Review":
+            c.execute("UPDATE bankers SET manual=MAX(0,manual-1) WHERE name=?", (banker,))
+
+        # Add new action counter
         if action == "Approved":
-            c.execute("UPDATE bankers SET approval=approval+1, total_customers=total_customers+1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET approval=approval+1 WHERE name=?", (banker,))
         elif action == "Rejected":
-            c.execute("UPDATE bankers SET rejection=rejection+1, total_customers=total_customers+1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET rejection=rejection+1 WHERE name=?", (banker,))
         elif action == "Manual Review":
-            c.execute("UPDATE bankers SET manual=manual+1, total_customers=total_customers+1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET manual=manual+1 WHERE name=?", (banker,))
+
+        # Only increment total_customers once (first time a final action is taken)
+        if first_action:
+            c.execute("UPDATE bankers SET total_customers=total_customers+1 WHERE name=?", (banker,))
 
     conn.commit()
     conn.close()
@@ -346,8 +401,14 @@ def update_status():
 def get_status(phone):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''SELECT loan_status, reason, allocated_banker
-                 FROM users WHERE phone=? ORDER BY id DESC LIMIT 1''', (phone,))
+    # Also accept optional name param to identify correct user
+    name = request.args.get('name', '').strip()
+    if name:
+        c.execute('''SELECT loan_status, reason, allocated_banker
+                     FROM users WHERE phone=? AND name=? ORDER BY id DESC LIMIT 1''', (phone, name))
+    else:
+        c.execute('''SELECT loan_status, reason, allocated_banker
+                     FROM users WHERE phone=? ORDER BY id DESC LIMIT 1''', (phone,))
     data = c.fetchone()
     conn.close()
     if data:
@@ -396,15 +457,26 @@ def api_borrowers():
 def api_admin_bankers():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+    c.execute("PRAGMA table_info(bankers)")
+    col_info = c.fetchall()
+    cols = [col[1] for col in col_info]
     c.execute("SELECT * FROM bankers")
     rows = c.fetchall()
     conn.close()
     bankers = []
     for b in rows:
+        row = dict(zip(cols, b))
         bankers.append({
-            "id": b[0], "name": b[1], "bank_name": b[2],
-            "ifsc": b[3], "banker_id": b[4], "total_customers": b[5],
-            "approval": b[6], "rejection": b[7], "manual": b[8]
+            "id":             row.get("id", ""),
+            "name":           row.get("name", ""),
+            "bank_name":      row.get("bank_name", ""),
+            "branch":         row.get("branch", ""),
+            "ifsc":           row.get("ifsc", ""),
+            "banker_id":      row.get("banker_id", row.get("ifsc","")),
+            "total_customers":row.get("total_customers", 0),
+            "approval":       row.get("approval", 0),
+            "rejection":      row.get("rejection", 0),
+            "manual":         row.get("manual", 0)
         })
     return jsonify(bankers)
 
@@ -415,6 +487,87 @@ def loan_requests():
     return render_template('loan_requests.html')
 
 
+# ------------------ LOAN REQUESTS PAGE ------------------
+@app.route('/register_user', methods=['POST'])
+def register_user():
+    data     = request.json
+    name     = data.get('name', '').strip()
+    phone    = data.get('phone', '').strip()
+    username = data.get('username', '').strip()
+
+    if not name or not username:
+        return jsonify({"error": "Name and username are required."}), 400
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Check duplicate username in a separate registrations table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS user_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        phone TEXT,
+        username TEXT UNIQUE
+    )
+    ''')
+
+    c.execute("SELECT id FROM user_accounts WHERE username=?", (username,))
+    if c.fetchone():
+        conn.close()
+        return jsonify({"error": "Username already taken."}), 400
+
+    c.execute("INSERT INTO user_accounts (name, phone, username) VALUES (?,?,?)",
+              (name, phone, username))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "User registered successfully."})
+
+
+# ------------------ CHECK USERNAME ------------------
+@app.route('/check_username', methods=['POST'])
+def check_username():
+    data     = request.json
+    username = data.get('username','').strip()
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS user_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, username TEXT UNIQUE
+    )''')
+    c.execute("SELECT id FROM user_accounts WHERE username=?", (username,))
+    exists = c.fetchone() is not None
+    conn.close()
+    return jsonify({"exists": exists})
+
+
+# ------------------ GET USER ACCOUNTS FOR ADMIN ------------------
+@app.route('/api/user_accounts')
+def get_user_accounts():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS user_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, username TEXT UNIQUE
+    )''')
+    c.execute("SELECT * FROM user_accounts")
+    rows = c.fetchall()
+    conn.close()
+    return jsonify([{"id":r[0],"name":r[1],"phone":r[2],"username":r[3]} for r in rows])
+
+
+# ------------------ GET BANKER BY ID ------------------
+@app.route('/api/get_banker/<banker_id>')
+def get_banker_by_id(banker_id):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(bankers)")
+    cols = [col[1] for col in c.fetchall()]
+    c.execute("SELECT * FROM bankers WHERE banker_id=?", (banker_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        r = dict(zip(cols, row))
+        return jsonify({"name": r.get("name",""), "bankName": r.get("bank_name",""), "ifsc": r.get("ifsc",""), "branch": r.get("branch","")})
+    return jsonify({"error": "Not found"}), 404
+
 # ------------------ RUN ------------------
 if __name__ == '__main__':
-    app.run(debug=True, port=5050)
+    app.run(host='0.0.0.0', port=5050, debug=True)
