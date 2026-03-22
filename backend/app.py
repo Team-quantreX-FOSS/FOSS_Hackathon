@@ -84,6 +84,9 @@ def banker_review(): return render_template('banker_review.html')
 @app.route('/loan_requests')
 def loan_requests(): return render_template('loan_requests.html')
 
+@app.route('/loan_tracking')
+def loan_tracking(): return render_template('loan_tracking.html')
+
 # ------------------ REGISTER BANKER ------------------
 @app.route('/register_banker', methods=['POST'])
 def register_banker():
