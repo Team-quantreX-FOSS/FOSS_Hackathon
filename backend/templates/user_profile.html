@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>User Profile</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -155,7 +157,8 @@ window.addEventListener("DOMContentLoaded", function(){
     document.getElementById("pRiskLevel").innerText = localStorage.getItem("riskLevel_" + currentUser) || "—";
     let phone = localStorage.getItem("phone_" + currentUser) || localStorage.getItem("phone") || "";
     if(phone){
-        fetch("/get_status/" + phone).then(r=>r.json()).then(d=>{
+        let ud2 = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
+        fetch("/get_status/" + phone + (ud2.name ? "?name="+encodeURIComponent(ud2.name) : "")).then(r=>r.json()).then(d=>{
             document.getElementById("pLoanStatus").innerText = d.status || "No Application";
             document.getElementById("pBanker").innerText    = d.banker || "Not assigned yet";
         });
