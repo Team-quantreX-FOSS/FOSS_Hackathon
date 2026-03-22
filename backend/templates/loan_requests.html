@@ -345,9 +345,12 @@ function renderCards(data){
         let card = document.createElement("div");
         card.className = "request-card";
         card.style.animationDelay = (i * 0.07) + "s";
+        let safeN = (u.name||"").replace(/'/g,"\\'");
+        let safeP = (u.phone||"").replace(/'/g,"\\'");
         card.innerHTML = `
 <p class="card-name">${u.name || "—"}</p>
 <p class="card-phone">📞 ${u.phone || "—"}</p>
+<button onclick="viewBorrowerProfile('${safeN}','${safeP}')" style="margin-bottom:10px;padding:5px 12px;font-family:DM Mono,monospace;font-size:11px;background:rgba(230,213,184,0.08);border:1px solid rgba(230,213,184,0.2);color:#bfa980;border-radius:6px;cursor:pointer;width:100%;">👁 View Profile</button>
 
 <div class="card-row">
     <span class="label">Loan Amount</span>
@@ -425,5 +428,107 @@ setInterval(loadRequests, 10000);
 
 </script>
 
+
+
+
+
+
+
+<!-- PROFILE OVERLAY -->
+<div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:9999;overflow-y:auto;">
+<div id="profileBox" style="background:#1a1614;border:1px solid rgba(230,213,184,0.2);border-radius:20px;width:540px;max-width:95vw;margin:40px auto 60px;padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08);">
+        <h2 style="font-family:Syne,sans-serif;font-size:1.3rem;font-weight:800;color:#e6d5b8;margin:0;">🪪 Borrower Profile</h2>
+        <button onclick="document.getElementById('profileOverlay').style.display='none'" style="background:none;border:none;color:#888;font-size:26px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div id="profileContent2"></div>
+</div>
+</div>
+
+<script>
+function openProfile(name, phone){
+    document.getElementById("profileOverlay").style.display = "block";
+    let el = document.getElementById("profileContent2");
+    el.innerHTML = '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#888;">⏳ Loading...</div>';
+
+    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        el.innerHTML = "";
+        if(d.error){
+            el.innerHTML = '<p style="font-family:DM Mono,monospace;font-size:14px;color:#666;text-align:center;">No detailed profile uploaded yet.</p>';
+            appendRow2(el,"Name",name); appendRow2(el,"Phone",phone);
+            return;
+        }
+        appendSection2(el,"Personal Details");
+        appendRow2(el,"Full Name",  d.name||name);
+        appendRow2(el,"Age",        d.age||"—");
+        appendRow2(el,"Phone",      d.phone||phone);
+        appendRow2(el,"Email",      d.email||"—");
+        appendRow2(el,"Address",    d.address||"—");
+        appendRow2(el,"Employment", d.employment||"—");
+        appendRow2(el,"Employer",   d.employer||"—");
+        appendSection2(el,"KYC Details");
+        appendRow2(el,"Aadhar",     d.aadhar||"—");
+        appendRow2(el,"PAN",        d.pan||"—");
+        appendSection2(el,"Bank Details");
+        appendRow2(el,"Account Holder", d.account_holder||"—");
+        appendRow2(el,"Account Number", d.account_number||"—");
+        appendRow2(el,"IFSC",           d.ifsc||"—");
+        appendSection2(el,"Loan Purpose");
+        appendRow2(el,"Purpose", d.purpose||"—");
+        if(d.aadhar_img || d.pan_img || d.salary_img || d.bank_stmt){
+            appendSection2(el,"Uploaded Documents");
+            if(d.aadhar_img)  appendDoc2(el,"Aadhar Card",d.aadhar_img);
+            if(d.pan_img)     appendDoc2(el,"PAN Card",d.pan_img);
+            if(d.salary_img)  appendDoc2(el,"Salary Slip",d.salary_img);
+            if(d.bank_stmt)   appendDoc2(el,"Bank Statement",d.bank_stmt);
+        }
+    })
+    .catch(function(){
+        el.innerHTML = '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#f87171;">Error loading profile.</div>';
+    });
+}
+
+function appendSection2(p,t){
+    let d=document.createElement("div");
+    d.style.cssText="font-family:Syne,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;margin:16px 0 8px 0;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);";
+    d.textContent=t; p.appendChild(d);
+}
+function appendRow2(p,label,value){
+    let d=document.createElement("div");
+    d.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);";
+    let l=document.createElement("span");
+    l.style.cssText="font-family:DM Mono,monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#666;white-space:nowrap;margin-right:12px;";
+    l.textContent=label;
+    let v=document.createElement("span");
+    v.style.cssText="font-family:DM Mono,monospace;font-size:13px;color:#e6d5b8;text-align:right;word-break:break-all;";
+    v.textContent=value;
+    d.appendChild(l); d.appendChild(v); p.appendChild(d);
+}
+function appendDoc2(p,label,src){
+    let wrap=document.createElement("div");
+    wrap.style.cssText="margin:12px 0;";
+    let lbl=document.createElement("div");
+    lbl.style.cssText="font-family:DM Mono,monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:8px;";
+    lbl.textContent=label;
+    let img=document.createElement("img");
+    img.src=src;
+    img.style.cssText="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:block;";
+    img.title="Click to open full size";
+    img.addEventListener("click",function(){ window.open(this.src,"_blank"); });
+    img.addEventListener("error",function(){
+        let e=document.createElement("div");
+        e.style.cssText="font-family:DM Mono,monospace;font-size:12px;color:#666;padding:8px;";
+        e.textContent="Could not display image";
+        this.parentElement.replaceChild(e,this);
+    });
+    let hint=document.createElement("div");
+    hint.style.cssText="font-family:DM Mono,monospace;font-size:10px;color:#555;margin-top:4px;";
+    hint.textContent="Click image to open full size";
+    wrap.appendChild(lbl); wrap.appendChild(img); wrap.appendChild(hint);
+    p.appendChild(wrap);
+}
+</script>
 </body>
 </html>
