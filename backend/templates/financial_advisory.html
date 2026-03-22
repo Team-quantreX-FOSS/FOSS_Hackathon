@@ -1,218 +1,205 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Advisory</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; }
+.page-header { display:flex; align-items:center; gap:18px; margin:32px 0 28px 0; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.08); }
+.page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#10b981,#f59e0b); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 4px 20px rgba(245,158,11,0.35); }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; margin:0; color:#e6d5b8; }
+.page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#888; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
+.section-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:32px 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
 
-.page-header {
-    display: flex; align-items: center; gap: 18px;
-    margin: 32px 0 28px 0; padding-bottom: 18px;
-    border-bottom: 2px solid rgba(255,255,255,0.08);
-}
-.page-header .icon-wrap {
-    width: 54px; height: 54px;
-    background: linear-gradient(135deg, #10b981, #f59e0b);
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 4px 20px rgba(245,158,11,0.35);
-}
-.page-header h1 {
-    font-family: 'Syne', sans-serif; font-size: 2rem;
-    font-weight: 800; margin: 0; color: #e6d5b8;
-}
-.page-header .subtitle {
-    font-family: 'DM Mono', monospace; font-size: 12px;
-    color: #888; letter-spacing: 2px; text-transform: uppercase;
-    margin: 3px 0 0 0;
-}
-
-/* SECTION TITLE */
-.section-title {
-    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-    letter-spacing: 2px; text-transform: uppercase; color: #888;
-    margin: 32px 0 16px 0; padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-}
+/* NAV TABS */
+.nav-tabs { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+.nav-tab { font-family:'DM Mono',monospace; font-size:13px; padding:9px 20px; border-radius:999px; border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#bfa980; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
+.nav-tab:hover { border-color:#e6d5b8; color:#e6d5b8; }
+.nav-tab.active { background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; border-color:transparent; font-weight:700; }
 
 /* ADVICE CARDS */
-.advice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 8px; }
-.advice-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px; padding: 20px;
-    transition: all 0.25s; position: relative; overflow: hidden;
-}
-.advice-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 3px; border-radius: 16px 16px 0 0;
-}
-.advice-card.green::before  { background: linear-gradient(90deg,#10b981,#34d399); }
-.advice-card.amber::before  { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
-.advice-card.red::before    { background: linear-gradient(90deg,#ef4444,#f87171); }
-.advice-card.blue::before   { background: linear-gradient(90deg,#3b82f6,#60a5fa); }
-.advice-card:hover { transform: translateY(-4px); border-color: rgba(230,213,184,0.15); }
-.advice-card .card-icon { font-size: 28px; margin-bottom: 10px; }
-.advice-card .card-title {
-    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
-    color: #e6d5b8; margin: 0 0 8px 0;
-}
-.advice-card .card-text {
-    font-family: 'DM Mono', monospace; font-size: 13px;
-    color: #888; line-height: 1.6;
-}
+.advice-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-bottom:8px; }
+.advice-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; transition:all 0.25s; position:relative; overflow:hidden; }
+.advice-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.advice-card.green::before { background:linear-gradient(90deg,#10b981,#34d399); }
+.advice-card.amber::before { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+.advice-card.red::before   { background:linear-gradient(90deg,#ef4444,#f87171); }
+.advice-card.blue::before  { background:linear-gradient(90deg,#3b82f6,#60a5fa); }
+.advice-card:hover { transform:translateY(-3px); background:rgba(255,255,255,0.05); }
+.card-icon  { font-size:28px; margin-bottom:10px; }
+.card-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#e6d5b8; margin-bottom:8px; }
+.card-text  { font-family:'DM Mono',monospace; font-size:14px; color:#bfa980; line-height:1.6; }
 
 /* SCHEME CARDS */
-.scheme-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px; padding: 22px;
-    margin-bottom: 14px; transition: all 0.25s;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 16px;
-}
-.scheme-card:hover { border-color: rgba(230,213,184,0.2); transform: translateX(4px); }
-.scheme-info { flex: 1; }
-.scheme-tag {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    font-family: 'DM Mono', monospace; font-size: 11px;
-    letter-spacing: 1px; text-transform: uppercase;
-    margin-bottom: 8px;
-}
-.tag-pension    { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
-.tag-scholarship{ background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
-.tag-insurance  { background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
-.tag-housing    { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
-.tag-health     { background:rgba(239,68,68,0.15);  color:#f87171; border:1px solid rgba(239,68,68,0.3); }
-.tag-women      { background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); }
-.tag-business   { background:rgba(20,184,166,0.15); color:#2dd4bf; border:1px solid rgba(20,184,166,0.3); }
-.tag-agri       { background:rgba(132,204,22,0.15); color:#a3e635; border:1px solid rgba(132,204,22,0.3); }
+.scheme-card { display:flex; justify-content:space-between; align-items:flex-start; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:12px; gap:16px; transition:all 0.2s; }
+.scheme-card:hover { background:rgba(255,255,255,0.05); border-color:rgba(230,213,184,0.2); }
+.scheme-tag { display:inline-block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:6px; margin-bottom:8px; }
+.tag-pension    { background:rgba(139,92,246,0.15); color:#a78bfa; }
+.tag-insurance  { background:rgba(16,185,129,0.15); color:#34d399; }
+.tag-scholarship{ background:rgba(59,130,246,0.15); color:#60a5fa; }
+.tag-housing    { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.tag-health     { background:rgba(239,68,68,0.15);  color:#f87171; }
+.tag-business   { background:rgba(230,213,184,0.15);color:#e6d5b8; }
+.tag-agri       { background:rgba(16,185,129,0.12); color:#6ee7b7; }
+.tag-women      { background:rgba(236,72,153,0.15); color:#f9a8d4; }
+.scheme-name    { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#e6d5b8; margin-bottom:6px; }
+.scheme-desc    { font-family:'DM Mono',monospace; font-size:13px; color:#888; line-height:1.6; margin-bottom:8px; }
+.scheme-benefit { font-family:'DM Mono',monospace; font-size:13px; color:#bfa980; }
+.scheme-actions { display:flex; flex-direction:column; gap:8px; min-width:120px; }
+.btn-apply { padding:10px 18px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; border:none; border-radius:10px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.btn-apply:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(230,213,184,0.25); }
+.btn-review { padding:10px 18px; background:transparent; border:1px solid rgba(230,213,184,0.25); color:#bfa980; font-family:'DM Mono',monospace; font-size:13px; border-radius:10px; cursor:pointer; text-decoration:none; display:block; text-align:center; transition:all 0.2s; }
+.btn-review:hover { border-color:#e6d5b8; color:#e6d5b8; }
 
-.scheme-name {
-    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
-    color: #e6d5b8; margin: 0 0 6px 0;
-}
-.scheme-desc {
-    font-family: 'DM Mono', monospace; font-size: 13px;
-    color: #777; line-height: 1.6; margin: 0 0 10px 0;
-}
-.scheme-benefit {
-    font-family: 'DM Mono', monospace; font-size: 12px;
-    color: #10b981; letter-spacing: 0.5px;
-}
-.scheme-actions { display: flex; flex-direction: column; gap: 8px; min-width: 110px; align-items: flex-end; }
-.btn-apply {
-    padding: 9px 20px; border-radius: 10px; border: none;
-    background: linear-gradient(135deg, #e6d5b8, #bfa980);
-    color: #111; font-family: 'Syne', sans-serif;
-    font-size: 13px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s; white-space: nowrap; width: 110px; text-align: center;
-}
-.btn-apply:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(230,213,184,0.25); }
-.btn-review {
-    padding: 9px 20px; border-radius: 10px;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #aaa; font-family: 'DM Mono', monospace;
-    font-size: 12px; cursor: pointer;
-    transition: all 0.2s; white-space: nowrap; width: 110px; text-align: center;
-    text-decoration: none; display: block;
-}
-.btn-review:hover { border-color: #e6d5b8; color: #e6d5b8; }
+/* FUTURE PLANNING */
+.fp-btn { padding:14px 28px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; border:none; border-radius:12px; cursor:pointer; transition:all 0.2s; margin-bottom:24px; }
+.fp-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(59,130,246,0.35); }
+.fp-form { background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:18px; padding:28px; display:none; }
+.fp-form.show { display:block; }
+.fp-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.fp-group label { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:7px; }
+.fp-group input, .fp-group select { width:100%; padding:11px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:15px; }
+.fp-group input:focus, .fp-group select:focus { outline:none; border-color:#3b82f6; }
+.fp-group select option { background:#1a1a2e; color:#e6d5b8; }
+.fp-submit { margin-top:20px; padding:13px 28px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; border:none; border-radius:10px; cursor:pointer; transition:all 0.2s; }
+.fp-submit:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(59,130,246,0.3); }
+.fp-results { margin-top:24px; }
+.fp-result-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; margin-bottom:12px; }
+.fp-result-card .goal-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#e6d5b8; margin-bottom:6px; }
+.fp-result-card .goal-detail { font-family:'DM Mono',monospace; font-size:13px; color:#bfa980; line-height:1.7; }
+.fp-result-card .goal-status { display:inline-block; font-family:'DM Mono',monospace; font-size:12px; padding:4px 12px; border-radius:6px; margin-top:8px; font-weight:700; }
+.status-ok   { background:rgba(16,185,129,0.15); color:#34d399; }
+.status-warn { background:rgba(245,158,11,0.15);  color:#fbbf24; }
+.status-bad  { background:rgba(239,68,68,0.15);   color:#f87171; }
+.fp-progress-wrap { width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:99px; margin-top:10px; overflow:hidden; }
+.fp-progress-fill { height:100%; border-radius:99px; transition:width 0.8s ease; }
 
-/* LITERACY CARDS */
-.literacy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.literacy-card {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px; padding: 20px; transition: transform 0.2s;
-}
-.literacy-card:hover { transform: translateY(-3px); }
-.literacy-card .lc-icon { font-size: 28px; margin-bottom: 10px; }
-.literacy-card .lc-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#e6d5b8; margin:0 0 8px 0; }
-.literacy-card .lc-text  { font-family:'DM Mono',monospace; font-size:13px; color:#777; line-height:1.7; }
-
-/* NO DATA */
-.no-data { text-align:center; padding:40px; color:#555; font-family:'DM Mono',monospace; font-size:14px; }
+/* COURSES */
+.course-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.cf-btn { font-family:'DM Mono',monospace; font-size:12px; padding:7px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:#888; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
+.cf-btn:hover { border-color:#bfa980; color:#bfa980; }
+.cf-btn.active { background:rgba(230,213,184,0.1); border-color:#bfa980; color:#e6d5b8; }
+.courses-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.course-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; transition:all 0.2s; display:flex; flex-direction:column; justify-content:space-between; }
+.course-card:hover { transform:translateY(-3px); background:rgba(255,255,255,0.05); }
+.course-top { margin-bottom:12px; }
+.course-badge { display:inline-block; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; padding:3px 9px; border-radius:5px; margin-bottom:8px; }
+.badge-free { background:rgba(16,185,129,0.15); color:#34d399; }
+.badge-paid { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.badge-cert { background:rgba(59,130,246,0.15); color:#60a5fa; }
+.course-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#e6d5b8; margin-bottom:5px; }
+.course-provider { font-family:'DM Mono',monospace; font-size:12px; color:#666; margin-bottom:6px; }
+.course-desc { font-family:'DM Mono',monospace; font-size:12px; color:#888; line-height:1.6; }
+.course-footer { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); }
+.course-price { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; }
+.price-free { color:#34d399; }
+.price-paid { color:#fbbf24; }
+.course-link { padding:7px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:12px; border-radius:8px; text-decoration:none; transition:all 0.2s; cursor:pointer; }
+.course-link:hover { background:rgba(230,213,184,0.1); border-color:#bfa980; }
+.no-advice { text-align:center; padding:40px; font-family:'DM Mono',monospace; font-size:14px; color:#666; }
 </style>
 </head>
 <body>
 
 <div class="topbar"><h2>FinRisk - Financial Advisory</h2></div>
-
 <div class="container">
 <div class="sidebar">
 <h2>FinRisk</h2>
-<button onclick="location.href='/user_dashboard'">Dashboard</button>
-<button onclick="location.href='/loan_check'">Loan Eligibility</button>
-<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
-<button onclick="location.href='/apply_loan'">Apply for Loan</button>
-<button onclick="location.href='/user_profile'">Profile</button>
-<button onclick="logout()">Logout</button>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div class="main">
 
 <div class="page-header">
-    <div class="icon-wrap">🌟</div>
+    <div class="icon-wrap">💡</div>
     <div>
         <h1>Financial Advisory</h1>
-        <p class="subtitle">Personalised advice · Government schemes · Financial literacy</p>
+        <p class="subtitle">Personalised advice · Government schemes · Future planning · Courses</p>
     </div>
 </div>
 
-<!-- PERSONALISED ADVICE -->
-<div class="section-title">📊 Personalised Advice</div>
-<div id="adviceSection">
-    <div class="no-data">Fill your financial details on the dashboard first to get personalised advice.</div>
+<!-- NAV TABS -->
+<div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('advice',this)">📊 My Advice</button>
+    <button class="nav-tab" onclick="showTab('schemes',this)">🏛 Govt Schemes</button>
+    <button class="nav-tab" onclick="showTab('future',this)">🎯 Future Planning</button>
+    <button class="nav-tab" onclick="showTab('courses',this)">🎓 Skill & Courses</button>
 </div>
 
-<!-- GOVERNMENT SCHEMES -->
-<div class="section-title">🏛 Government Schemes &amp; Services</div>
-<div id="schemesSection"></div>
-
-<!-- FINANCIAL LITERACY -->
-<div class="section-title">📚 Financial Literacy</div>
-<div class="literacy-grid">
-
-<div class="literacy-card">
-<div class="lc-icon">💰</div>
-<div class="lc-title">What is a CIBIL Score?</div>
-<div class="lc-text">A 3-digit number (300–900) that tells lenders how creditworthy you are. Above 750 is considered excellent. Pay EMIs on time and avoid multiple loan applications to keep it high.</div>
+<!-- TAB: ADVICE -->
+<div id="tab-advice">
+    <div id="adviceSection"><div class="no-advice">Enter your financial details on the Dashboard first to get personalised advice.</div></div>
 </div>
 
-<div class="literacy-card">
-<div class="lc-icon">📈</div>
-<div class="lc-title">Rule of 72</div>
-<div class="lc-text">Divide 72 by your annual interest rate to find out how many years it takes to double your money. At 8% interest, your investment doubles in 9 years.</div>
+<!-- TAB: SCHEMES -->
+<div id="tab-schemes" style="display:none;">
+    <div class="section-title">Government Schemes — Click Apply to visit official portal</div>
+    <div id="schemesSection"></div>
 </div>
 
-<div class="literacy-card">
-<div class="lc-icon">🏦</div>
-<div class="lc-title">FD vs Mutual Funds</div>
-<div class="lc-text">Fixed Deposits offer guaranteed returns (6–7%) with no risk. Mutual Funds offer higher potential returns (10–15%) but with market risk. Choose based on your risk appetite.</div>
+<!-- TAB: FUTURE PLANNING -->
+<div id="tab-future" style="display:none;">
+    <div class="section-title">Future Planning — Set your goals, we'll show you the path</div>
+    <button class="fp-btn" onclick="toggleFPForm()">＋ Add / Update My Goals</button>
+    <div class="fp-form" id="fpForm">
+        <div class="fp-grid">
+            <div class="fp-group">
+                <label>Short-Term Goal (within 1 year)</label>
+                <input type="text" id="goal1name" placeholder="e.g. Emergency Fund, Laptop, Vacation">
+            </div>
+            <div class="fp-group">
+                <label>Target Amount (₹)</label>
+                <input type="number" id="goal1amt" placeholder="e.g. 50000">
+            </div>
+            <div class="fp-group">
+                <label>Mid-Term Goal (1–5 years)</label>
+                <input type="text" id="goal2name" placeholder="e.g. Car, Wedding, Higher Education">
+            </div>
+            <div class="fp-group">
+                <label>Target Amount (₹)</label>
+                <input type="number" id="goal2amt" placeholder="e.g. 500000">
+            </div>
+            <div class="fp-group">
+                <label>Long-Term Goal (5+ years)</label>
+                <input type="text" id="goal3name" placeholder="e.g. House, Retirement, Child Education">
+            </div>
+            <div class="fp-group">
+                <label>Target Amount (₹)</label>
+                <input type="number" id="goal3amt" placeholder="e.g. 3000000">
+            </div>
+            <div class="fp-group">
+                <label>Current Savings Already Set Aside (₹)</label>
+                <input type="number" id="currentSavings" placeholder="e.g. 20000">
+            </div>
+            <div class="fp-group">
+                <label>How Much Can You Save Monthly (₹)</label>
+                <input type="number" id="monthlySave" placeholder="e.g. 8000">
+            </div>
+        </div>
+        <button class="fp-submit" onclick="calculateGoals()">Calculate My Plan →</button>
+    </div>
+    <div class="fp-results" id="fpResults"></div>
 </div>
 
-<div class="literacy-card">
-<div class="lc-icon">🛡</div>
-<div class="lc-title">Emergency Fund</div>
-<div class="lc-text">Always keep 3–6 months of expenses saved in a liquid account. This protects you from sudden job loss, medical emergencies, or unexpected bills without taking loans.</div>
-</div>
-
-<div class="literacy-card">
-<div class="lc-icon">📊</div>
-<div class="lc-title">50-30-20 Rule</div>
-<div class="lc-text">Allocate 50% of income to needs (rent, food, bills), 30% to wants (entertainment, shopping), and 20% to savings and investments. A simple framework for healthy finances.</div>
-</div>
-
-<div class="literacy-card">
-<div class="lc-icon">🔄</div>
-<div class="lc-title">Compound Interest</div>
-<div class="lc-text">Interest earned on both your principal and previously earned interest. Starting early makes a massive difference — ₹10,000 at 10% for 30 years grows to ₹1.75 lakh.</div>
-</div>
-
+<!-- TAB: COURSES -->
+<div id="tab-courses" style="display:none;">
+    <div class="section-title">Skill & Certification Courses — Free & Paid</div>
+    <div class="course-filters">
+        <button class="cf-btn active" onclick="filterCourses('all',this)">All</button>
+        <button class="cf-btn" onclick="filterCourses('free',this)">Free Only</button>
+        <button class="cf-btn" onclick="filterCourses('finance',this)">Finance</button>
+        <button class="cf-btn" onclick="filterCourses('tech',this)">Tech & Data</button>
+        <button class="cf-btn" onclick="filterCourses('business',this)">Business</button>
+        <button class="cf-btn" onclick="filterCourses('govt',this)">Govt Portals</button>
+    </div>
+    <div class="courses-grid" id="coursesGrid"></div>
 </div>
 
 </div>
@@ -220,186 +207,248 @@
 
 <script>
 
+/* ── TAB SWITCHING ── */
+function showTab(name, btn){
+    ['advice','schemes','future','courses'].forEach(t=>{
+        document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
+
+/* ── GOVERNMENT SCHEMES ── */
 const SCHEMES = [
-    {
-        name: "Atal Pension Yojana (APY)",
-        tag: "tag-pension", tagLabel: "Pension",
-        desc: "Government-backed pension scheme for unorganised sector workers. Get a guaranteed pension of ₹1,000–₹5,000/month after age 60.",
-        benefit: "✦ Guaranteed monthly pension after 60",
-        url: "https://www.npscra.nsdl.co.in/scheme-details.php",
-        eligibility: "all"
-    },
-    {
-        name: "PM Jan Dhan Yojana",
-        tag: "tag-insurance", tagLabel: "Banking",
-        desc: "Zero-balance bank account with RuPay debit card, ₹2 lakh accident insurance, and ₹30,000 life cover for unbanked citizens.",
-        benefit: "✦ Free accident insurance + life cover",
-        url: "https://pmjdy.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "PM Jeevan Jyoti Bima Yojana",
-        tag: "tag-insurance", tagLabel: "Insurance",
-        desc: "Life insurance cover of ₹2 lakh at just ₹436/year for ages 18–50. Renewable annually with auto-debit from bank account.",
-        benefit: "✦ ₹2 lakh life cover at ₹436/year",
-        url: "https://www.jansuraksha.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "PM Suraksha Bima Yojana",
-        tag: "tag-insurance", tagLabel: "Insurance",
-        desc: "Accident insurance of ₹2 lakh for death/total disability and ₹1 lakh for partial disability at just ₹20/year.",
-        benefit: "✦ ₹2 lakh accident cover at ₹20/year",
-        url: "https://www.jansuraksha.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "National Scholarship Portal",
-        tag: "tag-scholarship", tagLabel: "Scholarship",
-        desc: "Central hub for all government scholarships — pre-matric, post-matric, merit-cum-means. Covers SC/ST/OBC/minority students.",
-        benefit: "✦ Up to ₹50,000/year in scholarships",
-        url: "https://scholarships.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "PM Awas Yojana (Urban)",
-        tag: "tag-housing", tagLabel: "Housing",
-        desc: "Affordable housing scheme for EWS, LIG and MIG categories. Interest subsidy of 3–6.5% on home loans up to ₹12 lakh.",
-        benefit: "✦ Home loan interest subsidy",
-        url: "https://pmaymis.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "Ayushman Bharat (PM-JAY)",
-        tag: "tag-health", tagLabel: "Health",
-        desc: "World's largest health assurance scheme providing ₹5 lakh/year health cover per family for secondary and tertiary care.",
-        benefit: "✦ ₹5 lakh free hospital cover/year",
-        url: "https://pmjay.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "PM Mudra Yojana",
-        tag: "tag-business", tagLabel: "Business",
-        desc: "Loans for small businesses — Shishu (up to ₹50K), Kishor (₹50K–5L), Tarun (₹5L–10L). No collateral required.",
-        benefit: "✦ Collateral-free business loans",
-        url: "https://www.mudra.org.in",
-        eligibility: "all"
-    },
-    {
-        name: "PM Kisan Samman Nidhi",
-        tag: "tag-agri", tagLabel: "Agriculture",
-        desc: "Direct income support of ₹6,000/year in three instalments to small and marginal farmer families holding up to 2 hectares.",
-        benefit: "✦ ₹6,000/year direct bank transfer",
-        url: "https://pmkisan.gov.in",
-        eligibility: "agri"
-    },
-    {
-        name: "Sukanya Samriddhi Yojana",
-        tag: "tag-women", tagLabel: "Women & Girl Child",
-        desc: "High-interest savings scheme (8.2% p.a.) for girl children below 10 years. Tax-free maturity amount for education/marriage.",
-        benefit: "✦ 8.2% interest · Tax-free returns",
-        url: "https://www.nsiindia.gov.in",
-        eligibility: "all"
-    },
-    {
-        name: "Stand Up India",
-        tag: "tag-business", tagLabel: "Business",
-        desc: "Bank loans between ₹10 lakh and ₹1 crore for SC/ST and women entrepreneurs to set up greenfield enterprises.",
-        benefit: "✦ Loans up to ₹1 crore for entrepreneurs",
-        url: "https://www.standupmitra.in",
-        eligibility: "all"
-    },
-    {
-        name: "National Pension System (NPS)",
-        tag: "tag-pension", tagLabel: "Pension",
-        desc: "Voluntary retirement savings scheme with market-linked returns. Tax deduction up to ₹2 lakh under Section 80C + 80CCD.",
-        benefit: "✦ Tax savings + retirement corpus",
-        url: "https://www.npstrust.org.in",
-        eligibility: "all"
-    }
+    { name:"Atal Pension Yojana (APY)", tag:"tag-pension", tagLabel:"Pension", desc:"Government-backed pension scheme for unorganised sector workers. Guaranteed pension of ₹1,000–₹5,000/month after age 60.", benefit:"✦ Guaranteed monthly pension after 60", url:"https://npscra.nsdl.co.in" },
+    { name:"PM Jan Dhan Yojana", tag:"tag-insurance", tagLabel:"Banking", desc:"Zero-balance bank account with RuPay debit card, ₹2 lakh accident insurance and ₹30,000 life cover.", benefit:"✦ Free accident insurance + life cover", url:"https://pmjdy.gov.in" },
+    { name:"PM Jeevan Jyoti Bima Yojana", tag:"tag-insurance", tagLabel:"Insurance", desc:"Life insurance cover of ₹2 lakh at just ₹436/year for ages 18–50. Auto-debit from bank account.", benefit:"✦ ₹2 lakh life cover at ₹436/year", url:"https://jansuraksha.gov.in" },
+    { name:"PM Suraksha Bima Yojana", tag:"tag-insurance", tagLabel:"Insurance", desc:"Accident insurance of ₹2 lakh for death/disability at just ₹20/year.", benefit:"✦ ₹2 lakh accident cover at ₹20/year", url:"https://jansuraksha.gov.in" },
+    { name:"National Scholarship Portal", tag:"tag-scholarship", tagLabel:"Scholarship", desc:"Central hub for all government scholarships for SC/ST/OBC/minority students across India.", benefit:"✦ Up to ₹50,000/year in scholarships", url:"https://scholarships.gov.in" },
+    { name:"PM Awas Yojana (Urban)", tag:"tag-housing", tagLabel:"Housing", desc:"Affordable housing scheme for EWS, LIG and MIG. Interest subsidy of 3–6.5% on home loans up to ₹12 lakh.", benefit:"✦ Home loan interest subsidy", url:"https://pmaymis.gov.in" },
+    { name:"Ayushman Bharat (PM-JAY)", tag:"tag-health", tagLabel:"Health", desc:"World's largest health assurance scheme — ₹5 lakh/year health cover per family for hospital care.", benefit:"✦ ₹5 lakh free hospital cover/year", url:"https://pmjay.gov.in" },
+    { name:"PM Mudra Yojana", tag:"tag-business", tagLabel:"Business", desc:"Loans for small businesses — Shishu (up to ₹50K), Kishor (₹50K–5L), Tarun (₹5L–10L). No collateral.", benefit:"✦ Collateral-free business loans", url:"https://mudra.org.in" },
+    { name:"PM Kisan Samman Nidhi", tag:"tag-agri", tagLabel:"Agriculture", desc:"Direct income support of ₹6,000/year in three instalments to small farmer families.", benefit:"✦ ₹6,000/year direct bank transfer", url:"https://pmkisan.gov.in" },
+    { name:"Sukanya Samriddhi Yojana", tag:"tag-women", tagLabel:"Women & Girl Child", desc:"High-interest savings scheme (8.2% p.a.) for girl children below 10. Tax-free maturity amount.", benefit:"✦ 8.2% interest · Tax-free returns", url:"https://nsiindia.gov.in" },
+    { name:"Stand Up India", tag:"tag-business", tagLabel:"Business", desc:"Bank loans ₹10 lakh–₹1 crore for SC/ST and women entrepreneurs for greenfield enterprises.", benefit:"✦ Loans up to ₹1 crore for entrepreneurs", url:"https://standupmitra.in" },
+    { name:"National Pension System (NPS)", tag:"tag-pension", tagLabel:"Pension", desc:"Voluntary retirement savings with market-linked returns. Tax deduction up to ₹2 lakh under 80C+80CCD.", benefit:"✦ Tax savings + retirement corpus", url:"https://npstrust.org.in" }
 ];
 
-window.addEventListener("DOMContentLoaded", function(){
-    let currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ window.location.href="/"; return; }
+function openURL(url){
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
 
-    let income   = Number(localStorage.getItem("income_" + currentUser)) || Number(localStorage.getItem("income")) || 0;
-    let expense  = Number(localStorage.getItem("totalExpense_" + currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
-    let score    = Number(localStorage.getItem("riskScore_" + currentUser)) || Number(localStorage.getItem("riskScore")) || 0;
-    let savings  = income - expense;
-    let ratio    = income > 0 ? savings / income : 0;
+function renderSchemes(){
+    let html = "";
+    SCHEMES.forEach(function(s){
+        html += '<div class="scheme-card">' +
+            '<div class="scheme-info">' +
+                '<span class="scheme-tag ' + s.tag + '">' + s.tagLabel + '</span>' +
+                '<div class="scheme-name">' + s.name + '</div>' +
+                '<div class="scheme-desc">' + s.desc + '</div>' +
+                '<div class="scheme-benefit">' + s.benefit + '</div>' +
+            '</div>' +
+            '<div class="scheme-actions">' +
+                '<button class="btn-apply" onclick="openURL(\'' + s.url + '\')">Apply →</button>' +
+                '<button class="btn-review" onclick="openURL(\'' + s.url + '\')">Learn More</button>' +
+            '</div>' +
+        '</div>';
+    });
+    document.getElementById("schemesSection").innerHTML = html;
+}
 
-    if(income > 0) generateAdvice(income, expense, savings, ratio, score);
-    renderSchemes();
-});
-
+/* ── PERSONALISED ADVICE ── */
 function generateAdvice(income, expense, savings, ratio, score){
     let cards = [];
+    if(ratio > 0.4)       cards.push({color:"green",icon:"🌱",title:"Excellent Savings Rate!",text:"You save "+Math.round(ratio*100)+"% of income (₹"+savings.toLocaleString()+"/month). Consider investing in SIP mutual funds or NPS to grow wealth further."});
+    else if(ratio > 0.2)  cards.push({color:"amber",icon:"📊",title:"Moderate Savings",text:"You save "+Math.round(ratio*100)+"% of income. Push this to 30%+ by cutting discretionary expenses. Even ₹2,000/month extra in SIP makes a big difference over 10 years."});
+    else if(ratio > 0)    cards.push({color:"red",icon:"⚠",title:"Low Savings — Action Needed",text:"Only "+Math.round(ratio*100)+"% of income saved. Review expenses immediately. Try the 50-30-20 rule: 50% needs, 30% wants, 20% savings."});
+    else                   cards.push({color:"red",icon:"🚨",title:"Spending Exceeds Income!",text:"You are spending more than you earn. Avoid new loans and focus on reducing expenses immediately."});
 
-    /* Savings advice */
-    if(ratio > 0.4){
-        cards.push({ color:"green", icon:"🌱", title:"Excellent Savings Rate!", text:`You save ${Math.round(ratio*100)}% of your income (₹${savings.toLocaleString()}/month). Consider investing in SIP mutual funds or NPS to grow your wealth further.` });
-    } else if(ratio > 0.2){
-        cards.push({ color:"amber", icon:"📊", title:"Moderate Savings", text:`You save ${Math.round(ratio*100)}% of income. Try to push this to 30%+ by cutting discretionary expenses. Even ₹2,000/month extra in SIP makes a big difference over 10 years.` });
-    } else if(ratio > 0){
-        cards.push({ color:"red", icon:"⚠", title:"Low Savings — Action Needed", text:`Only ${Math.round(ratio*100)}% of income saved. Review your expenses immediately. Try the 50-30-20 rule — 50% needs, 30% wants, 20% savings.` });
-    } else {
-        cards.push({ color:"red", icon:"🚨", title:"Spending Exceeds Income!", text:`You are spending more than you earn. This is unsustainable. Avoid taking new loans and focus on reducing expenses immediately.` });
-    }
+    if(score >= 75)        cards.push({color:"green",icon:"✅",title:"Strong Credit Profile",text:"Risk score "+score+" is excellent. Eligible for low-interest loans. Maintain this by paying bills on time."});
+    else if(score >= 55)   cards.push({color:"amber",icon:"📋",title:"Moderate Risk Profile",text:"Risk score "+score+". Lenders may offer higher interest rates. Reduce existing EMIs and maintain consistent payment history."});
+    else if(score > 0)     cards.push({color:"red",icon:"❗",title:"High Risk — Loan Caution",text:"Risk score "+score+" is low. Avoid new loans. Focus on clearing existing debts first."});
 
-    /* Risk score advice */
-    if(score >= 75){
-        cards.push({ color:"green", icon:"✅", title:"Strong Credit Profile", text:`Your risk score of ${score} is excellent. You are likely eligible for low-interest loans. Maintain this by paying bills on time and avoiding unnecessary credit.` });
-    } else if(score >= 55){
-        cards.push({ color:"amber", icon:"📋", title:"Moderate Risk Profile", text:`Risk score ${score} — lenders may offer loans with higher interest rates. Improve by reducing existing EMIs and maintaining a consistent payment history.` });
-    } else {
-        cards.push({ color:"red", icon:"❗", title:"High Risk — Loan Caution", text:`Risk score ${score} is low. Avoid taking new loans right now. Focus on clearing existing debts and building savings before reapplying.` });
-    }
-
-    /* EMI advice */
     let maxSafeEmi = income * 0.4;
-    cards.push({ color:"blue", icon:"🏦", title:"Safe EMI Limit", text:`Based on your income of ₹${income.toLocaleString()}, your safe monthly EMI should not exceed ₹${Math.round(maxSafeEmi).toLocaleString()} (40% of income). Going beyond this strains your finances.` });
+    cards.push({color:"blue",icon:"🏦",title:"Safe EMI Limit",text:"Based on ₹"+income.toLocaleString()+" income, your safe EMI should not exceed ₹"+Math.round(maxSafeEmi).toLocaleString()+"/month (40% of income)."});
 
-    /* Emergency fund */
     let emergencyTarget = expense * 6;
-    cards.push({ color:"blue", icon:"🛡", title:"Emergency Fund Target", text:`Based on your expenses, you should have ₹${emergencyTarget.toLocaleString()} saved as an emergency fund (6 months of expenses). Keep this in a savings account or liquid fund.` });
+    cards.push({color:"blue",icon:"🛡",title:"Emergency Fund Target",text:"You should have ₹"+emergencyTarget.toLocaleString()+" saved as emergency fund (6 months of expenses). Keep in a savings account or liquid fund."});
 
     let html = '<div class="advice-grid">';
-    cards.forEach(c => {
-        html += `<div class="advice-card ${c.color}">
-<div class="card-icon">${c.icon}</div>
-<div class="card-title">${c.title}</div>
-<div class="card-text">${c.text}</div>
-</div>`;
+    cards.forEach(function(c){
+        html += '<div class="advice-card '+c.color+'"><div class="card-icon">'+c.icon+'</div><div class="card-title">'+c.title+'</div><div class="card-text">'+c.text+'</div></div>';
     });
     html += '</div>';
     document.getElementById("adviceSection").innerHTML = html;
 }
 
-function renderSchemes(){
-    let html = "";
-    SCHEMES.forEach(s => {
-        html += `<div class="scheme-card">
-<div class="scheme-info">
-    <span class="scheme-tag ${s.tag}">${s.tagLabel}</span>
-    <div class="scheme-name">${s.name}</div>
-    <div class="scheme-desc">${s.desc}</div>
-    <div class="scheme-benefit">${s.benefit}</div>
-</div>
-<div class="scheme-actions">
-    <button class="btn-apply" onclick="window.open('${s.url}','_blank')">Apply →</button>
-    <a class="btn-review" href="${s.url}" target="_blank">Learn More</a>
-</div>
-</div>`;
-    });
-    document.getElementById("schemesSection").innerHTML = html;
+/* ── FUTURE PLANNING ── */
+function toggleFPForm(){
+    let f = document.getElementById("fpForm");
+    f.classList.toggle("show");
 }
+
+function calculateGoals(){
+    let currentUser = localStorage.getItem("currentUser");
+    let income   = Number(localStorage.getItem("income_"+currentUser))       || Number(localStorage.getItem("income"))       || 0;
+    let expense  = Number(localStorage.getItem("totalExpense_"+currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
+    let naturalSavings = Math.max(0, income - expense);
+
+    let goal1name = document.getElementById("goal1name").value.trim() || "Short-Term Goal";
+    let goal1amt  = Number(document.getElementById("goal1amt").value)  || 0;
+    let goal2name = document.getElementById("goal2name").value.trim() || "Mid-Term Goal";
+    let goal2amt  = Number(document.getElementById("goal2amt").value)  || 0;
+    let goal3name = document.getElementById("goal3name").value.trim() || "Long-Term Goal";
+    let goal3amt  = Number(document.getElementById("goal3amt").value)  || 0;
+    let currentSavings = Number(document.getElementById("currentSavings").value) || 0;
+    let monthlySave    = Number(document.getElementById("monthlySave").value)    || naturalSavings;
+
+    if(!goal1amt && !goal2amt && !goal3amt){ alert("Please enter at least one goal amount."); return; }
+    if(!monthlySave){ alert("Please enter how much you can save monthly."); return; }
+
+    /* Timelines: short=12mo, mid=36mo, long=120mo */
+    let goals = [
+        { name:goal1name, target:goal1amt, months:12,  type:"Short-Term (1 year)" },
+        { name:goal2name, target:goal2amt, months:36,  type:"Mid-Term (3 years)" },
+        { name:goal3name, target:goal3amt, months:120, type:"Long-Term (10 years)" }
+    ].filter(function(g){ return g.target > 0; });
+
+    let html = '<div class="section-title" style="margin-top:0;">Your Financial Roadmap</div>';
+
+    /* Summary bar */
+    html += '<div class="fp-result-card" style="border-color:rgba(59,130,246,0.3);margin-bottom:20px;">' +
+        '<div class="goal-name" style="color:#60a5fa;">📋 Your Financial Snapshot</div>' +
+        '<div class="goal-detail">' +
+            '💰 Monthly Income: <b style="color:#e6d5b8;">₹'+income.toLocaleString()+'</b><br>' +
+            '💸 Monthly Expenses: <b style="color:#e6d5b8;">₹'+expense.toLocaleString()+'</b><br>' +
+            '🏦 Natural Savings/month: <b style="color:#34d399;">₹'+naturalSavings.toLocaleString()+'</b><br>' +
+            '🎯 Planned Savings/month: <b style="color:#60a5fa;">₹'+monthlySave.toLocaleString()+'</b><br>' +
+            '💼 Current Savings: <b style="color:#e6d5b8;">₹'+currentSavings.toLocaleString()+'</b>' +
+        '</div>' +
+    '</div>';
+
+    goals.forEach(function(g){
+        let remaining   = Math.max(0, g.target - currentSavings);
+        let monthsNeeded = remaining > 0 ? Math.ceil(remaining / monthlySave) : 0;
+        let canAchieve  = monthsNeeded <= g.months;
+        let progress    = Math.min(100, Math.round((currentSavings / g.target) * 100));
+        let shortfall   = Math.max(0, remaining - monthlySave * g.months);
+        let extraNeeded = shortfall > 0 ? Math.ceil(shortfall / g.months) : 0;
+        let progressColor = canAchieve ? "#34d399" : monthsNeeded <= g.months * 1.5 ? "#f59e0b" : "#f87171";
+        let statusClass   = canAchieve ? "status-ok" : monthsNeeded <= g.months * 1.5 ? "status-warn" : "status-bad";
+        let statusText    = canAchieve ? "✓ On Track" : "⚠ Needs More Savings";
+
+        html += '<div class="fp-result-card">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+                '<div class="goal-name">'+g.name+'</div>' +
+                '<span class="goal-status '+statusClass+'">'+statusText+'</span>' +
+            '</div>' +
+            '<div class="goal-detail">' +
+                '🎯 Goal: <b style="color:#e6d5b8;">₹'+g.target.toLocaleString()+'</b> in '+g.type+'<br>' +
+                '📅 Months to achieve: <b style="color:#e6d5b8;">'+monthsNeeded+' months</b>' + (canAchieve ? ' ✓ within '+g.months+' months!' : ' (deadline: '+g.months+' months)') + '<br>';
+
+        if(canAchieve){
+            html += '✅ At ₹'+monthlySave.toLocaleString()+'/month you will reach this goal in <b style="color:#34d399;">'+monthsNeeded+' months</b>.';
+        } else {
+            html += '❌ Saving ₹'+monthlySave.toLocaleString()+'/month is not enough. You need <b style="color:#fbbf24;">₹'+(monthlySave+extraNeeded).toLocaleString()+'/month</b> to meet this goal on time. (₹'+extraNeeded.toLocaleString()+' more/month)';
+        }
+
+        html += '</div>' +
+            '<div class="fp-progress-wrap"><div class="fp-progress-fill" style="width:'+progress+'%;background:'+progressColor+';"></div></div>' +
+            '<div style="font-family:DM Mono,monospace;font-size:11px;color:#666;margin-top:5px;">'+progress+'% saved toward goal</div>' +
+        '</div>';
+    });
+
+    /* Investment tip */
+    html += '<div class="fp-result-card" style="border-color:rgba(16,185,129,0.2);">' +
+        '<div class="goal-name" style="color:#34d399;">💡 Pro Tip — Make Your Savings Work</div>' +
+        '<div class="goal-detail">' +
+            '• <b>Short goals</b>: Keep in savings account or liquid mutual fund<br>' +
+            '• <b>Mid goals</b>: SIP in debt mutual funds or recurring deposit<br>' +
+            '• <b>Long goals</b>: SIP in equity mutual funds (12–15% avg returns over 10yr)<br>' +
+            '• At 12% returns, ₹'+monthlySave.toLocaleString()+'/month for 10 years = <b style="color:#34d399;">₹'+Math.round(monthlySave*((Math.pow(1.01,120)-1)/0.01)).toLocaleString()+'</b>' +
+        '</div>' +
+    '</div>';
+
+    document.getElementById("fpResults").innerHTML = html;
+    document.getElementById("fpForm").classList.remove("show");
+    document.getElementById("fpResults").scrollIntoView({behavior:"smooth"});
+}
+
+/* ── COURSES ── */
+const COURSES = [
+    { name:"Financial Markets", provider:"Yale / Coursera", desc:"Robert Shiller's legendary course on financial markets, risk, and investing fundamentals.", price:"Free to audit", paid:false, category:"finance", url:"https://www.coursera.org/learn/financial-markets-global" },
+    { name:"Personal Finance & Investing", provider:"NPTEL / SWAYAM", desc:"IIT-level personal finance course covering budgeting, insurance, tax, and investments. Indian context.", price:"Free", paid:false, category:"finance", url:"https://swayam.gov.in" },
+    { name:"Financial Literacy", provider:"SEBI Investor Education", desc:"Official SEBI portal for investor education — mutual funds, stocks, bonds, derivatives.", price:"Free", paid:false, category:"finance", url:"https://investor.sebi.gov.in" },
+    { name:"Banking & Finance Fundamentals", provider:"IIBF / Google", desc:"Covers banking operations, credit, loans, and RBI guidelines. Practical Indian banking knowledge.", price:"Free", paid:false, category:"finance", url:"https://www.iibf.org.in/elearning.asp" },
+    { name:"Google Data Analytics Certificate", provider:"Google / Coursera", desc:"Learn data analysis, spreadsheets, SQL and Tableau. High-demand skill that boosts income by 20–30%.", price:"₹3,000/month (Coursera)", paid:true, category:"tech", url:"https://grow.google/certificates" },
+    { name:"Python for Everybody", provider:"University of Michigan", desc:"Beginner Python programming — the most in-demand skill in fintech, data, and automation.", price:"Free to audit", paid:false, category:"tech", url:"https://www.coursera.org/specializations/python" },
+    { name:"Microsoft Excel & Power BI", provider:"Microsoft Learn", desc:"Master Excel and Power BI for financial analysis, dashboards, and reporting. Free official Microsoft courses.", price:"Free", paid:false, category:"tech", url:"https://learn.microsoft.com" },
+    { name:"Digital Marketing Fundamentals", provider:"Google Digital Garage", desc:"Google-certified course on digital marketing, SEO, and social media. Helps grow any small business.", price:"Free", paid:false, category:"business", url:"https://learndigital.withgoogle.com/digitalgarage" },
+    { name:"Entrepreneurship & Startup", provider:"NPTEL / SWAYAM", desc:"IIT course on entrepreneurship, business model design, and startup financing. Ideal for MUDRA loan applicants.", price:"Free", paid:false, category:"business", url:"https://swayam.gov.in" },
+    { name:"Accounting Fundamentals", provider:"ICAI / SWAYAM", desc:"Basic accounting, GST, and tally. Essential for small business owners and self-employed individuals.", price:"Free", paid:false, category:"business", url:"https://swayam.gov.in" },
+    { name:"PM eVIDYA — Free Courses", provider:"Ministry of Education", desc:"Official govt platform with 200+ free courses across all subjects. Certificates recognized for govt jobs.", price:"Free", paid:false, category:"govt", url:"https://pmevidy a.gov.in" },
+    { name:"SWAYAM — 1000+ Free Courses", provider:"UGC / AICTE / NPTEL", desc:"India's largest MOOC platform with courses from top IITs and IIMs. Credits transferable to university.", price:"Free", paid:false, category:"govt", url:"https://swayam.gov.in" },
+    { name:"Skill India Digital Hub", provider:"Ministry of Skill Development", desc:"Free skill courses in IT, finance, retail, healthcare, and more. Government-certified and job-linked.", price:"Free", paid:false, category:"govt", url:"https://skillindia.gov.in" },
+    { name:"CFA Level 1 Prep", provider:"CFA Institute", desc:"Gold standard in finance and investment management. Opens doors to banking, PE, and fund management careers.", price:"~₹60,000 (exam fee)", paid:true, category:"finance", url:"https://www.cfainstitute.org" },
+    { name:"AWS Cloud Practitioner", provider:"Amazon Web Services", desc:"Entry-level cloud certification. Cloud skills are now required in most fintech and banking tech roles.", price:"₹10,000 (exam fee)", paid:true, category:"tech", url:"https://aws.amazon.com/certification" }
+];
+
+let activeCourseFilter = 'all';
+
+function filterCourses(filter, btn){
+    activeCourseFilter = filter;
+    document.querySelectorAll('.cf-btn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    renderCourses();
+}
+
+function renderCourses(){
+    let filtered = COURSES.filter(function(c){
+        if(activeCourseFilter === 'all')     return true;
+        if(activeCourseFilter === 'free')    return !c.paid;
+        return c.category === activeCourseFilter;
+    });
+
+    let html = '';
+    filtered.forEach(function(c){
+        let badge = c.paid ? '<span class="course-badge badge-paid">Paid</span>' : '<span class="course-badge badge-free">Free</span>';
+        let certBadge = c.paid ? '<span class="course-badge badge-cert" style="margin-left:4px;">Certificate</span>' : '';
+        html += '<div class="course-card">' +
+            '<div class="course-top">' +
+                badge + certBadge +
+                '<div class="course-name">' + c.name + '</div>' +
+                '<div class="course-provider">' + c.provider + '</div>' +
+                '<div class="course-desc">' + c.desc + '</div>' +
+            '</div>' +
+            '<div class="course-footer">' +
+                '<span class="course-price ' + (c.paid ? 'price-paid' : 'price-free') + '">' + c.price + '</span>' +
+                '<button class="course-link" onclick="openURL(\'' + c.url + '\')">Explore →</button>' +
+            '</div>' +
+        '</div>';
+    });
+    document.getElementById("coursesGrid").innerHTML = html;
+}
+
+/* ── INIT ── */
+window.addEventListener("DOMContentLoaded", function(){
+    let currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ window.location.href="/"; return; }
+
+    let income  = Number(localStorage.getItem("income_"+currentUser))       || Number(localStorage.getItem("income"))       || 0;
+    let expense = Number(localStorage.getItem("totalExpense_"+currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
+    let score   = Number(localStorage.getItem("riskScore_"+currentUser))    || Number(localStorage.getItem("riskScore"))    || 0;
+    let savings = income - expense;
+    let ratio   = income > 0 ? savings / income : 0;
+
+    if(income > 0) generateAdvice(income, expense, savings, ratio, score);
+    renderSchemes();
+    renderCourses();
+});
 
 function logout(){
     localStorage.removeItem("currentUser");
     window.location.href = "/";
 }
-
 </script>
 </body>
 </html>
