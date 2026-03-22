@@ -18,6 +18,8 @@ def init_db():
         loanAmount REAL, loanType TEXT, tenure INTEGER, emi REAL,
         risk_score INTEGER, allocated_banker TEXT,
         loan_status TEXT, reason TEXT,
+        address TEXT, employment TEXT, purpose TEXT,
+        aadhar TEXT, pan TEXT,
         created_at TEXT DEFAULT (datetime('now','localtime'))
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS bankers (
@@ -36,6 +38,17 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS user_accounts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT, phone TEXT, username TEXT UNIQUE
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS borrower_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT, phone TEXT,
+        age INTEGER, email TEXT, address TEXT,
+        employment TEXT, employer TEXT,
+        aadhar TEXT, pan TEXT,
+        purpose TEXT, account_holder TEXT,
+        account_number TEXT, ifsc TEXT,
+        created_at TEXT
     )''')
     conn.commit()
     conn.close()
@@ -169,14 +182,26 @@ def apply_loan():
     data = request.json
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+
+    # Auto-add missing columns if DB has old schema
+    c.execute("PRAGMA table_info(users)")
+    existing = [r[1] for r in c.fetchall()]
+    for col, typ in [("address","TEXT"),("employment","TEXT"),("purpose","TEXT"),
+                     ("aadhar","TEXT"),("pan","TEXT"),("created_at","TEXT")]:
+        if col not in existing:
+            c.execute(f"ALTER TABLE users ADD COLUMN {col} {typ}")
+
     c.execute("SELECT COUNT(*) FROM bankers")
     banker_count = c.fetchone()[0]
     c.execute('''INSERT INTO users
-        (name,age,phone,loanAmount,loanType,tenure,emi,risk_score,allocated_banker,loan_status,reason,created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+        (name,age,phone,loanAmount,loanType,tenure,emi,risk_score,allocated_banker,loan_status,reason,
+         address,employment,purpose,aadhar,pan,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
         (data.get('name'), data.get('age',0), data.get('phone'),
          data.get('loanAmount'), data.get('loanType'), data.get('tenure'),
          data.get('emi'), data.get('risk_score'), None, "Pending", "",
+         data.get('address',''), data.get('employment',''),
+         data.get('purpose',''), data.get('aadhar',''), data.get('pan',''),
          datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
     conn.close()
@@ -447,6 +472,67 @@ def save_data():
     conn.commit()
     conn.close()
     return jsonify({"message":"Saved"})
+
+
+# ------------------ SAVE BORROWER PROFILE ------------------
+@app.route('/save_borrower_profile', methods=['POST'])
+def save_borrower_profile():
+    data = request.json
+    conn = sqlite3.connect('users.db')
+    cur = conn.cursor()
+    # Auto-add image columns if missing (for existing DBs)
+    cur.execute("PRAGMA table_info(borrower_profiles)")
+    existing_cols = [r[1] for r in cur.fetchall()]
+    for col in ['aadhar_img','pan_img','salary_img','bank_stmt']:
+        if col not in existing_cols:
+            cur.execute(f"ALTER TABLE borrower_profiles ADD COLUMN {col} TEXT")
+    cur.execute("SELECT id FROM borrower_profiles WHERE phone=?", (data.get('phone',''),))
+    row = cur.fetchone()
+    fields = (data.get('name',''), data.get('age',0), data.get('email',''),
+              data.get('address',''), data.get('employment',''), data.get('employer',''),
+              data.get('aadhar',''), data.get('pan',''), data.get('purpose',''),
+              data.get('accountHolder',''), data.get('accountNumber',''), data.get('ifsc',''),
+              data.get('aadharImg'), data.get('panImg'), data.get('salaryImg'), data.get('bankStmt'))
+    if row:
+        cur.execute('''UPDATE borrower_profiles SET
+            name=?,age=?,email=?,address=?,employment=?,employer=?,
+            aadhar=?,pan=?,purpose=?,account_holder=?,account_number=?,ifsc=?,
+            aadhar_img=?,pan_img=?,salary_img=?,bank_stmt=?
+            WHERE phone=?''', fields + (data.get('phone',''),))
+    else:
+        cur.execute('''INSERT INTO borrower_profiles
+            (name,phone,age,email,address,employment,employer,aadhar,pan,
+             purpose,account_holder,account_number,ifsc,
+             aadhar_img,pan_img,salary_img,bank_stmt,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+            (data.get('name',''), data.get('phone','')) + fields[1:] +
+            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "saved"})
+
+# ------------------ GET BORROWER PROFILE ------------------
+@app.route('/api/borrower_profile')
+def get_borrower_profile():
+    phone = request.args.get('phone','').strip()
+    name  = request.args.get('name','').strip()
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    if phone and name:
+        c.execute("SELECT * FROM borrower_profiles WHERE phone=? OR name=? LIMIT 1",(phone,name))
+    elif phone:
+        c.execute("SELECT * FROM borrower_profiles WHERE phone=? LIMIT 1",(phone,))
+    else:
+        c.execute("SELECT * FROM borrower_profiles WHERE name=? LIMIT 1",(name,))
+    row = c.fetchone()
+    c2 = conn.cursor()
+    c2.execute("PRAGMA table_info(borrower_profiles)")
+    cols = [r[1] for r in c2.fetchall()]
+    conn.close()
+    if row:
+        result = dict(zip(cols, row))
+        return jsonify(result)
+    return jsonify({"error":"not found"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
