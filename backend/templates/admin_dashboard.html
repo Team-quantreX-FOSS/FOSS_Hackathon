@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <style>
@@ -48,6 +50,7 @@ color:white;
 <table id="bankTable">
 <tr>
 <th>Bank Name</th>
+<th>Branch</th>
 <th>IFSC</th>
 <th>No. of Bankers</th>
 <th>Total Customers</th>
@@ -70,36 +73,38 @@ async function loadBanks(){
     let table = document.getElementById("bankTable");
 
     if(bankers.length === 0){
-        table.innerHTML += "<tr><td colspan='7'>No banks registered yet.</td></tr>";
+        table.innerHTML += "<tr><td colspan='8'>No banks registered yet.</td></tr>";
         return;
     }
 
     /* Group by bank name */
     let banks = {};
     bankers.forEach(b => {
-        let key = b.bankName + "||" + b.ifsc;
+        let key = b.bankName;
         if(!banks[key]){
             banks[key] = {
-                name: b.bankName,
-                ifsc: b.ifsc,
-                count: 0,
+                name:      b.bankName,
+                branch:    b.branch || "—",
+                ifsc:      b.ifsc,
+                count:     0,
                 customers: 0,
-                approved: 0,
-                rejected: 0,
-                manual: 0
+                approved:  0,
+                rejected:  0,
+                manual:    0
             };
         }
         banks[key].count++;
         banks[key].customers += b.totalCustomers || 0;
-        banks[key].approved  += b.approval || 0;
+        banks[key].approved  += b.approval  || 0;
         banks[key].rejected  += b.rejection || 0;
-        banks[key].manual    += b.manual || 0;
+        banks[key].manual    += b.manual    || 0;
     });
 
     Object.values(banks).forEach(b => {
         let row = table.insertRow();
         row.innerHTML = `
 <td>${b.name}</td>
+<td>${b.branch}</td>
 <td>${b.ifsc}</td>
 <td>${b.count}</td>
 <td>${b.customers}</td>
