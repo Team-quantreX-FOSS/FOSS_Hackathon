@@ -2,54 +2,64 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Apply for Loan</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; }
-.form-wrap { max-width: 600px; margin: 40px auto; }
+.form-wrap { max-width: 700px; margin: 40px auto; }
 .page-header { display:flex; align-items:center; gap:18px; margin-bottom:32px; padding-bottom:18px; border-bottom:2px solid rgba(255,255,255,0.08); }
 .page-header .icon-wrap { width:54px; height:54px; background:linear-gradient(135deg,#e6d5b8,#bfa980); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; }
 .page-header h1 { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; margin:0; color:#e6d5b8; }
 .page-header .subtitle { font-family:'DM Mono',monospace; font-size:12px; color:#888; letter-spacing:2px; text-transform:uppercase; margin:3px 0 0 0; }
 .form-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; }
 .form-section { margin-bottom:28px; }
-.form-section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:0 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.form-section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:0 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px; }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 .form-group { margin-bottom:16px; }
 .form-group label { display:block; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:8px; }
-.form-group input, .form-group select {
-    width:100%; padding:13px 16px;
-    font-family:'DM Mono',monospace; font-size:16px;
+.form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:12px 14px;
+    font-family:'DM Mono',monospace; font-size:15px;
     border-radius:10px; border:1px solid rgba(255,255,255,0.1);
-    background:rgba(255,255,255,0.05); color:#e6d5b8;
-    transition:border-color 0.2s;
+    background:rgba(255,255,255,0.05); color:#e6d5b8; transition:border-color 0.2s;
 }
-.form-group input:focus, .form-group select:focus { outline:none; border-color:#bfa980; }
-.form-group input::placeholder { color:#555; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline:none; border-color:#bfa980; }
+.form-group input::placeholder, .form-group textarea::placeholder { color:#555; }
+.form-group select option { background:#1a1a2e; color:#e6d5b8; }
+.form-group textarea { resize:vertical; min-height:70px; }
+.file-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1.5px dashed rgba(230,213,184,0.2); background:rgba(230,213,184,0.03); font-family:'DM Mono',monospace; font-size:14px; color:#bfa980; cursor:pointer; transition:all 0.2s; }
+.file-label:hover { border-color:#bfa980; }
+.file-label.uploaded { border-style:solid; border-color:#34d399; background:rgba(16,185,129,0.06); color:#34d399; }
+.file-label input[type=file] { display:none; }
 .emi-display { background:rgba(230,213,184,0.08); border:1px solid rgba(230,213,184,0.15); border-radius:10px; padding:16px; text-align:center; margin-bottom:20px; }
 .emi-display .emi-label { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#888; }
 .emi-display .emi-val { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:#e6d5b8; }
-.submit-btn { width:100%; padding:16px; border:none; border-radius:12px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:18px; font-weight:800; cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; }
+.submit-btn { width:100%; padding:16px; border:none; border-radius:12px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:18px; font-weight:800; cursor:pointer; transition:all 0.2s; }
 .submit-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(230,213,184,0.3); }
 #errorMsg { font-family:'DM Mono',monospace; font-size:14px; color:#f87171; margin-top:12px; text-align:center; }
 #successMsg { font-family:'DM Mono',monospace; font-size:14px; color:#34d399; margin-top:12px; text-align:center; line-height:1.6; }
+.step-bar { display:flex; gap:0; margin-bottom:32px; }
+.step { flex:1; text-align:center; padding:10px 0; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; color:#555; border-bottom:2px solid rgba(255,255,255,0.08); position:relative; }
+.step.active { color:#e6d5b8; border-bottom-color:#bfa980; }
+.step.done { color:#34d399; border-bottom-color:#34d399; }
+.required-star { color:#f87171; }
 </style>
 </head>
 <body>
 
 <div class="topbar"><h2>FinRisk - Loan Application</h2></div>
-
 <div class="container">
 <div class="sidebar">
 <h2>FinRisk</h2>
-<button onclick="location.href='/user_dashboard'">Dashboard</button>
-<button onclick="location.href='/loan_check'">Loan Eligibility</button>
-<button onclick="location.href='/financial_advisory'">Financial Advisory</button>
-<button onclick="location.href='/apply_loan'">Apply for Loan</button>
-<button onclick="location.href='/user_profile'">Profile</button>
-<button onclick="logout()">Logout</button>
+<button onclick="location.href='/user_dashboard'">📊 Dashboard</button>
+<button onclick="location.href='/loan_check'">🔍 Loan Eligibility</button>
+<button onclick="location.href='/loan_tracking'">📁 Loan History</button>
+<button onclick="location.href='/financial_advisory'">💡 Advisory</button>
+<button onclick="location.href='/apply_loan'">📝 Apply for Loan</button>
+<button onclick="location.href='/user_profile'">👤 Profile</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div class="main">
@@ -59,40 +69,120 @@
     <div class="icon-wrap">📝</div>
     <div>
         <h1>Loan Application</h1>
-        <p class="subtitle">Fill details · Submit · Banker reviews</p>
+        <p class="subtitle">Complete all sections · Submit · Banker reviews</p>
     </div>
 </div>
 
 <div class="form-card">
 
+<!-- SECTION 1: PERSONAL DETAILS -->
 <div class="form-section">
-<div class="form-section-title">Loan Details</div>
+<div class="form-section-title">👤 Personal Details</div>
 <div class="form-row">
-    <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="loan" placeholder="e.g. 500000" oninput="calcEmi()"></div>
-    <div class="form-group"><label>Age</label><input type="number" id="age" placeholder="e.g. 28"></div>
-    <div class="form-group"><label>Loan Type</label>
-    <select id="loanType">
-        <option value="">Select type</option>
-        <option>Home Loan</option>
-        <option>Personal Loan</option>
-        <option>Education Loan</option>
-        <option>Vehicle Loan</option>
-        <option>Business Loan</option>
-        <option>Gold Loan</option>
-    </select></div>
+    <div class="form-group"><label>Full Name <span class="required-star">*</span></label><input type="text" id="fullName" placeholder="As per Aadhar card"></div>
+    <div class="form-group"><label>Age <span class="required-star">*</span></label><input type="number" id="age" placeholder="e.g. 28" min="18" max="70"></div>
 </div>
 <div class="form-row">
-    <div class="form-group"><label>Tenure (months)</label><input type="number" id="tenure" placeholder="e.g. 60" oninput="calcEmi()"></div>
-    <div class="form-group"><label>Risk Score</label><input type="number" id="score" placeholder="Auto-filled"></div>
+    <div class="form-group"><label>Phone Number <span class="required-star">*</span></label><input type="text" id="phone" placeholder="10-digit mobile number" maxlength="10"></div>
+    <div class="form-group"><label>Email Address</label><input type="email" id="email" placeholder="youremail@gmail.com"></div>
+</div>
+<div class="form-group"><label>Residential Address <span class="required-star">*</span></label><textarea id="address" placeholder="Flat/House No, Street, City, State, PIN"></textarea></div>
+<div class="form-row">
+    <div class="form-group">
+        <label>Employment Type <span class="required-star">*</span></label>
+        <select id="employment" onchange="toggleEmployment()">
+            <option value="">Select type</option>
+            <option value="Salaried">Salaried (Private)</option>
+            <option value="Salaried Govt">Salaried (Government)</option>
+            <option value="Self Employed">Self Employed / Freelancer</option>
+            <option value="Business Owner">Business Owner</option>
+            <option value="Student">Student</option>
+            <option value="Retired">Retired</option>
+        </select>
+    </div>
+    <div class="form-group" id="employerGroup"><label>Employer / Company Name</label><input type="text" id="employer" placeholder="e.g. Infosys, HDFC Bank"></div>
 </div>
 </div>
 
+<!-- SECTION 2: KYC DOCUMENTS -->
 <div class="form-section">
-<div class="form-section-title">Bank Details</div>
-<div class="form-group"><label>Account Holder Name</label><input type="text" id="accountHolder" placeholder="As per bank records"></div>
+<div class="form-section-title">🪪 KYC Documents</div>
 <div class="form-row">
-    <div class="form-group"><label>Bank Account Number</label><input type="text" id="accountNumber" placeholder="e.g. 1234567890"></div>
-    <div class="form-group"><label>IFSC Code</label><input type="text" id="ifsc" placeholder="e.g. SBIN0000001"></div>
+    <div class="form-group"><label>Aadhar Number <span class="required-star">*</span></label><input type="text" id="aadhar" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="formatAadhar(this)"></div>
+    <div class="form-group"><label>PAN Number <span class="required-star">*</span></label><input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" oninput="this.value=this.value.toUpperCase()"></div>
+</div>
+<div class="form-row">
+    <div class="form-group">
+        <label>Aadhar Card (Front) <span class="required-star">*</span></label>
+        <label class="file-label" id="aadharLabel" for="aadharFile">
+            <span id="aadharIcon">📎</span><span id="aadharTxt">Upload image</span>
+            <input type="file" id="aadharFile" accept="image/*,.pdf" onchange="handleFile('aadharFile','aadharLabel','aadharIcon','aadharTxt','aadharData')">
+        </label>
+    </div>
+    <div class="form-group">
+        <label>PAN Card <span class="required-star">*</span></label>
+        <label class="file-label" id="panLabel" for="panFile">
+            <span id="panIcon">📎</span><span id="panTxt">Upload image</span>
+            <input type="file" id="panFile" accept="image/*,.pdf" onchange="handleFile('panFile','panLabel','panIcon','panTxt','panData')">
+        </label>
+    </div>
+</div>
+</div>
+
+<!-- SECTION 3: FINANCIAL DOCUMENTS -->
+<div class="form-section">
+<div class="form-section-title">💰 Financial Documents</div>
+<div class="form-row">
+    <div class="form-group">
+        <label>Salary Slip / Income Proof <span class="required-star">*</span></label>
+        <label class="file-label" id="salaryLabel" for="salaryFile">
+            <span id="salaryIcon">📎</span><span id="salaryTxt">Upload latest salary slip</span>
+            <input type="file" id="salaryFile" accept="image/*,.pdf" onchange="handleFile('salaryFile','salaryLabel','salaryIcon','salaryTxt','salaryData')">
+        </label>
+    </div>
+    <div class="form-group">
+        <label>Bank Statement (6 months)</label>
+        <label class="file-label" id="bankStmtLabel" for="bankStmtFile">
+            <span id="bankStmtIcon">📎</span><span id="bankStmtTxt">Upload PDF or image</span>
+            <input type="file" id="bankStmtFile" accept="image/*,.pdf" onchange="handleFile('bankStmtFile','bankStmtLabel','bankStmtIcon','bankStmtTxt','bankStmtData')">
+        </label>
+    </div>
+</div>
+</div>
+
+<!-- SECTION 4: LOAN DETAILS -->
+<div class="form-section">
+<div class="form-section-title">🏦 Loan Details</div>
+<div class="form-row">
+    <div class="form-group"><label>Loan Amount (₹) <span class="required-star">*</span></label><input type="number" id="loan" placeholder="e.g. 500000" oninput="calcEmi()"></div>
+    <div class="form-group">
+        <label>Loan Type <span class="required-star">*</span></label>
+        <select id="loanType">
+            <option value="">Select type</option>
+            <option>Home Loan</option>
+            <option>Personal Loan</option>
+            <option>Education Loan</option>
+            <option>Vehicle Loan</option>
+            <option>Business Loan</option>
+            <option>Gold Loan</option>
+            <option>Mudra Loan</option>
+        </select>
+    </div>
+</div>
+<div class="form-row">
+    <div class="form-group"><label>Tenure (months) <span class="required-star">*</span></label><input type="number" id="tenure" placeholder="e.g. 60" oninput="calcEmi()"></div>
+    <div class="form-group"><label>Risk Score</label><input type="number" id="score" placeholder="Auto-filled from Loan Eligibility"></div>
+</div>
+<div class="form-group"><label>Purpose of Loan <span class="required-star">*</span></label><textarea id="purpose" placeholder="Briefly describe why you need this loan (e.g. to purchase a car, fund college education, expand business)"></textarea></div>
+</div>
+
+<!-- SECTION 5: BANK DETAILS -->
+<div class="form-section">
+<div class="form-section-title">🏧 Bank Account Details</div>
+<div class="form-group"><label>Account Holder Name <span class="required-star">*</span></label><input type="text" id="accountHolder" placeholder="As per bank records"></div>
+<div class="form-row">
+    <div class="form-group"><label>Bank Account Number <span class="required-star">*</span></label><input type="text" id="accountNumber" placeholder="e.g. 1234567890"></div>
+    <div class="form-group"><label>IFSC Code <span class="required-star">*</span></label><input type="text" id="ifsc" placeholder="e.g. SBIN0000001" oninput="this.value=this.value.toUpperCase()"></div>
 </div>
 </div>
 
@@ -111,56 +201,149 @@
 </div>
 
 <script>
+/* Store uploaded file data */
+let fileStore = { aadharData:null, panData:null, salaryData:null, bankStmtData:null };
+
 window.addEventListener("DOMContentLoaded", function(){
-    let score = localStorage.getItem("riskScore") || "";
-    document.getElementById("score").value = score;
+    let currentUser = localStorage.getItem("currentUser");
+    if(!currentUser){ window.location.href="/"; return; }
+    let ud = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
+    if(ud.name) document.getElementById("fullName").value = ud.name;
+
+    let phone = localStorage.getItem("phone_"+currentUser) || localStorage.getItem("phone") || "";
+    if(phone) document.getElementById("phone").value = phone;
+
+    let score = localStorage.getItem("riskScore_"+currentUser) || localStorage.getItem("riskScore") || "";
+    if(score) document.getElementById("score").value = score;
 });
 
+function formatAadhar(inp){
+    let val = inp.value.replace(/\D/g,'').substring(0,12);
+    inp.value = val.replace(/(\d{4})(?=\d)/g,'$1 ').trim();
+}
+
+function toggleEmployment(){
+    let emp = document.getElementById("employment").value;
+    let grp = document.getElementById("employerGroup");
+    grp.style.display = (emp==="Student"||emp==="Retired"||emp==="") ? "none" : "block";
+}
+
+function handleFile(inputId, lblId, iconId, txtId, storeKey){
+    let file = document.getElementById(inputId).files[0];
+    if(!file) return;
+    let lbl = document.getElementById(lblId);
+    lbl.classList.add("uploaded");
+    document.getElementById(iconId).innerText = "✅";
+    let name = file.name.length > 22 ? file.name.substring(0,20)+"…" : file.name;
+    document.getElementById(txtId).innerText = name;
+    let reader = new FileReader();
+    reader.onload = function(e){ fileStore[storeKey] = e.target.result; };
+    reader.readAsDataURL(file);
+}
+
 function calcEmi(){
-    let loan   = Number(document.getElementById("loan").value);
+    let loan = Number(document.getElementById("loan").value);
     let tenure = Number(document.getElementById("tenure").value);
     if(loan && tenure){
-        let emi = Math.round(loan / tenure);
-        document.getElementById("emiDisplay").innerText = "₹ " + emi.toLocaleString();
+        document.getElementById("emiDisplay").innerText = "₹ " + Math.round(loan/tenure).toLocaleString();
     } else {
         document.getElementById("emiDisplay").innerText = "₹ —";
     }
 }
 
 function submitApplication(){
-    let loan     = document.getElementById("loan").value;
-    let loanType = document.getElementById("loanType").value;
-    let tenure   = document.getElementById("tenure").value;
-    let score    = document.getElementById("score").value;
-    let errEl    = document.getElementById("errorMsg");
-    let sucEl    = document.getElementById("successMsg");
-
+    let errEl = document.getElementById("errorMsg");
+    let sucEl = document.getElementById("successMsg");
     errEl.innerText = ""; sucEl.innerText = "";
 
-    if(!loan||!loanType||!tenure||!score){ errEl.innerText="Please fill all required fields."; return; }
+    let fullName   = document.getElementById("fullName").value.trim();
+    let age        = Number(document.getElementById("age").value);
+    let phone      = document.getElementById("phone").value.trim();
+    let address    = document.getElementById("address").value.trim();
+    let employment = document.getElementById("employment").value;
+    let employer   = document.getElementById("employer") ? document.getElementById("employer").value.trim() : "";
+    let aadhar     = document.getElementById("aadhar").value.replace(/\s/g,"").trim();
+    let pan        = document.getElementById("pan").value.trim();
+    let loan       = document.getElementById("loan").value;
+    let loanType   = document.getElementById("loanType").value;
+    let tenure     = document.getElementById("tenure").value;
+    let score      = document.getElementById("score").value;
+    let purpose    = document.getElementById("purpose").value.trim();
+    let accountHolder = document.getElementById("accountHolder").value.trim();
+    let accountNumber = document.getElementById("accountNumber").value.trim();
+    let ifsc       = document.getElementById("ifsc").value.trim();
 
-    let phone = localStorage.getItem("phone") || "";
-    if(!phone){ errEl.innerText="Phone missing. Fill financial details on dashboard first."; return; }
-
-    let name = "";
-    let currentUser = localStorage.getItem("currentUser");
-    if(currentUser){
-        let ud = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
-        name = ud.name || "";
-    }
+    /* Validation */
+    if(!fullName)      { errEl.innerText="Please enter your full name."; return; }
+    if(!age||age<18)   { errEl.innerText="Age must be 18 or above."; return; }
+    if(!phone||phone.length!==10){ errEl.innerText="Enter a valid 10-digit phone number."; return; }
+    if(!address)       { errEl.innerText="Please enter your address."; return; }
+    if(!employment)    { errEl.innerText="Please select employment type."; return; }
+    if(!aadhar||aadhar.length!==12){ errEl.innerText="Enter a valid 12-digit Aadhar number."; return; }
+    if(!pan||pan.length!==10){ errEl.innerText="Enter a valid 10-character PAN number."; return; }
+    if(!fileStore.aadharData){ errEl.innerText="Please upload your Aadhar card."; return; }
+    if(!fileStore.panData)   { errEl.innerText="Please upload your PAN card."; return; }
+    if(!fileStore.salaryData){ errEl.innerText="Please upload salary slip or income proof."; return; }
+    if(!loan||!loanType||!tenure||!score){ errEl.innerText="Please fill all loan details."; return; }
+    if(!purpose)       { errEl.innerText="Please describe the purpose of the loan."; return; }
+    if(!accountHolder||!accountNumber||!ifsc){ errEl.innerText="Please fill all bank account details."; return; }
 
     let emi = Math.round(Number(loan)/Number(tenure));
 
+    /* Save documents to localStorage for banker to view */
+    let currentUser = localStorage.getItem("currentUser");
+    let appDocs = {
+        fullName, age, phone, address, employment, employer,
+        aadhar: aadhar.substring(0,8)+"XXXX", /* mask last 4 */
+        pan: pan.substring(0,5)+"XXXXX",       /* mask last 5 */
+        purpose, accountHolder,
+        accountNumber: "XXXXXX"+accountNumber.slice(-4), /* mask */
+        ifsc,
+        aadharImg: fileStore.aadharData,
+        panImg:    fileStore.panData,
+        salaryImg: fileStore.salaryData,
+        bankStmt:  fileStore.bankStmtData
+    };
+    localStorage.setItem("appDocs_"+currentUser, JSON.stringify(appDocs));
+    /* Save phone for status tracking */
+    localStorage.setItem("phone_"+currentUser, phone);
+    localStorage.setItem("phone", phone);
+
+    /* Save profile + images to DB so banker can view */
+    fetch("/save_borrower_profile",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            name:fullName, age, phone,
+            email:document.getElementById("email").value.trim(),
+            address, employment,
+            employer:document.getElementById("employer")?document.getElementById("employer").value.trim():"",
+            aadhar: aadhar.substring(0,8)+"XXXX",
+            pan: pan.substring(0,5)+"XXXXX",
+            purpose,
+            accountHolder, accountNumber:"XXXXXX"+accountNumber.slice(-4), ifsc,
+            aadharImg:  fileStore.aadharData,
+            panImg:     fileStore.panData,
+            salaryImg:  fileStore.salaryData,
+            bankStmt:   fileStore.bankStmtData
+        })
+    }).catch(()=>{});
+
     fetch("/apply_loan",{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ name, age:Number(document.getElementById("age").value)||0, phone, loanAmount:Number(loan), loanType, tenure:Number(tenure), emi, risk_score:Number(score) })
+        body:JSON.stringify({
+            name:fullName, age, phone,
+            loanAmount:Number(loan), loanType,
+            tenure:Number(tenure), emi,
+            risk_score:Number(score),
+            address, employment, purpose, aadhar, pan
+        })
     })
     .then(r=>r.json())
     .then(res=>{
         if(res.message==="no_banker"){
-            sucEl.innerText="✅ Request sent! No banker is available yet — your application will be picked up once a banker registers.";
+            sucEl.innerText="✅ Application submitted! No banker available yet — will be picked up once a banker registers.";
         } else {
-            sucEl.innerText="✅ Application submitted! A banker will pick it up from the Loan Requests page.";
+            sucEl.innerText="✅ Application submitted successfully! A banker will review your application shortly.";
         }
         setTimeout(()=>{ window.location.href="/user_dashboard"; }, 2500);
     })
