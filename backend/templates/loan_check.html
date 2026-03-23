@@ -361,7 +361,18 @@ function checkRisk(){
        Total: 100 points across 5 independent factors
        ═══════════════════════════════════════════════════════════ */
 
-    let newEmi = loan / tenure;
+    /* Proper EMI formula: EMI = P*r*(1+r)^n / ((1+r)^n - 1)
+       Estimated annual interest rate based on risk score */
+    let annualRate = 12; /* default 12% */
+    if(method === "credit"){
+        if(creditScore >= 750)      annualRate = 8.5;
+        else if(creditScore >= 700) annualRate = 10.5;
+        else if(creditScore >= 650) annualRate = 13;
+        else if(creditScore >= 600) annualRate = 16;
+        else                        annualRate = 20;
+    }
+    let r = annualRate / 12 / 100; /* monthly rate */
+    let newEmi = r > 0 ? Math.round(loan * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1)) : Math.round(loan / tenure);
 
     /* ── FACTOR 1: CIBIL / CREDIT SCORE  (35 pts) ──────────────
        Industry standard: CIBIL score is the single biggest factor.
@@ -524,7 +535,7 @@ function checkRisk(){
     document.querySelector('#bEMI').closest('.breakdown-box').querySelector('.bb-label').innerText = "Savings Rate";
 
     document.getElementById("formulaNote").innerText =
-        "RBI/CIBIL Standard: CIBIL Score (35pts) + FOIR — Fixed Obligation to Income (25pts) + Net Savings Rate (20pts) + Loan-to-Income LTI (12pts) + Age Factor (8pts) = " + totalScore + "/100. Hard knockouts: CIBIL < 550 caps score at 30; FOIR > 65% caps at 25.";
+        "Estimated Rate: "+annualRate+"% p.a. | RBI/CIBIL Standard: CIBIL Score (35pts) + FOIR — Fixed Obligation to Income (25pts) + Net Savings Rate (20pts) + Loan-to-Income LTI (12pts) + Age Factor (8pts) = " + totalScore + "/100. Hard knockouts: CIBIL < 550 caps score at 30; FOIR > 65% caps at 25.";
 
     document.getElementById("resultCard").classList.add("show");
     document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -536,7 +547,54 @@ function checkRisk(){
     localStorage.setItem("riskScore", totalScore);
 }
 
-function logout(){ localStorage.removeItem("currentUser"); window.location.href = "/"; }
+function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage.removeItem('currentUser'); window.location.href='/'; } }
+</script>
+
+<script>
+
+/* ── TOAST SYSTEM ── */
+(function(){
+    let container = document.getElementById('toastContainer');
+    if(!container){
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        document.body.appendChild(container);
+    }
+    window.showToast = function(msg, type){
+        type = type || 'info';
+        let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
+        let t = document.createElement('div');
+        t.className = 'toast ' + type;
+        t.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + msg + '</span>';
+        container.appendChild(t);
+        setTimeout(function(){
+            t.classList.add('fade-out');
+            setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+        }, 3000);
+    };
+})();
+
+/* ── MOBILE SIDEBAR ── */
+(function(){
+    let sidebar = document.querySelector('.sidebar');
+    if(!sidebar) return;
+    let btn = document.createElement('button');
+    btn.className = 'hamburger';
+    btn.innerHTML = '☰';
+    document.body.appendChild(btn);
+    let overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+    btn.addEventListener('click', function(){
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function(){
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    });
+})();
+
 </script>
 </body>
 </html>
