@@ -1,16 +1,20 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'users.db')
+
 def get_db():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,7 +115,7 @@ def register_banker():
     ifsc      = data.get('ifsc','').strip()
     if not name or not banker_id or not bank_name or not ifsc:
         return jsonify({"error":"All fields are required."}), 400
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id FROM bankers WHERE banker_id=?", (banker_id,))
     if c.fetchone():
@@ -132,7 +136,7 @@ def register_admin():
     admin_id = data.get('admin_id','').strip()
     if not name or not email or not admin_id:
         return jsonify({"error":"All fields are required."}), 400
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id FROM admins WHERE admin_id=?", (admin_id,))
     if c.fetchone():
@@ -152,7 +156,7 @@ def register_user():
     username = data.get('username','').strip()
     if not name or not username:
         return jsonify({"error":"Name and username are required."}), 400
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id FROM user_accounts WHERE username=?", (username,))
     if c.fetchone():
@@ -166,13 +170,50 @@ def register_user():
 # ------------------ CHECK USERNAME ------------------
 @app.route('/check_username', methods=['POST'])
 def check_username():
-    username = request.json.get('username','').strip()
-    conn = sqlite3.connect('users.db')
+    username = request.json.get('username', '').strip().lower()
+
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id FROM user_accounts WHERE username=?", (username,))
+
+    c.execute("SELECT id FROM user_accounts WHERE LOWER(username)=?", (username,))
     exists = c.fetchone() is not None
+    c.execute("SELECT username FROM user_accounts")
+    print(c.fetchall())
+    print("Checking username:", username)
+    print("DB Path:", DB_PATH)
+    
     conn.close()
+
     return jsonify({"exists": exists})
+
+
+
+@app.route('/login_user', methods=['POST'])
+def login_user():
+    username = request.json.get('username', '').strip().lower()
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT id, name, phone, username FROM user_accounts WHERE LOWER(username)=?", (username,))
+    user = c.fetchone()
+
+    conn.close()
+
+    if user:
+        return jsonify({
+            "exists": True,
+            "id": user[0],
+            "name": user[1],
+            "phone": user[2],
+            "username": user[3]
+        })
+    else:
+        return jsonify({
+            "exists": False,
+            "message": "Username not found"
+        }), 404
+
 
 # ------------------ APPLY LOAN ------------------
 @app.route('/apply_loan', methods=['GET','POST'])
@@ -180,7 +221,7 @@ def apply_loan():
     if request.method == 'GET':
         return render_template('apply_loan.html')
     data = request.json
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     # Auto-add missing columns if DB has old schema
@@ -215,7 +256,7 @@ def pickup_loan():
     banker_name = data.get('banker_name','').strip()
     if not user_id or not banker_name:
         return jsonify({"error":"Missing data."}), 400
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT allocated_banker FROM users WHERE id=?", (user_id,))
     row = c.fetchone()
@@ -238,7 +279,7 @@ def banker_action():
     user_id = data.get('user_id')
     action  = data.get('action')
     reason  = data.get('reason','')
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT loan_status, allocated_banker FROM users WHERE id=?", (user_id,))
     row = c.fetchone()
@@ -270,7 +311,7 @@ def banker_action():
 # ------------------ GET USERS ------------------
 @app.route('/api/users')
 def get_users():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM users")
     rows = c.fetchall()
@@ -282,7 +323,7 @@ def get_users():
 # ------------------ GET BANKERS ------------------
 @app.route('/api/bankers')
 def get_bankers():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("PRAGMA table_info(bankers)")
     cols = [col[1] for col in c.fetchall()]
@@ -303,7 +344,7 @@ def get_bankers():
 # ------------------ GET BANKS ------------------
 @app.route('/api/banks')
 def get_banks():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("PRAGMA table_info(bankers)")
     cols = [col[1] for col in c.fetchall()]
@@ -322,7 +363,7 @@ def get_banks():
 # ------------------ GET BANKER BY ID ------------------
 @app.route('/api/get_banker/<banker_id>')
 def get_banker_by_id(banker_id):
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("PRAGMA table_info(bankers)")
     cols = [col[1] for col in c.fetchall()]
@@ -344,7 +385,7 @@ def get_banker_by_id(banker_id):
 # ------------------ SYSTEM STATS (for dashboard) ------------------
 @app.route('/api/stats')
 def get_stats():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM users")
     total_loans = c.fetchone()[0]
@@ -365,7 +406,7 @@ def get_stats():
 # ------------------ GET STATUS ------------------
 @app.route('/get_status/<phone>')
 def get_status(phone):
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     name = request.args.get('name','').strip()
     if name:
@@ -383,7 +424,7 @@ def get_status(phone):
 # ------------------ USERS API (banker dashboard) ------------------
 @app.route('/users')
 def api_users():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM users")
     rows = c.fetchall()
@@ -394,7 +435,7 @@ def api_users():
 # ------------------ ADMIN APIS ------------------
 @app.route('/api/borrowers')
 def api_borrowers():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM users")
     rows = c.fetchall()
@@ -405,7 +446,7 @@ def api_borrowers():
 
 @app.route('/api/admin_bankers')
 def api_admin_bankers():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("PRAGMA table_info(bankers)")
     cols = [col[1] for col in c.fetchall()]
@@ -425,7 +466,7 @@ def api_admin_bankers():
 
 @app.route('/api/user_accounts')
 def get_user_accounts():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM user_accounts")
     rows = c.fetchall()
@@ -434,7 +475,7 @@ def get_user_accounts():
 
 @app.route('/delete_user/<int:id>', methods=['DELETE'])
 def delete_user(id):
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM users WHERE id=?", (id,))
     conn.commit()
@@ -443,7 +484,7 @@ def delete_user(id):
 
 @app.route('/reset_all', methods=['POST'])
 def reset_all():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM users")
     c.execute("DELETE FROM bankers")
@@ -454,7 +495,7 @@ def reset_all():
 @app.route('/update_status', methods=['POST'])
 def update_status():
     data = request.json
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE users SET loan_status=?, reason=? WHERE id=?",
               (data['status'],data['reason'],data['id']))
@@ -465,7 +506,7 @@ def update_status():
 @app.route('/save', methods=['POST'])
 def save_data():
     data = request.json
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO users (name,phone,loan_status,reason) VALUES (?,?,?,?)",
               (data.get('name'),data.get('phone'),"Pending",""))
@@ -478,7 +519,7 @@ def save_data():
 @app.route('/save_borrower_profile', methods=['POST'])
 def save_borrower_profile():
     data = request.json
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     # Auto-add image columns if missing (for existing DBs)
     cur.execute("PRAGMA table_info(borrower_profiles)")
@@ -516,7 +557,7 @@ def save_borrower_profile():
 def get_borrower_profile():
     phone = request.args.get('phone','').strip()
     name  = request.args.get('name','').strip()
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if phone and name:
         c.execute("SELECT * FROM borrower_profiles WHERE phone=? OR name=? LIMIT 1",(phone,name))
@@ -533,6 +574,32 @@ def get_borrower_profile():
         result = dict(zip(cols, row))
         return jsonify(result)
     return jsonify({"error":"not found"}), 404
+
+
+# ------------------ ADMIN REMOVE BANKER ------------------
+@app.route('/admin_remove_banker/<int:id>', methods=['DELETE'])
+def admin_remove_banker(id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # Unassign all loans from this banker first
+    c.execute("SELECT name FROM bankers WHERE id=?", (id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE users SET allocated_banker=NULL, loan_status='Pending' WHERE allocated_banker=? AND loan_status NOT IN ('Approved','Rejected')", (row[0],))
+    c.execute("DELETE FROM bankers WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Banker removed"})
+
+
+# ------------------ ERROR HANDLERS ------------------
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
