@@ -88,6 +88,19 @@
 </div>
 
 <script>
+
+function deactivateBanker(id, name){
+    if(!confirm('Remove banker "'+name+'"? All their assigned loans will become unassigned.')) return;
+    fetch('/admin_remove_banker/'+id, {method:'DELETE'})
+    .then(r=>r.json())
+    .then(function(d){ 
+        if(d.error){ showToast(d.error,'error'); return; }
+        showToast('🚫 Banker removed','warn'); 
+        loadBankers(); 
+    })
+    .catch(function(){ showToast('Error','error'); });
+}
+
 async function loadBankers(){
     let res     = await fetch("/api/bankers");
     let bankers = await res.json();
@@ -115,7 +128,10 @@ async function loadBankers(){
 
         let tr = document.createElement("tr");
         tr.innerHTML = `
-<td><b>${b.name||""}</b></td>
+<td>
+  <b>${b.name||""}</b>
+  <br><button onclick="deactivateBanker(${b.id},'${(b.name||"").replace(/'/g,"\'")}'" style="margin-top:4px;padding:3px 8px;font-family:DM Mono,monospace;font-size:11px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:6px;cursor:pointer;">🚫 Remove</button>
+</td>
 <td style="color:#bfa980;">${b.bankerId||"—"}</td>
 <td>${b.bankName||""}</td>
 <td style="color:#bfa980;">${b.branch||"—"}</td>
@@ -212,6 +228,53 @@ async function loadBankers(){
 }
 
 loadBankers();
+</script>
+
+<script>
+
+/* ── TOAST SYSTEM ── */
+(function(){
+    let container = document.getElementById('toastContainer');
+    if(!container){
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        document.body.appendChild(container);
+    }
+    window.showToast = function(msg, type){
+        type = type || 'info';
+        let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
+        let t = document.createElement('div');
+        t.className = 'toast ' + type;
+        t.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + msg + '</span>';
+        container.appendChild(t);
+        setTimeout(function(){
+            t.classList.add('fade-out');
+            setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+        }, 3000);
+    };
+})();
+
+/* ── MOBILE SIDEBAR ── */
+(function(){
+    let sidebar = document.querySelector('.sidebar');
+    if(!sidebar) return;
+    let btn = document.createElement('button');
+    btn.className = 'hamburger';
+    btn.innerHTML = '☰';
+    document.body.appendChild(btn);
+    let overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+    btn.addEventListener('click', function(){
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function(){
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    });
+})();
+
 </script>
 </body>
 </html>
