@@ -530,5 +530,52 @@ function appendDoc2(p,label,src){
     p.appendChild(wrap);
 }
 </script>
+
+<script>
+
+/* ── TOAST SYSTEM ── */
+(function(){
+    let container = document.getElementById('toastContainer');
+    if(!container){
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        document.body.appendChild(container);
+    }
+    window.showToast = function(msg, type){
+        type = type || 'info';
+        let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
+        let t = document.createElement('div');
+        t.className = 'toast ' + type;
+        t.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + msg + '</span>';
+        container.appendChild(t);
+        setTimeout(function(){
+            t.classList.add('fade-out');
+            setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+        }, 3000);
+    };
+})();
+
+/* ── MOBILE SIDEBAR ── */
+(function(){
+    let sidebar = document.querySelector('.sidebar');
+    if(!sidebar) return;
+    let btn = document.createElement('button');
+    btn.className = 'hamburger';
+    btn.innerHTML = '☰';
+    document.body.appendChild(btn);
+    let overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+    btn.addEventListener('click', function(){
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function(){
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    });
+})();
+
+</script>
 </body>
 </html>
