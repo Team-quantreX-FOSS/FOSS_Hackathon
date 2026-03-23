@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinRisk - Page Not Found</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; }
+.error-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:40px 20px; }
+.error-code { font-family:'Syne',sans-serif; font-size:8rem; font-weight:800; color:rgba(230,213,184,0.12); line-height:1; margin-bottom:0; letter-spacing:-4px; }
+.error-icon { font-size:60px; margin:-20px 0 16px 0; }
+.error-title { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; color:#e6d5b8; margin:0 0 12px 0; }
+.error-msg { font-family:'DM Mono',monospace; font-size:16px; color:#bfa980; margin:0 0 40px 0; letter-spacing:1px; }
+.error-btn { padding:14px 32px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:16px; font-weight:800; border:none; border-radius:12px; cursor:pointer; text-decoration:none; display:inline-block; transition:all 0.2s; }
+.error-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(230,213,184,0.3); }
+</style>
+</head>
+<body>
+<div class="error-wrap">
+    <div class="error-code">404</div>
+    <div class="error-icon">🔍</div>
+    <h1 class="error-title">Page Not Found</h1>
+    <p class="error-msg">This page doesn't exist or has been moved.</p>
+    <a href="/" class="error-btn">← Back to FinRisk</a>
+</div>
+</body>
+</html>
