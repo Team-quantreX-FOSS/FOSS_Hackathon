@@ -2,35 +2,23 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-table{
-font-size:20px;
-border-collapse:collapse;
-width:100%;
-}
-th, td{
-padding:14px;
-text-align:center;
-border: 1px solid #ccc;
-}
-th{
-background:#333;
-color:white;
-}
+table { font-size:20px; border-collapse:collapse; width:100%; }
+th, td { padding:14px; text-align:center; border:1px solid #ccc; }
+th { background:#333; color:white; }
 </style>
 </head>
-
 <body>
 
 <div class="topbar">
 <h2>FinRisk - Bank Overview</h2>
+<h2 id="adminWelcome"></h2>
 </div>
 
 <div class="container">
-
 <div class="sidebar">
 <h2>Admin</h2>
 <button onclick="location.href='/admin_dashboard'">🏛 Banks</button>
@@ -40,12 +28,15 @@ color:white;
 <button onclick="logout()">🚪 Logout</button>
 </div>
 
-<div class="main">
+<div class="main" id="mainContent" style="display:none;">
 
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);">
 <div style="width:54px;height:54px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(245,158,11,0.3);">🏛</div>
-<div><h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Registered Banks</h1>
-<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">System Overview · Live Data</p></div></div>
+<div>
+<h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Registered Banks</h1>
+<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">System Overview · Live Data</p>
+</div>
+</div>
 
 <table id="bankTable">
 <tr>
@@ -61,43 +52,58 @@ color:white;
 </table>
 
 </div>
+
+<!-- NOT LOGGED IN SCREEN -->
+<div class="main" id="notLoggedIn" style="display:none;">
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:20px;text-align:center;">
+    <div style="font-size:64px;">🔒</div>
+    <h2 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Access Denied</h2>
+    <p style="font-family:'DM Mono',monospace;font-size:15px;color:#bfa980;max-width:380px;line-height:1.7;">You must be logged in as an <b style="color:#f59e0b;">Admin</b> to view this page.</p>
+    <button onclick="location.href='/index'" style="padding:14px 32px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#111;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;">Go to Login →</button>
+</div>
+</div>
+
 </div>
 
 <script>
+window.addEventListener("DOMContentLoaded", function(){
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "admin"){
+            document.getElementById("mainContent").style.display = "none";
+            document.getElementById("notLoggedIn").style.display = "block";
+            return;
+        }
+        document.getElementById("adminWelcome").innerText = "Welcome, " + (sess.name || "Admin");
+        document.getElementById("mainContent").style.display = "block";
+        document.getElementById("notLoggedIn").style.display = "none";
+        loadBanks();
+    }).catch(function(){
+        document.getElementById("mainContent").style.display = "none";
+        document.getElementById("notLoggedIn").style.display = "block";
+    });
+});
 
 async function loadBanks(){
-
     let res     = await fetch("/api/bankers");
     let bankers = await res.json();
-
-    let table = document.getElementById("bankTable");
+    let table   = document.getElementById("bankTable");
 
     if(bankers.length === 0){
         table.innerHTML += "<tr><td colspan='8'>No banks registered yet.</td></tr>";
         return;
     }
 
-    /* Group by bank name */
     let banks = {};
     bankers.forEach(b => {
         let key = b.bankName;
         if(!banks[key]){
-            banks[key] = {
-                name:      b.bankName,
-                branch:    b.branch || "—",
-                ifsc:      b.ifsc,
-                count:     0,
-                customers: 0,
-                approved:  0,
-                rejected:  0,
-                manual:    0
-            };
+            banks[key] = { name:b.bankName, branch:b.branch||"—", ifsc:b.ifsc, count:0, customers:0, approved:0, rejected:0, manual:0 };
         }
         banks[key].count++;
         banks[key].customers += b.totalCustomers || 0;
-        banks[key].approved  += b.approval  || 0;
-        banks[key].rejected  += b.rejection || 0;
-        banks[key].manual    += b.manual    || 0;
+        banks[key].approved  += b.approval       || 0;
+        banks[key].rejected  += b.rejection      || 0;
+        banks[key].manual    += b.manual         || 0;
     });
 
     Object.values(banks).forEach(b => {
@@ -110,19 +116,30 @@ async function loadBanks(){
 <td>${b.customers}</td>
 <td style="color:green;">${b.approved}</td>
 <td style="color:red;">${b.rejected}</td>
-<td style="color:purple;">${b.manual}</td>
-`;
+<td style="color:purple;">${b.manual}</td>`;
     });
-
 }
 
 function logout(){
-    window.location.href="/";
+    if(confirm('Are you sure you want to logout?')){
+        fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/index'; });
+    }
 }
-
-loadBanks();
-
 </script>
 
+<script>
+(function(){
+    let container = document.getElementById('toastContainer');
+    if(!container){ container = document.createElement('div'); container.id='toastContainer'; document.body.appendChild(container); }
+    window.showToast = function(msg,type){ type=type||'info'; let icons={success:'✅',error:'❌',info:'ℹ',warn:'⚠'}; let t=document.createElement('div'); t.className='toast '+type; t.innerHTML='<span>'+(icons[type]||'')+'</span><span>'+msg+'</span>'; container.appendChild(t); setTimeout(function(){ t.classList.add('fade-out'); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },300); },3000); };
+})();
+(function(){
+    let sidebar=document.querySelector('.sidebar'); if(!sidebar) return;
+    let btn=document.createElement('button'); btn.className='hamburger'; btn.innerHTML='☰'; document.body.appendChild(btn);
+    let overlay=document.createElement('div'); overlay.className='sidebar-overlay'; document.body.appendChild(overlay);
+    btn.addEventListener('click',function(){ sidebar.classList.toggle('open'); overlay.classList.toggle('open'); });
+    overlay.addEventListener('click',function(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); });
+})();
+</script>
 </body>
 </html>
