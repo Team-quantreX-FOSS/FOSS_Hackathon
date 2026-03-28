@@ -110,55 +110,53 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    let bid = localStorage.getItem("currentBanker");
-    if(!bid){ window.location.href="/"; return; }
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "banker"){ window.location.href="/"; return; }
 
-    let bd = JSON.parse(localStorage.getItem("banker_" + bid) || "{}");
-    document.getElementById("pName").innerText = bd.name   || "—";
-    document.getElementById("pId").innerText   = bd.bankId || bid;
-    document.getElementById("pBank").innerText = bd.bankName || "—";
-    document.getElementById("pIfsc").innerText = bd.ifsc   || "—";
+        let bid = sess.banker_id;
+        document.getElementById("pName").innerText = sess.name || "—";
+        document.getElementById("pId").innerText   = bid       || "—";
 
-    /* Fetch live stats from DB */
-    fetch("/api/bankers")
-    .then(r => r.json())
-    .then(bankers => {
-        // Match by bankerId OR name
-        let bd2 = JSON.parse(localStorage.getItem("banker_"+bid)||"{}");
-        let me = bankers.find(b => b.bankerId === bid || b.bankerId === bid || b.name === bd2.name);
-        if(me){
-            document.getElementById("pTotal").innerText    = me.totalCustomers || 0;
-            document.getElementById("pApproved").innerText = me.approval || 0;
-            document.getElementById("pRejected").innerText = me.rejection || 0;
-            document.getElementById("pManual").innerText   = me.manual || 0;
-        }
-    });
+        /* Fetch full banker info */
+        fetch("/api/get_banker/" + encodeURIComponent(bid))
+        .then(r=>r.json()).then(function(bd){
+            document.getElementById("pBank").innerText = bd.bankName || "—";
+            document.getElementById("pIfsc").innerText = bd.ifsc     || "—";
+        });
+
+        /* Fetch live stats */
+        fetch("/api/bankers").then(r=>r.json()).then(function(bankers){
+            let me = bankers.find(function(b){ return b.bankerId === bid || b.name === sess.name; });
+            if(me){
+                document.getElementById("pTotal").innerText    = me.totalCustomers || 0;
+                document.getElementById("pApproved").innerText = me.approval       || 0;
+                document.getElementById("pRejected").innerText = me.rejection      || 0;
+                document.getElementById("pManual").innerText   = me.manual         || 0;
+            }
+        });
+    }).catch(function(){ window.location.href="/"; });
 });
 
 function logout(){
-    localStorage.removeItem("currentBanker");
-    window.location.href = "/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; });
 }
 
 function openEdit(){
-    let bid = localStorage.getItem("currentBanker");
-    let bd  = JSON.parse(localStorage.getItem("banker_"+bid)||"{}");
-    document.getElementById("editName").value     = bd.name     || "";
-    document.getElementById("editBankName").value = bd.bankName || "";
-    document.getElementById("editIfsc").value     = bd.ifsc     || "";
-    document.getElementById("editPopup").classList.add("show");
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        fetch("/api/get_banker/"+encodeURIComponent(sess.banker_id)).then(r=>r.json()).then(function(bd){
+            document.getElementById("editName").value     = sess.name      || "";
+            document.getElementById("editBankName").value = bd.bankName    || "";
+            document.getElementById("editIfsc").value     = bd.ifsc        || "";
+            document.getElementById("editPopup").classList.add("show");
+        });
+    });
 }
 function closeEdit(){ document.getElementById("editPopup").classList.remove("show"); }
 function saveEdit(){
-    let bid = localStorage.getItem("currentBanker");
-    let bd  = JSON.parse(localStorage.getItem("banker_"+bid)||"{}");
-    bd.name     = document.getElementById("editName").value.trim();
-    bd.bankName = document.getElementById("editBankName").value.trim();
-    bd.ifsc     = document.getElementById("editIfsc").value.trim();
-    localStorage.setItem("banker_"+bid, JSON.stringify(bd));
-    document.getElementById("pName").innerText = bd.name;
-    document.getElementById("pBank").innerText = bd.bankName;
-    document.getElementById("pIfsc").innerText = bd.ifsc;
+    /* Banker profile edits are informational only (no server update endpoint needed for now) */
+    document.getElementById("pName").innerText = document.getElementById("editName").value.trim();
+    document.getElementById("pBank").innerText = document.getElementById("editBankName").value.trim();
+    document.getElementById("pIfsc").innerText = document.getElementById("editIfsc").value.trim();
     document.getElementById("editMsg").innerText = "✓ Saved!";
     setTimeout(()=>{ closeEdit(); document.getElementById("editMsg").innerText=""; }, 1200);
 }
