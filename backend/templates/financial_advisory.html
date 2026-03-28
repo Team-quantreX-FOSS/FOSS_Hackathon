@@ -287,9 +287,8 @@ function toggleFPForm(){
 }
 
 function calculateGoals(){
-    let currentUser = localStorage.getItem("currentUser");
-    let income   = Number(localStorage.getItem("income_"+currentUser))       || Number(localStorage.getItem("income"))       || 0;
-    let expense  = Number(localStorage.getItem("totalExpense_"+currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
+    let income  = financeData.income;
+    let expense = financeData.expense;
     let naturalSavings = Math.max(0, income - expense);
 
     let goal1name = document.getElementById("goal1name").value.trim() || "Short-Term Goal";
@@ -302,9 +301,8 @@ function calculateGoals(){
     let monthlySave    = Number(document.getElementById("monthlySave").value)    || naturalSavings;
 
     if(!goal1amt && !goal2amt && !goal3amt){ alert("Please enter at least one goal amount."); return; }
-    if(!monthlySave){ alert("Please enter how much you can save monthly."); return; }
+    if(!monthlySave){ alert("Please enter how much you can save monthly (or fill financial details on Dashboard first)."); return; }
 
-    /* Timelines: short=12mo, mid=36mo, long=120mo */
     let goals = [
         { name:goal1name, target:goal1amt, months:12,  type:"Short-Term (1 year)" },
         { name:goal2name, target:goal2amt, months:36,  type:"Mid-Term (3 years)" },
@@ -313,7 +311,6 @@ function calculateGoals(){
 
     let html = '<div class="section-title" style="margin-top:0;">Your Financial Roadmap</div>';
 
-    /* Summary bar */
     html += '<div class="fp-result-card" style="border-color:rgba(59,130,246,0.3);margin-bottom:20px;">' +
         '<div class="goal-name" style="color:#60a5fa;">📋 Your Financial Snapshot</div>' +
         '<div class="goal-detail">' +
@@ -326,12 +323,12 @@ function calculateGoals(){
     '</div>';
 
     goals.forEach(function(g){
-        let remaining   = Math.max(0, g.target - currentSavings);
+        let remaining    = Math.max(0, g.target - currentSavings);
         let monthsNeeded = remaining > 0 ? Math.ceil(remaining / monthlySave) : 0;
-        let canAchieve  = monthsNeeded <= g.months;
-        let progress    = Math.min(100, Math.round((currentSavings / g.target) * 100));
-        let shortfall   = Math.max(0, remaining - monthlySave * g.months);
-        let extraNeeded = shortfall > 0 ? Math.ceil(shortfall / g.months) : 0;
+        let canAchieve   = monthsNeeded <= g.months;
+        let progress     = Math.min(100, Math.round((currentSavings / g.target) * 100));
+        let shortfall    = Math.max(0, remaining - monthlySave * g.months);
+        let extraNeeded  = shortfall > 0 ? Math.ceil(shortfall / g.months) : 0;
         let progressColor = canAchieve ? "#34d399" : monthsNeeded <= g.months * 1.5 ? "#f59e0b" : "#f87171";
         let statusClass   = canAchieve ? "status-ok" : monthsNeeded <= g.months * 1.5 ? "status-warn" : "status-bad";
         let statusText    = canAchieve ? "✓ On Track" : "⚠ Needs More Savings";
@@ -343,12 +340,13 @@ function calculateGoals(){
             '</div>' +
             '<div class="goal-detail">' +
                 '🎯 Goal: <b style="color:#e6d5b8;">₹'+g.target.toLocaleString()+'</b> in '+g.type+'<br>' +
-                '📅 Months to achieve: <b style="color:#e6d5b8;">'+monthsNeeded+' months</b>' + (canAchieve ? ' ✓ within '+g.months+' months!' : ' (deadline: '+g.months+' months)') + '<br>';
+                '📅 Months to achieve: <b style="color:#e6d5b8;">'+monthsNeeded+' months</b>' +
+                (canAchieve ? ' ✓ within '+g.months+' months!' : ' (deadline: '+g.months+' months)') + '<br>';
 
         if(canAchieve){
             html += '✅ At ₹'+monthlySave.toLocaleString()+'/month you will reach this goal in <b style="color:#34d399;">'+monthsNeeded+' months</b>.';
         } else {
-            html += '❌ Saving ₹'+monthlySave.toLocaleString()+'/month is not enough. You need <b style="color:#fbbf24;">₹'+(monthlySave+extraNeeded).toLocaleString()+'/month</b> to meet this goal on time. (₹'+extraNeeded.toLocaleString()+' more/month)';
+            html += '❌ You need <b style="color:#fbbf24;">₹'+(monthlySave+extraNeeded).toLocaleString()+'/month</b> to meet this goal on time. (₹'+extraNeeded.toLocaleString()+' more/month)';
         }
 
         html += '</div>' +
@@ -357,7 +355,6 @@ function calculateGoals(){
         '</div>';
     });
 
-    /* Investment tip */
     html += '<div class="fp-result-card" style="border-color:rgba(16,185,129,0.2);">' +
         '<div class="goal-name" style="color:#34d399;">💡 Pro Tip — Make Your Savings Work</div>' +
         '<div class="goal-detail">' +
@@ -385,7 +382,7 @@ const COURSES = [
     { name:"Digital Marketing Fundamentals", provider:"Google Digital Garage", desc:"Google-certified course on digital marketing, SEO, and social media. Helps grow any small business.", price:"Free", paid:false, category:"business", url:"https://learndigital.withgoogle.com/digitalgarage" },
     { name:"Entrepreneurship & Startup", provider:"NPTEL / SWAYAM", desc:"IIT course on entrepreneurship, business model design, and startup financing. Ideal for MUDRA loan applicants.", price:"Free", paid:false, category:"business", url:"https://swayam.gov.in" },
     { name:"Accounting Fundamentals", provider:"ICAI / SWAYAM", desc:"Basic accounting, GST, and tally. Essential for small business owners and self-employed individuals.", price:"Free", paid:false, category:"business", url:"https://swayam.gov.in" },
-    { name:"PM eVIDYA — Free Courses", provider:"Ministry of Education", desc:"Official govt platform with 200+ free courses across all subjects. Certificates recognized for govt jobs.", price:"Free", paid:false, category:"govt", url:"https://pmevidy a.gov.in" },
+    { name:"PM eVIDYA — Free Courses", provider:"Ministry of Education", desc:"Official govt platform with 200+ free courses across all subjects. Certificates recognized for govt jobs.", price:"Free", paid:false, category:"govt", url:"https://pmevidya.gov.in" },
     { name:"SWAYAM — 1000+ Free Courses", provider:"UGC / AICTE / NPTEL", desc:"India's largest MOOC platform with courses from top IITs and IIMs. Credits transferable to university.", price:"Free", paid:false, category:"govt", url:"https://swayam.gov.in" },
     { name:"Skill India Digital Hub", provider:"Ministry of Skill Development", desc:"Free skill courses in IT, finance, retail, healthcare, and more. Government-certified and job-linked.", price:"Free", paid:false, category:"govt", url:"https://skillindia.gov.in" },
     { name:"CFA Level 1 Prep", provider:"CFA Institute", desc:"Gold standard in finance and investment management. Opens doors to banking, PE, and fund management careers.", price:"~₹60,000 (exam fee)", paid:true, category:"finance", url:"https://www.cfainstitute.org" },
@@ -429,24 +426,45 @@ function renderCourses(){
 }
 
 /* ── INIT ── */
+let financeData = { income: 0, expense: 0, score: 0 };
+
 window.addEventListener("DOMContentLoaded", function(){
-    let currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ window.location.href="/"; return; }
-
-    let income  = Number(localStorage.getItem("income_"+currentUser))       || Number(localStorage.getItem("income"))       || 0;
-    let expense = Number(localStorage.getItem("totalExpense_"+currentUser)) || Number(localStorage.getItem("totalExpense")) || 0;
-    let score   = Number(localStorage.getItem("riskScore_"+currentUser))    || Number(localStorage.getItem("riskScore"))    || 0;
-    let savings = income - expense;
-    let ratio   = income > 0 ? savings / income : 0;
-
-    if(income > 0) generateAdvice(income, expense, savings, ratio, score);
+    /* Render static sections immediately — no auth needed */
     renderSchemes();
     renderCourses();
+
+    /* Load financial data from backend session */
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "user"){
+            window.location.href="/";
+            return;
+        }
+        fetch("/api/financial_data")
+        .then(function(response){ return response.json(); })
+        .then(function(finance){
+            financeData.income  = Number(finance.income)        || 0;
+            financeData.expense = Number(finance.total_expense) || 0;
+            financeData.score   = Number(finance.risk_score)    || 0;
+            let savings = financeData.income - financeData.expense;
+            let ratio   = financeData.income > 0 ? savings / financeData.income : 0;
+            if(financeData.income > 0){
+                generateAdvice(
+                    financeData.income,
+                    financeData.expense,
+                    savings,
+                    ratio,
+                    financeData.score
+                );
+            }
+        })
+        .catch(function(error){
+            console.error("Financial advisory load error:", error);
+        });
+    }).catch(function(){ window.location.href="/"; });
 });
 
 function logout(){
-    localStorage.removeItem("currentUser");
-    window.location.href = "/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
 }
 </script>
 </body>
