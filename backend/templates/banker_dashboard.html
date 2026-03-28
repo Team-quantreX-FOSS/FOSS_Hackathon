@@ -137,34 +137,33 @@ let applications = [];
 let selectedId   = null;
 let manualUserId = null;
 let bankerName   = "";
-let currentBankerId = localStorage.getItem("currentBanker") || "";
+let currentBankerId = "";
 
 /* Store user data for profile lookup */
 let userDataMap = {};
 
 async function init(){
-    if(!currentBankerId){
-        document.getElementById("tableBody").innerHTML =
-            '<tr><td colspan="9" class="empty-state">Not logged in. <a href="/" style="color:#e6d5b8;">Login here</a></td></tr>';
-        return;
-    }
     try {
-        let res  = await fetch("/api/get_banker/" + encodeURIComponent(currentBankerId));
-        let data = await res.json();
-        if(data.name) bankerName = data.name;
-    } catch(e){}
+        let sessRes = await fetch("/api/session");
+        let sess    = await sessRes.json();
+        if(!sess.role || sess.role !== "banker"){
+            document.getElementById("tableBody").innerHTML =
+                '<tr><td colspan="9" class="empty-state">Not logged in. <a href="/" style="color:#e6d5b8;">Login here</a></td></tr>';
+            return;
+        }
+        currentBankerId = sess.banker_id || "";
+        bankerName      = sess.name      || "";
 
-    if(!bankerName){
-        let stored = localStorage.getItem("banker_" + currentBankerId);
-        if(stored) bankerName = JSON.parse(stored).name || "";
-    }
-
-    if(!bankerName){
+        if(!bankerName){
+            document.getElementById("tableBody").innerHTML =
+                '<tr><td colspan="9" class="empty-state">Could not identify banker. Please <a href="/" style="color:#e6d5b8;">logout and login again</a>.</td></tr>';
+            return;
+        }
+        fetchUsers();
+    } catch(e){
         document.getElementById("tableBody").innerHTML =
-            '<tr><td colspan="9" class="empty-state">Could not identify banker. Please <a href="/" style="color:#e6d5b8;">logout and login again</a>.</td></tr>';
-        return;
+            '<tr><td colspan="9" class="empty-state">Session error. <a href="/" style="color:#e6d5b8;">Login here</a></td></tr>';
     }
-    fetchUsers();
 }
 
 function fetchUsers(){
@@ -402,7 +401,7 @@ function manualDecision(action){
     }).then(function(r){ return r.json(); }).then(function(d){ showToast(d.error||'✅ Decision recorded', d.error?'error':'success'); closeManualPopup(); fetchUsers(); }).catch(function(){ showToast('Server error','error'); });
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage.removeItem('currentBanker'); window.location.href='/'; } }
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; }); } }
 
 init();
 </script>
