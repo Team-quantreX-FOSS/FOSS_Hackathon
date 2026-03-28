@@ -287,17 +287,16 @@
 <script>
 
 let myBanker = "";
-let currentBankerId = localStorage.getItem("currentBanker") || "";
-if(currentBankerId){
-    let bd = JSON.parse(localStorage.getItem("banker_" + currentBankerId) || "{}");
-    myBanker = bd.name || "";
-    if(!myBanker){
-        fetch("/api/get_banker/" + currentBankerId)
-        .then(r=>r.json())
-        .then(data=>{ if(data.name){ myBanker=data.name; } })
-        .catch(()=>{});
+
+/* Load banker identity from session */
+fetch("/api/session").then(r=>r.json()).then(function(sess){
+    if(!sess.role || sess.role !== "banker"){
+        window.location.href = "/";
+        return;
     }
-}
+    myBanker = sess.name || "";
+    loadRequests();
+}).catch(function(){ window.location.href="/"; });
 
 function loadRequests(){
     fetch("/users")
@@ -418,11 +417,9 @@ function pickUp(id, btn){
 }
 
 function logout(){
-    localStorage.removeItem("currentBanker");
-    window.location.href = "/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href = "/"; });
 }
 
-loadRequests();
 /* Auto-refresh every 10 seconds */
 setInterval(loadRequests, 10000);
 
