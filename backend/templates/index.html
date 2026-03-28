@@ -316,13 +316,6 @@ function checkUsernameAvail(val){
     let inp  = document.getElementById("username");
     if(!val){ warn.classList.remove("show"); ok.classList.remove("show"); inp.classList.remove("input-error","input-ok"); return; }
     usernameCheckTimer = setTimeout(()=>{
-        /* Check localStorage first */
-        if(localStorage.getItem("user_"+val)){
-            warn.innerText = "⚠ Username \"" + val + "\" is already taken. Please choose another.";
-            warn.classList.add("show"); ok.classList.remove("show");
-            inp.classList.add("input-error"); inp.classList.remove("input-ok"); return;
-        }
-        /* Check DB */
         fetch("/check_username",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:val})})
         .then(r=>r.json()).then(d=>{
             if(d.exists){
@@ -339,19 +332,14 @@ function checkUsernameAvail(val){
 }
 
 function checkBankerIdAvail(val){
+    /* No local check needed — handled by server on submit */
     let warn = document.getElementById("dupWarn");
     let ok   = document.getElementById("dupOk");
     let inp  = document.getElementById("bankId");
     if(!val){ warn.classList.remove("show"); ok.classList.remove("show"); inp.classList.remove("input-error","input-ok"); return; }
-    if(localStorage.getItem("banker_"+val)){
-        warn.innerText = "⚠ Banker ID \"" + val + "\" is already registered.";
-        warn.classList.add("show"); ok.classList.remove("show");
-        inp.classList.add("input-error"); inp.classList.remove("input-ok");
-    } else {
-        ok.innerText = "✓ Banker ID \"" + val + "\" is available.";
-        ok.classList.add("show"); warn.classList.remove("show");
-        inp.classList.add("input-ok"); inp.classList.remove("input-error");
-    }
+    ok.innerText = "Banker ID noted — availability checked on submit.";
+    ok.classList.add("show"); warn.classList.remove("show");
+    inp.classList.add("input-ok"); inp.classList.remove("input-error");
 }
 
 /* ── REGISTER ───────────────────────────────────────────── */
@@ -415,30 +403,18 @@ function register(){
         let username = document.getElementById("username").value.trim();
         let name     = document.getElementById("name").value.trim();
         let phone    = document.getElementById("phone").value.trim();
-        if(!name||!username||!phone){ regMsg.innerText="Please fill all fields."; return; }
-
-        /* Block if duplicate detected */
+        if(!name||!username||!phone||!password){ regMsg.innerText="Please fill all fields."; return; }
         if(document.getElementById("username").classList.contains("input-error")){
             regMsg.innerText="Username already taken. Choose another."; return;
         }
-
-        regMsg.style.color="#bfa980"; regMsg.innerText="Checking username...";
-        fetch("/check_username",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username})})
-        .then(r=>r.json()).then(d=>{
-            if(d.exists){
-                warn.innerText="⚠ Username \""+username+"\" is already taken.";
-                warn.classList.add("show"); ok.classList.remove("show");
-                regMsg.innerText=""; return;
-            }
-            fetch("/register_user",{method:"POST",headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({name,phone,username})})
-            .then(r=>r.json()).then(data=>{
-                if(data.error){ regMsg.style.color="#f87171"; regMsg.innerText=data.error; return; }
-                localStorage.setItem("user_"+username,JSON.stringify({name,phone,username,pass:password}));
-                regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered successfully!";
-                warn.classList.remove("show"); ok.classList.remove("show");
-                setTimeout(()=>{ closePopup("registerPopup"); document.getElementById("loginPopup").classList.add("show"); },1200);
-            }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error."; });
+        regMsg.style.color="#bfa980"; regMsg.innerText="Registering...";
+        fetch("/register_user",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({name,phone,username,password})})
+        .then(r=>r.json()).then(data=>{
+            if(data.error){ regMsg.style.color="#f87171"; regMsg.innerText=data.error; return; }
+            regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered successfully!";
+            warn.classList.remove("show"); ok.classList.remove("show");
+            setTimeout(()=>{ closePopup("registerPopup"); document.getElementById("loginPopup").classList.add("show"); },1200);
         }).catch(()=>{ regMsg.style.color="#f87171"; regMsg.innerText="Server error."; });
     }
 
@@ -448,24 +424,12 @@ function register(){
         let id       = document.getElementById("bankId").value.trim();
         let bankName = document.getElementById("bankName").value.trim();
         let ifsc     = document.getElementById("ifsc").value.trim();
-        if(!name||!id||!bankName||!ifsc){ regMsg.innerText="Please fill all fields."; return; }
-
-        /* Block if duplicate detected */
-        if(localStorage.getItem("banker_"+id)){
-            warn.innerText="⚠ Banker ID \""+id+"\" is already registered.";
-            warn.classList.add("show"); regMsg.innerText=""; return;
-        }
-
+        let branch   = document.getElementById("branch").value.trim();
+        if(!name||!id||!bankName||!ifsc||!password){ regMsg.innerText="Please fill all fields."; return; }
         fetch("/register_banker",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({name,banker_id:id,bank_name:bankName,branch:document.getElementById("branch").value.trim(),ifsc,pass:password})})
+            body:JSON.stringify({name,banker_id:id,bank_name:bankName,branch,ifsc,pass:password})})
         .then(r=>r.json()).then(data=>{
-            if(data.error){
-                warn.innerText="⚠ "+data.error;
-                warn.classList.add("show"); ok.classList.remove("show");
-                regMsg.innerText=""; return;
-            }
-            let branch=document.getElementById("branch").value.trim();
-            localStorage.setItem("banker_"+id,JSON.stringify({name,bankId:id,bankName,branch,ifsc,pass:password,proofDoc:bankerDocData}));
+            if(data.error){ warn.innerText="⚠ "+data.error; warn.classList.add("show"); ok.classList.remove("show"); regMsg.innerText=""; return; }
             regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered! You can now login.";
             warn.classList.remove("show");
             setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
@@ -476,13 +440,12 @@ function register(){
     else{
         let name  = document.getElementById("name").value.trim();
         let email = document.getElementById("email").value.trim();
-        if(!name||!email){ regMsg.innerText="Please fill all fields."; return; }
+        if(!name||!email||!password){ regMsg.innerText="Please fill all fields."; return; }
         let adminId = "ADM"+Math.floor(Math.random()*100000);
         fetch("/register_admin",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({name,email,admin_id:adminId})})
+            body:JSON.stringify({name,email,admin_id:adminId,pass:password})})
         .then(r=>r.json()).then(data=>{
             if(data.error){ regMsg.style.color="#f87171"; regMsg.innerText=data.error; return; }
-            localStorage.setItem("admin_"+adminId,JSON.stringify({name,email,adminId,pass:password}));
             alert("Your Admin ID: "+adminId+"\n\nSave this — you need it to login!");
             regMsg.style.color="#34d399"; regMsg.innerText="✓ Registered!";
             setTimeout(()=>{ closePopup('registerPopup'); document.getElementById("loginPopup").classList.add("show"); },1200);
@@ -499,37 +462,40 @@ function login(){
         let username = document.getElementById("loginUser").value.trim();
         let password = document.getElementById("loginPass").value.trim();
         if(!username||!password){ loginMsg.innerText="Enter all fields!"; return; }
-        let stored = localStorage.getItem("user_"+username);
-        if(!stored){ loginMsg.innerText="Username not found. Please register first."; return; }
-        let data = JSON.parse(stored);
-        if(data.pass === password){
-            localStorage.setItem("currentUser", username);
-            window.location.href = "/user_dashboard";
-        } else { loginMsg.innerText="Wrong password!"; }
+        loginMsg.style.color="#bfa980"; loginMsg.innerText="Logging in...";
+        fetch("/login_user",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({username,password})})
+        .then(r=>r.json()).then(data=>{
+            if(data.error){ loginMsg.style.color="#f87171"; loginMsg.innerText=data.error; return; }
+            loginMsg.style.color="#34d399"; loginMsg.innerText="✓ Login successful!";
+            setTimeout(()=>{ window.location.href="/user_dashboard"; }, 400);
+        }).catch(()=>{ loginMsg.style.color="#f87171"; loginMsg.innerText="Server error."; });
     }
     else if(role === "banker"){
         let id       = document.getElementById("loginId").value.trim();
         let password = document.getElementById("loginPass").value.trim();
         if(!id||!password){ loginMsg.innerText="Enter all fields!"; return; }
-        let stored = localStorage.getItem("banker_"+id);
-        if(!stored){ loginMsg.innerText="Banker ID not found. Please register first."; return; }
-        let data = JSON.parse(stored);
-        if(data.pass === password){
-            localStorage.setItem("currentBanker", id);
-            window.location.href = "/banker_dashboard";
-        } else { loginMsg.innerText="Wrong password!"; }
+        loginMsg.style.color="#bfa980"; loginMsg.innerText="Logging in...";
+        fetch("/login_banker",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({banker_id:id,password})})
+        .then(r=>r.json()).then(data=>{
+            if(data.error){ loginMsg.style.color="#f87171"; loginMsg.innerText=data.error; return; }
+            loginMsg.style.color="#34d399"; loginMsg.innerText="✓ Login successful!";
+            setTimeout(()=>{ window.location.href="/banker_dashboard"; }, 400);
+        }).catch(()=>{ loginMsg.style.color="#f87171"; loginMsg.innerText="Server error."; });
     }
     else{
         let id       = document.getElementById("loginId").value.trim();
         let password = document.getElementById("loginPass").value.trim();
         if(!id||!password){ loginMsg.innerText="Enter all fields!"; return; }
-        let stored = localStorage.getItem("admin_"+id);
-        if(!stored){ loginMsg.innerText="Admin ID not found. Please register first."; return; }
-        let data = JSON.parse(stored);
-        if(data.pass === password){
-            localStorage.setItem("currentAdmin", id);
-            window.location.href = "/admin_dashboard";
-        } else { loginMsg.innerText="Wrong password!"; }
+        loginMsg.style.color="#bfa980"; loginMsg.innerText="Logging in...";
+        fetch("/login_admin",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({admin_id:id,password})})
+        .then(r=>r.json()).then(data=>{
+            if(data.error){ loginMsg.style.color="#f87171"; loginMsg.innerText=data.error; return; }
+            loginMsg.style.color="#34d399"; loginMsg.innerText="✓ Login successful!";
+            setTimeout(()=>{ window.location.href="/admin_dashboard"; }, 400);
+        }).catch(()=>{ loginMsg.style.color="#f87171"; loginMsg.innerText="Server error."; });
     }
 }
 </script>
