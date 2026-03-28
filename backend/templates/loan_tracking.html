@@ -205,113 +205,120 @@
 </div>
 
 <script>
-let currentUser = "";
+let currentUser  = "";
+let currentName  = "";
+let currentPhone = "";
 let approvedLoan = null;
-let expenses = [];
-let catChartObj = null, utilChartObj = null;
-let billDataURL = null;
+let expenses     = [];
+let catChartObj  = null, utilChartObj = null;
+let billDataURL  = null;
 
 window.addEventListener("DOMContentLoaded", function(){
-    currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ window.location.href="/"; return; }
-
-    // Set today's date
     document.getElementById("expDate").valueAsDate = new Date();
 
-    loadLoanHistory();
-    loadExpenses();
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
+        currentUser  = sess.username || "";
+        currentName  = sess.name     || "";
+        currentPhone = sess.phone    || "";
+        loadLoanHistory();
+        loadExpenses();
+    }).catch(function(){ window.location.href="/"; });
 });
 
 /* ── LOAD LOAN HISTORY FROM DB ── */
 function loadLoanHistory(){
-    let userData = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
-    let userName = userData.name || "";
-    let phone    = localStorage.getItem("phone_"+currentUser) || localStorage.getItem("phone") || "";
+    /* Get phone from financial_data if not in session */
+    fetch("/api/financial_data").then(r=>r.json()).then(function(fd){
+        let phone    = fd.phone    || currentPhone || "";
+        let userName = fd.name     || currentName  || "";
 
-    if(!phone && !userName){ document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No phone or user data found. Please update your profile.</div>'; return; }
-
-    fetch("/api/users")
-    .then(r=>r.json())
-    .then(function(users){
-        // Filter by name matching current user
-        let myLoans = users.filter(function(u){
-            return u.name && userData.name && u.name.toLowerCase() === userData.name.toLowerCase()
-                   || u.phone === phone;
-        });
-
-        if(myLoans.length === 0){
-            document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No loan applications found. <a href="/apply_loan" style="color:#e6d5b8;">Apply for a loan →</a></div>';
+        if(!phone && !userName){
+            document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No phone or user data found. Please update your profile.</div>';
             return;
         }
 
-        // Sort newest first
-        myLoans.sort(function(a,b){ return b.id - a.id; });
+        fetch("/api/users").then(r=>r.json()).then(function(users){
+            let myLoans = users.filter(function(u){
+                return (userName && u.name && u.name.toLowerCase() === userName.toLowerCase())
+                    || (phone && u.phone === phone);
+            });
 
-        // Check for approved loan for tracking
-        approvedLoan = myLoans.find(function(u){ return u.status === "Approved"; });
-        if(approvedLoan){
-            document.getElementById("trackingSection").style.display = "block";
-            document.getElementById("totalLoan").innerText = "₹" + Number(approvedLoan.loanAmount||0).toLocaleString();
-            updateTrackingSummary();
-        }
+            if(myLoans.length === 0){
+                document.getElementById("loanHistory").innerHTML = '<div class="empty-state">No loan applications found. <a href="/apply_loan" style="color:#e6d5b8;">Apply for a loan →</a></div>';
+                return;
+            }
 
-        let html = "";
-        myLoans.forEach(function(loan){
-            let statusClass = "pending";
-            let badgeClass  = "badge-pending";
-            let statusLabel = loan.status || "Pending";
-            if(loan.status==="Approved")      { statusClass="approved"; badgeClass="badge-approved"; }
-            else if(loan.status==="Rejected") { statusClass="rejected"; badgeClass="badge-rejected"; }
-            else if(loan.status==="Manual Review"){ statusClass="manual"; badgeClass="badge-manual"; }
-            else if(loan.status==="Picked Up"){ statusClass="pending"; badgeClass="badge-pickedup"; statusLabel="Under Review"; }
+            myLoans.sort(function(a,b){ return b.id - a.id; });
 
-            // Timeline
-            let t_applied  = "done", t_picked = "", t_review = "", t_decision = "";
-            if(loan.status==="Picked Up"){ t_picked="active"; }
-            else if(loan.status==="Manual Review"){ t_picked="done"; t_review="active"; }
-            else if(loan.status==="Approved"){ t_picked="done"; t_review="done"; t_decision="done"; }
-            else if(loan.status==="Rejected"){ t_picked="done"; t_review="done"; t_decision="fail"; }
+            approvedLoan = myLoans.find(function(u){ return u.status === "Approved"; });
+            if(approvedLoan){
+                document.getElementById("trackingSection").style.display = "block";
+                document.getElementById("totalLoan").innerText = "₹" + Number(approvedLoan.loanAmount||0).toLocaleString();
+                updateTrackingSummary();
+            }
 
-            html += '<div class="loan-card '+statusClass+'">' +
-                '<div class="loan-card-header">' +
-                    '<div>' +
-                        '<div class="loan-type">'+(loan.loanType||"Loan")+'</div>' +
-                        '<div class="loan-amount">₹'+Number(loan.loanAmount||0).toLocaleString()+'</div>' +
+            let html = "";
+            myLoans.forEach(function(loan){
+                let statusClass = "pending";
+                let badgeClass  = "badge-pending";
+                let statusLabel = loan.status || "Pending";
+                if(loan.status==="Approved")        { statusClass="approved"; badgeClass="badge-approved"; }
+                else if(loan.status==="Rejected")   { statusClass="rejected"; badgeClass="badge-rejected"; }
+                else if(loan.status==="Manual Review"){ statusClass="manual"; badgeClass="badge-manual"; }
+                else if(loan.status==="Picked Up")  { statusClass="pending"; badgeClass="badge-pickedup"; statusLabel="Under Review"; }
+
+                let t_applied = "done", t_picked = "", t_review = "", t_decision = "";
+                if(loan.status==="Picked Up"){ t_picked="active"; }
+                else if(loan.status==="Manual Review"){ t_picked="done"; t_review="active"; }
+                else if(loan.status==="Approved"){ t_picked="done"; t_review="done"; t_decision="done"; }
+                else if(loan.status==="Rejected"){ t_picked="done"; t_review="done"; t_decision="fail"; }
+
+                html += '<div class="loan-card '+statusClass+'">' +
+                    '<div class="loan-card-header">' +
+                        '<div>' +
+                            '<div class="loan-type">'+(loan.loanType||"Loan")+'</div>' +
+                            '<div class="loan-amount">₹'+Number(loan.loanAmount||0).toLocaleString()+'</div>' +
+                        '</div>' +
+                        '<span class="loan-status-badge '+badgeClass+'">'+statusLabel+'</span>' +
                     '</div>' +
-                    '<span class="loan-status-badge '+badgeClass+'">'+statusLabel+'</span>' +
-                '</div>' +
-                '<div class="loan-meta">' +
-                    '<div class="meta-item">EMI: <span>₹'+Number(loan.emi||0).toLocaleString()+'/mo</span></div>' +
-                    '<div class="meta-item">Tenure: <span>'+(loan.tenure||"—")+' months</span></div>' +
-                    '<div class="meta-item">Risk Score: <span>'+(loan.score||"—")+'</span></div>' +
-                    '<div class="meta-item">Banker: <span>'+(loan.banker||"Not assigned")+'</span></div>' +
-                '</div>' +
-                (loan.reason ? '<div class="loan-reason">Reason: '+loan.reason+'</div>' : '') +
-                '<ul class="timeline">' +
-                    '<li class="'+t_applied+'"><strong>Applied</strong> — Loan application submitted</li>' +
-                    '<li class="'+(t_picked||"")+'"><strong>Picked Up</strong> — Banker assigned and reviewing</li>' +
-                    '<li class="'+(t_review||"")+'"><strong>Under Review</strong> — Manual verification in progress</li>' +
-                    '<li class="'+(t_decision||"")+'"><strong>Decision</strong> — '+(loan.status==="Approved"?"Loan approved ✓":loan.status==="Rejected"?"Loan rejected":"Awaiting final decision")+'</li>' +
-                '</ul>' +
-            '</div>';
-        });
+                    '<div class="loan-meta">' +
+                        '<div class="meta-item">EMI: <span>₹'+Number(loan.emi||0).toLocaleString()+'/mo</span></div>' +
+                        '<div class="meta-item">Tenure: <span>'+(loan.tenure||"—")+' months</span></div>' +
+                        '<div class="meta-item">Risk Score: <span>'+(loan.score||"—")+'</span></div>' +
+                        '<div class="meta-item">Banker: <span>'+(loan.banker||"Not assigned")+'</span></div>' +
+                    '</div>' +
+                    (loan.reason ? '<div class="loan-reason">Reason: '+loan.reason+'</div>' : '') +
+                    '<ul class="timeline">' +
+                        '<li class="'+t_applied+'"><strong>Applied</strong> — Loan application submitted</li>' +
+                        '<li class="'+(t_picked||"")+'"><strong>Picked Up</strong> — Banker assigned and reviewing</li>' +
+                        '<li class="'+(t_review||"")+'"><strong>Under Review</strong> — Manual verification in progress</li>' +
+                        '<li class="'+(t_decision||"")+'"><strong>Decision</strong> — '+(loan.status==="Approved"?"Loan approved ✓":loan.status==="Rejected"?"Loan rejected":"Awaiting final decision")+'</li>' +
+                    '</ul>' +
+                '</div>';
+            });
 
-        document.getElementById("loanHistory").innerHTML = html;
-    })
-    .catch(function(){
-        document.getElementById("loanHistory").innerHTML = '<div class="empty-state">Could not load loan history. Is Flask running?</div>';
+            document.getElementById("loanHistory").innerHTML = html;
+        }).catch(function(){
+            document.getElementById("loanHistory").innerHTML = '<div class="empty-state">Could not load loan history. Is Flask running?</div>';
+        });
+    }).catch(function(){
+        document.getElementById("loanHistory").innerHTML = '<div class="empty-state">Could not load user data. Is Flask running?</div>';
     });
 }
 
-/* ── EXPENSES ── */
+/* ── EXPENSES — backed by server ── */
 function loadExpenses(){
-    let saved = localStorage.getItem("loanExpenses_"+currentUser);
-    expenses = saved ? JSON.parse(saved) : [];
-    renderExpenses();
+    fetch("/api/loan_expenses").then(r=>r.json()).then(function(data){
+        if(data.error){ expenses = []; }
+        else { expenses = data; }
+        renderExpenses();
+        updateTrackingSummary();
+    }).catch(function(){ expenses = []; renderExpenses(); });
 }
 
 function saveExpenses(){
-    localStorage.setItem("loanExpenses_"+currentUser, JSON.stringify(expenses));
+    /* No-op: expenses are saved individually via addExpense/deleteExpense */
 }
 
 function handleBillUpload(){
@@ -336,8 +343,7 @@ function addExpense(){
     if(!amt || amt <= 0){ alert("Please enter a valid amount."); return; }
     if(!desc){ alert("Please enter a description."); return; }
 
-    // Check if exceeds remaining loan
-    let loanAmt = approvedLoan ? Number(approvedLoan.loanAmount||0) : 0;
+    let loanAmt    = approvedLoan ? Number(approvedLoan.loanAmount||0) : 0;
     let totalSpent = expenses.reduce(function(s,e){ return s+e.amt; }, 0);
     if(loanAmt > 0 && (totalSpent + amt) > loanAmt){
         if(!confirm("This expense exceeds your loan amount. Are you sure you want to log it?")){
@@ -345,22 +351,32 @@ function addExpense(){
         }
     }
 
-    expenses.push({
+    let newExp = {
         id:   Date.now(),
         cat:  cat,
         amt:  amt,
         desc: desc,
         date: date,
         bill: billDataURL || null
-    });
-    saveExpenses();
-    renderExpenses();
-    updateTrackingSummary();
+    };
 
-    // Reset form
-    document.getElementById("expAmt").value  = "";
-    document.getElementById("expDesc").value = "";
-    document.getElementById("expDate").valueAsDate = new Date();
+    fetch("/api/loan_expenses", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(newExp)
+    }).then(r=>r.json()).then(function(d){
+        if(d.error){ alert("Error saving expense: " + d.error); return; }
+        expenses.push(newExp);
+        renderExpenses();
+        updateTrackingSummary();
+
+        document.getElementById("expAmt").value  = "";
+        document.getElementById("expDesc").value = "";
+        document.getElementById("expDate").valueAsDate = new Date();
+        clearBill();
+    }).catch(function(){ alert("Server error saving expense."); });
+}
+function clearBill(){
     document.getElementById("billFile").value = "";
     document.getElementById("billLabel").classList.remove("uploaded");
     document.getElementById("billIcon").innerText = "📎";
@@ -369,10 +385,17 @@ function addExpense(){
 }
 
 function deleteExpense(id){
-    expenses = expenses.filter(function(e){ return e.id !== id; });
-    saveExpenses();
-    renderExpenses();
-    updateTrackingSummary();
+    fetch("/api/loan_expenses/" + id, { method: "DELETE" })
+    .then(r=>r.json()).then(function(){
+        expenses = expenses.filter(function(e){ return e.id !== id; });
+        renderExpenses();
+        updateTrackingSummary();
+    }).catch(function(){
+        /* Optimistic delete on error */
+        expenses = expenses.filter(function(e){ return e.id !== id; });
+        renderExpenses();
+        updateTrackingSummary();
+    });
 }
 
 function renderExpenses(){
@@ -488,8 +511,7 @@ function renderCharts(){
 }
 
 function logout(){
-    localStorage.removeItem("currentUser");
-    window.location.href="/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
 }
 </script>
 </body>
