@@ -2,26 +2,14 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Admin - Borrowers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-#userTable{
-font-size:22px;
-border-collapse:collapse;
-width:100%;
-}
-#userTable th, #userTable td{
-padding:16px;
-text-align:center;
-border:1px solid #ccc;
-}
-#userTable th{
-font-size:24px;
-background:#333;
-color:white;
-}
+#userTable { font-size:22px; border-collapse:collapse; width:100%; }
+#userTable th, #userTable td { padding:16px; text-align:center; border:1px solid #ccc; }
+#userTable th { font-size:24px; background:#333; color:white; }
 </style>
 </head>
 <body>
@@ -35,41 +23,65 @@ color:white;
 <button onclick="location.href='/admin_borrowers'">👥 Borrowers</button>
 <button onclick="location.href='/admin_bankers'">🏦 Bankers</button>
 <button onclick="location.href='/admin_profile'">⚙ Profile</button>
-<button onclick="window.location.href='/'">🚪 Logout</button>
+<button onclick="logout()">🚪 Logout</button>
 </div>
 
-<div class="main">
+<div class="main" id="mainContent" style="display:none;">
 
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(255,255,255,0.06);">
 <div style="width:54px;height:54px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(16,185,129,0.3);">👥</div>
-<div><h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Borrowers</h1>
-<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">All Registered Loan Applications</p></div></div>
+<div>
+<h1 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Borrowers</h1>
+<p style="font-family:'DM Mono',monospace;font-size:12px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:3px 0 0 0;">All Registered Loan Applications</p>
+</div>
+</div>
+
 <table id="userTable">
 <tr>
-<th>Name</th>
-<th>Age</th>
-<th>Phone</th>
-<th>Loan Amount</th>
-<th>Loan Type</th>
-<th>Tenure</th>
-<th>EMI</th>
-<th>Risk Score</th>
-<th>Allocated Banker</th>
-<th>Status</th>
+<th>Name</th><th>Age</th><th>Phone</th><th>Loan Amount</th>
+<th>Loan Type</th><th>Tenure</th><th>EMI</th><th>Risk Score</th>
+<th>Allocated Banker</th><th>Status</th>
 </tr>
 </table>
 
-<h2>Borrower Loan Status</h2>
+<h2 style="font-family:'Syne',sans-serif;color:#e6d5b8;margin-top:32px;">Borrower Loan Status</h2>
 <canvas id="borrowerChart" width="400" height="200"></canvas>
 
 </div>
+
+<!-- NOT LOGGED IN SCREEN -->
+<div class="main" id="notLoggedIn" style="display:none;">
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:20px;text-align:center;">
+    <div style="font-size:64px;">🔒</div>
+    <h2 style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#e6d5b8;margin:0;">Access Denied</h2>
+    <p style="font-family:'DM Mono',monospace;font-size:15px;color:#bfa980;max-width:380px;line-height:1.7;">You must be logged in as an <b style="color:#10b981;">Admin</b> to view this page.</p>
+    <button onclick="location.href='/index'" style="padding:14px 32px;border:none;border-radius:12px;background:linear-gradient(135deg,#10b981,#3b82f6);color:#111;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;">Go to Login →</button>
+</div>
+</div>
+
 </div>
 
 <script>
+window.addEventListener("DOMContentLoaded", function(){
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "admin"){
+            document.getElementById("mainContent").style.display = "none";
+            document.getElementById("notLoggedIn").style.display = "block";
+            return;
+        }
+        document.getElementById("mainContent").style.display = "block";
+        document.getElementById("notLoggedIn").style.display = "none";
+        loadUsers();
+        loadRegisteredUsers();
+    }).catch(function(){
+        document.getElementById("mainContent").style.display = "none";
+        document.getElementById("notLoggedIn").style.display = "block";
+    });
+});
+
 async function loadUsers(){
     let res   = await fetch("/api/users");
     let users = await res.json();
-
     let table = document.getElementById("userTable");
     table.innerHTML = `
 <tr>
@@ -96,7 +108,7 @@ async function loadUsers(){
 <td>${u.score||"-"}</td>
 <td>${u.banker||"-"}</td>
 <td>${u.status||"Pending"}${u.reason ? "<br><small>("+u.reason+")</small>" : ""}</td>`;
-            statusCount[u.status||"Pending"]++;
+            statusCount[u.status||"Pending"] = (statusCount[u.status||"Pending"]||0) + 1;
         });
     }
 
@@ -105,17 +117,11 @@ async function loadUsers(){
         type:'pie',
         data:{
             labels:['Pending','Approved','Rejected','Manual Review'],
-            datasets:[{
-                data:[statusCount.Pending, statusCount.Approved, statusCount.Rejected, statusCount["Manual Review"]],
-                backgroundColor:['#f39c12','#27ae60','#c0392b','#8e44ad']
-            }]
+            datasets:[{ data:[statusCount.Pending,statusCount.Approved,statusCount.Rejected,statusCount["Manual Review"]], backgroundColor:['#f39c12','#27ae60','#c0392b','#8e44ad'] }]
         },
         options:{responsive:true}
     });
 }
-
-loadUsers();
-loadRegisteredUsers();
 
 async function loadRegisteredUsers(){
     try {
@@ -137,54 +143,27 @@ async function loadRegisteredUsers(){
         });
     } catch(e){ console.error(e); }
 }
+
+function logout(){
+    if(confirm('Are you sure you want to logout?')){
+        fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/index'; });
+    }
+}
 </script>
 
-
 <script>
-
-/* ── TOAST SYSTEM ── */
 (function(){
     let container = document.getElementById('toastContainer');
-    if(!container){
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        document.body.appendChild(container);
-    }
-    window.showToast = function(msg, type){
-        type = type || 'info';
-        let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
-        let t = document.createElement('div');
-        t.className = 'toast ' + type;
-        t.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + msg + '</span>';
-        container.appendChild(t);
-        setTimeout(function(){
-            t.classList.add('fade-out');
-            setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
-        }, 3000);
-    };
+    if(!container){ container = document.createElement('div'); container.id='toastContainer'; document.body.appendChild(container); }
+    window.showToast = function(msg,type){ type=type||'info'; let icons={success:'✅',error:'❌',info:'ℹ',warn:'⚠'}; let t=document.createElement('div'); t.className='toast '+type; t.innerHTML='<span>'+(icons[type]||'')+'</span><span>'+msg+'</span>'; container.appendChild(t); setTimeout(function(){ t.classList.add('fade-out'); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },300); },3000); };
 })();
-
-/* ── MOBILE SIDEBAR ── */
 (function(){
-    let sidebar = document.querySelector('.sidebar');
-    if(!sidebar) return;
-    let btn = document.createElement('button');
-    btn.className = 'hamburger';
-    btn.innerHTML = '☰';
-    document.body.appendChild(btn);
-    let overlay = document.createElement('div');
-    overlay.className = 'sidebar-overlay';
-    document.body.appendChild(overlay);
-    btn.addEventListener('click', function(){
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('open');
-    });
-    overlay.addEventListener('click', function(){
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-    });
+    let sidebar=document.querySelector('.sidebar'); if(!sidebar) return;
+    let btn=document.createElement('button'); btn.className='hamburger'; btn.innerHTML='☰'; document.body.appendChild(btn);
+    let overlay=document.createElement('div'); overlay.className='sidebar-overlay'; document.body.appendChild(overlay);
+    btn.addEventListener('click',function(){ sidebar.classList.toggle('open'); overlay.classList.toggle('open'); });
+    overlay.addEventListener('click',function(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); });
 })();
-
 </script>
 </body>
 </html>
