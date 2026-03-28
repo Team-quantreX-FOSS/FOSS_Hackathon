@@ -85,70 +85,42 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    /* Get the currently logged-in admin from localStorage */
-    /* Admin stores their ID in localStorage during login */
-    let adminData = null;
-    let adminKey  = null;
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "admin"){ window.location.href="/"; return; }
 
-    /* Search for which admin is currently active by finding most recently set */
-    for(let i=0; i<localStorage.length; i++){
-        let key = localStorage.key(i);
-        if(key && key.startsWith("admin_")){
-            let d = JSON.parse(localStorage.getItem(key) || "{}");
-            /* Pick the one that matches currentAdmin if set, else last found */
-            if(!adminData || localStorage.getItem("currentAdmin") === d.adminId){
-                adminData = d;
-                adminKey  = key;
-            }
-        }
-    }
-
-    if(adminData){
-        document.getElementById("pName").innerText    = adminData.name    || "Admin";
-        document.getElementById("pNameRow").innerText = adminData.name    || "—";
-        document.getElementById("pEmail").innerText   = adminData.email   || "—";
-        document.getElementById("pId").innerText      = adminData.adminId || (adminKey||"").replace("admin_","");
-    }
+        document.getElementById("pName").innerText    = sess.name     || "Admin";
+        document.getElementById("pNameRow").innerText = sess.name     || "—";
+        document.getElementById("pEmail").innerText   = sess.email    || "—";
+        document.getElementById("pId").innerText      = sess.admin_id || "—";
+    }).catch(function(){ window.location.href="/"; });
 
     /* Live system stats */
-    fetch("/api/bankers").then(r=>r.json()).then(d=>{
+    fetch("/api/bankers").then(r=>r.json()).then(function(d){
         document.getElementById("sTotalBankers").innerText = d.length;
         let banks = new Set(d.map(b=>b.bankName));
         document.getElementById("sTotalBanks").innerText = banks.size;
     });
-    fetch("/api/users").then(r=>r.json()).then(d=>{
+    fetch("/api/users").then(r=>r.json()).then(function(d){
         document.getElementById("sTotalBorrowers").innerText = d.length;
     });
 });
 
 function openEdit(){
-    for(let i=0;i<localStorage.length;i++){
-        let key=localStorage.key(i);
-        if(key&&key.startsWith("admin_")){
-            let d=JSON.parse(localStorage.getItem(key)||"{}");
-            document.getElementById("editName").value  = d.name  || "";
-            document.getElementById("editEmail").value = d.email || "";
-            break;
-        }
-    }
-    document.getElementById("editPopup").classList.add("show");
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        document.getElementById("editName").value  = sess.name  || "";
+        document.getElementById("editEmail").value = sess.email || "";
+        document.getElementById("editPopup").classList.add("show");
+    });
 }
 function closeEdit(){ document.getElementById("editPopup").classList.remove("show"); }
 function saveAdminEdit(){
-    for(let i=0;i<localStorage.length;i++){
-        let key=localStorage.key(i);
-        if(key&&key.startsWith("admin_")){
-            let d=JSON.parse(localStorage.getItem(key)||"{}");
-            d.name  = document.getElementById("editName").value.trim();
-            d.email = document.getElementById("editEmail").value.trim();
-            localStorage.setItem(key, JSON.stringify(d));
-            document.getElementById("pName").innerText    = d.name;
-            document.getElementById("pNameRow").innerText = d.name;
-            document.getElementById("pEmail").innerText   = d.email;
-            break;
-        }
-    }
-    document.getElementById("editMsg").innerText = "✓ Saved!";
+    /* Admin profile edits are display-only — names/emails shown from session */
+    let name  = document.getElementById("editName").value.trim();
+    let email = document.getElementById("editEmail").value.trim();
+    document.getElementById("pName").innerText    = name;
+    document.getElementById("pNameRow").innerText = name;
+    document.getElementById("pEmail").innerText   = email;
+    document.getElementById("editMsg").innerText  = "✓ Saved!";
     setTimeout(()=>{ closeEdit(); document.getElementById("editMsg").innerText=""; }, 1200);
 }
 
