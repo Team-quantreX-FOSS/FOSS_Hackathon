@@ -144,69 +144,66 @@
 </div>
 
 <script>
+let _currentUser = "";
 window.addEventListener("DOMContentLoaded", function(){
-    let currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ window.location.href="/"; return; }
-    let userData = JSON.parse(localStorage.getItem("user_" + currentUser) || "{}");
-    document.getElementById("pName").innerText     = userData.name || "—";
-    document.getElementById("pUsername").innerText = currentUser;
-    document.getElementById("pPhone").innerText    = localStorage.getItem("phone_" + currentUser) || localStorage.getItem("phone") || "—";
-    document.getElementById("pIncome").innerText   = localStorage.getItem("income_" + currentUser) ? "₹" + Number(localStorage.getItem("income_" + currentUser)).toLocaleString() : "—";
-    document.getElementById("pExpense").innerText  = localStorage.getItem("totalExpense_" + currentUser) ? "₹" + Number(localStorage.getItem("totalExpense_" + currentUser)).toLocaleString() : "—";
-    document.getElementById("pScore").innerText    = localStorage.getItem("riskScore_" + currentUser) || "—";
-    document.getElementById("pRiskLevel").innerText = localStorage.getItem("riskLevel_" + currentUser) || "—";
-    let phone = localStorage.getItem("phone_" + currentUser) || localStorage.getItem("phone") || "";
-    if(phone){
-        let ud2 = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
-        fetch("/get_status/" + phone + (ud2.name ? "?name="+encodeURIComponent(ud2.name) : "")).then(r=>r.json()).then(d=>{
-            document.getElementById("pLoanStatus").innerText = d.status || "No Application";
-            document.getElementById("pBanker").innerText    = d.banker || "Not assigned yet";
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
+        _currentUser = sess.username;
+
+        document.getElementById("pName").innerText     = sess.name     || "—";
+        document.getElementById("pUsername").innerText = sess.username || "—";
+
+        /* Load phone + financial snapshot from backend */
+        fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+            let phone = d.phone || sess.phone || "—";
+            document.getElementById("pPhone").innerText   = phone;
+            document.getElementById("pIncome").innerText  = d.income       ? "₹"+Number(d.income).toLocaleString()       : "—";
+            document.getElementById("pExpense").innerText = d.total_expense? "₹"+Number(d.total_expense).toLocaleString(): "—";
+            document.getElementById("pScore").innerText   = d.risk_score   || "—";
+            document.getElementById("pRiskLevel").innerText = d.risk_level || "—";
+            /* Fetch loan status */
+            if(phone && phone !== "—"){
+                let name = sess.name || "";
+                fetch("/get_status/" + phone + (name ? "?name="+encodeURIComponent(name) : "")).then(r=>r.json()).then(function(s){
+                    document.getElementById("pLoanStatus").innerText = s.status || "No Application";
+                    document.getElementById("pBanker").innerText    = s.banker  || "Not assigned yet";
+                });
+            }
         });
-    }
+    }).catch(function(){ window.location.href="/"; });
 });
 
 function openEdit(){
-    let cu = localStorage.getItem("currentUser");
-    let ud = JSON.parse(localStorage.getItem("user_"+cu)||"{}");
-    document.getElementById("editName").value     = ud.name     || "";
-    document.getElementById("editUsername").value = ud.username || cu;
-    document.getElementById("editPhone").value    = localStorage.getItem("phone_"+cu) || "";
-    document.getElementById("editPopup").classList.add("show");
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        document.getElementById("editName").value     = sess.name     || "";
+        document.getElementById("editUsername").value = sess.username || "";
+        fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+            document.getElementById("editPhone").value = d.phone || sess.phone || "";
+        });
+        document.getElementById("editPopup").classList.add("show");
+    });
 }
 function closeEdit(){ document.getElementById("editPopup").classList.remove("show"); }
 function saveUserEdit(){
-    let cu       = localStorage.getItem("currentUser");
-    let ud       = JSON.parse(localStorage.getItem("user_"+cu)||"{}");
     let name     = document.getElementById("editName").value.trim();
     let username = document.getElementById("editUsername").value.trim();
     let phone    = document.getElementById("editPhone").value.trim();
-    ud.name     = name;
-    ud.username = username || cu;
-    /* If username changed, migrate localStorage key */
-    if(username && username !== cu){
-        localStorage.setItem("user_"+username, JSON.stringify(ud));
-        localStorage.removeItem("user_"+cu);
-        localStorage.setItem("currentUser", username);
-        /* Migrate per-user keys */
-        ["income_","totalExpense_","transport_","education_","food_","utilities_","other_","riskScore_","riskLevel_","phone_","financeFilled_"].forEach(k=>{
-            let v = localStorage.getItem(k+cu);
-            if(v){ localStorage.setItem(k+username, v); localStorage.removeItem(k+cu); }
-        });
-    } else {
-        localStorage.setItem("user_"+cu, JSON.stringify(ud));
-    }
-    let newCu = username || cu;
-    localStorage.setItem("phone_"+newCu, phone);
-    localStorage.setItem("phone", phone);
-    document.getElementById("pName").innerText     = name;
-    document.getElementById("pUsername").innerText = newCu;
-    document.getElementById("pPhone").innerText    = phone;
-    document.getElementById("editMsg").innerText   = "✓ Saved successfully!";
-    setTimeout(()=>{ closeEdit(); document.getElementById("editMsg").innerText=""; }, 1200);
+    fetch("/api/update_user_profile",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name,username,phone})
+    }).then(r=>r.json()).then(function(d){
+        if(d.error){ document.getElementById("editMsg").innerText="Error: "+d.error; return; }
+        _currentUser = d.username || username;
+        document.getElementById("pName").innerText     = name;
+        document.getElementById("pUsername").innerText = _currentUser;
+        document.getElementById("pPhone").innerText    = phone;
+        document.getElementById("editMsg").innerText   = "✓ Saved successfully!";
+        setTimeout(()=>{ closeEdit(); document.getElementById("editMsg").innerText=""; }, 1200);
+    }).catch(function(){ document.getElementById("editMsg").innerText="Server error."; });
 }
 function logout(){
-    localStorage.removeItem("currentUser");
-    window.location.href = "/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
 }
 </script>
 
