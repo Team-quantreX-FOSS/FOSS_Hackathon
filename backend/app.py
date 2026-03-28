@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session
+import os
 import sqlite3
 from datetime import datetime
 import secrets
@@ -764,4 +765,4 @@ def not_found(e): return render_template('404.html'), 404
 def server_error(e): return render_template('500.html'), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5050)))
