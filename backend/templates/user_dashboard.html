@@ -35,13 +35,37 @@
 .stat-card .s-label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#666; margin-bottom:8px; display:block; }
 .stat-card .s-val { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; color:#e6d5b8; }
 
+/* ── Risk score CTA state ── */
+.risk-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e6d5b8, #bfa980);
+    color: #111;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.risk-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(230,213,184,0.25); }
+
+/* make the risk score stat-card feel clickable when in CTA state */
+.stat-card.risk-unset { border-color: rgba(230,213,184,0.2); cursor: pointer; }
+.stat-card.risk-unset:hover { background: rgba(230,213,184,0.05); }
+
 .action-row { display:flex; gap:12px; margin:20px 0; flex-wrap:wrap; }
 .btn-primary { padding:12px 24px; border:none; border-radius:10px; background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; }
 .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(230,213,184,0.25); }
 .btn-outline { padding:12px 24px; border-radius:10px; border:1px solid rgba(230,213,184,0.3); background:transparent; color:#e6d5b8; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; }
 .btn-outline:hover { background:rgba(230,213,184,0.08); }
 
-/* STATUS BOX - always visible when there's a loan */
+/* STATUS BOX */
 #statusBox {
     margin-top:20px;
     font-size:17px;
@@ -90,8 +114,29 @@
 </div>
 
 <div class="stats-row">
-    <div class="stat-card"><span class="s-label">Risk Score</span><span class="s-val" id="riskScore">—</span></div>
-    <div class="stat-card"><span class="s-label">Risk Level</span><span class="s-val" id="riskLevel" style="font-size:1.1rem;">—</span></div>
+
+    <!-- Risk Score card — shows CTA if eligibility not checked yet -->
+    <div class="stat-card risk-unset" id="riskScoreCard" onclick="handleRiskCardClick()">
+        <span class="s-label">Risk Score</span>
+        <span class="s-val" id="riskScore">—</span>
+        <div id="riskScoreCta">
+            <button class="risk-cta-btn" onclick="event.stopPropagation(); location.href='/loan_check'">
+                🔍 Check Eligibility
+            </button>
+        </div>
+    </div>
+
+    <!-- Risk Level card — shows CTA if eligibility not checked yet -->
+    <div class="stat-card risk-unset" id="riskLevelCard" onclick="handleRiskCardClick()">
+        <span class="s-label">Risk Level</span>
+        <span class="s-val" id="riskLevel" style="font-size:1.1rem;">—</span>
+        <div id="riskLevelCta">
+            <button class="risk-cta-btn" onclick="event.stopPropagation(); location.href='/loan_check'">
+                🔍 Check Eligibility
+            </button>
+        </div>
+    </div>
+
     <div class="stat-card"><span class="s-label">Monthly Income</span><span class="s-val" id="incomeDisplay">—</span></div>
     <div class="stat-card"><span class="s-label">Total Expenses</span><span class="s-val" id="expenseDisplay">—</span></div>
 </div>
@@ -142,54 +187,113 @@
 <script>
 
 let currentUser = "";
+let currentName = "";
+let currentPhone = "";
 
 window.addEventListener("DOMContentLoaded", function(){
     Notification.requestPermission();
 
-    currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ alert("Please login first!"); window.location.href="/index"; return; }
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "user"){
+            alert("Please login first!");
+            window.location.href="/index";
+            return;
+        }
+        currentUser  = sess.username;
+        currentName  = sess.name || "";
+        currentPhone = sess.phone || "";
 
-    let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-    if(!userData){ alert("User data missing!"); localStorage.removeItem("currentUser"); window.location.href="/index"; return; }
+        document.getElementById("welcome").innerText  = "Welcome, " + currentName;
+        document.getElementById("userName").innerText = currentName + "'s Dashboard";
 
-    document.getElementById("welcome").innerText  = "Welcome, " + userData.name;
-    document.getElementById("userName").innerText = userData.name + "'s Dashboard";
-
-    let financeFilled = localStorage.getItem("financeFilled_" + currentUser);
-    if(!financeFilled){ openPopup(); } else { loadSavedData(); }
-
-    /* Start polling immediately */
-    pollStatus();
+        loadSavedData();
+        pollStatus();
+    }).catch(function(){
+        alert("Session error. Please login again.");
+        window.location.href="/index";
+    });
 });
 
 function getPhone(){
-    /* Try per-user key first, fallback to generic key */
-    let p = localStorage.getItem("phone_" + currentUser) || localStorage.getItem("phone") || "";
-    return p;
+    return currentPhone;
+}
+
+/* ── Redirect to loan eligibility page when user clicks the risk cards ── */
+function handleRiskCardClick(){
+    location.href = '/loan_check';
+}
+
+/* ── Show/hide the CTA buttons depending on whether risk score exists ── */
+function setRiskDisplay(riskScore, riskLevel){
+    let scoreEl  = document.getElementById("riskScore");
+    let levelEl  = document.getElementById("riskLevel");
+    let scoreCta = document.getElementById("riskScoreCta");
+    let levelCta = document.getElementById("riskLevelCta");
+    let scoreCard = document.getElementById("riskScoreCard");
+    let levelCard = document.getElementById("riskLevelCard");
+
+    let hasRisk = riskScore && riskScore !== "—" && riskScore !== "" && riskScore !== null;
+
+    if(hasRisk){
+        /* Hide CTA buttons, remove clickable styling */
+        scoreCta.style.display = "none";
+        levelCta.style.display = "none";
+        scoreCard.classList.remove("risk-unset");
+        scoreCard.style.cursor = "default";
+        scoreCard.onclick = null;
+        levelCard.classList.remove("risk-unset");
+        levelCard.style.cursor = "default";
+        levelCard.onclick = null;
+
+        /* Populate values */
+        scoreEl.innerText = riskScore;
+        levelEl.innerText = riskLevel || "—";
+
+        if(riskLevel === "Low Risk")         levelEl.style.color = "#34d399";
+        else if(riskLevel === "Medium Risk") levelEl.style.color = "#f59e0b";
+        else if(riskLevel === "High Risk")   levelEl.style.color = "#f87171";
+        else                                 levelEl.style.color = "#e6d5b8";
+
+    } else {
+        /* Show CTA — eligibility not checked */
+        scoreCta.style.display = "block";
+        levelCta.style.display = "block";
+        scoreCard.classList.add("risk-unset");
+        scoreCard.onclick = handleRiskCardClick;
+        levelCard.classList.add("risk-unset");
+        levelCard.onclick = handleRiskCardClick;
+
+        scoreEl.innerText = "—";
+        levelEl.innerText = "—";
+        levelEl.style.color = "#e6d5b8";
+    }
 }
 
 function loadSavedData(){
-    let income       = Number(localStorage.getItem("income_"       + currentUser)) || 0;
-    let totalExpense = Number(localStorage.getItem("totalExpense_" + currentUser)) || 0;
-    let transport    = Number(localStorage.getItem("transport_"    + currentUser)) || 0;
-    let education    = Number(localStorage.getItem("education_"    + currentUser)) || 0;
-    let food         = Number(localStorage.getItem("food_"         + currentUser)) || 0;
-    let utilities    = Number(localStorage.getItem("utilities_"    + currentUser)) || 0;
-    let other        = Number(localStorage.getItem("other_"        + currentUser)) || 0;
-    let riskScore    = localStorage.getItem("riskScore_" + currentUser) || "—";
-    let riskLevel    = localStorage.getItem("riskLevel_" + currentUser) || "—";
+    fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+        if(d.error) { setRiskDisplay(null, null); openPopup(); return; }
 
-    document.getElementById("incomeDisplay").innerText  = income       ? "₹"+income.toLocaleString()       : "—";
-    document.getElementById("expenseDisplay").innerText = totalExpense ? "₹"+totalExpense.toLocaleString() : "—";
-    document.getElementById("riskScore").innerText      = riskScore;
+        let income       = Number(d.income)       || 0;
+        let totalExpense = Number(d.total_expense) || 0;
+        let transport    = Number(d.transport)     || 0;
+        let education    = Number(d.education)     || 0;
+        let food         = Number(d.food)          || 0;
+        let utilities    = Number(d.utilities)     || 0;
+        let other        = Number(d.other)         || 0;
+        let riskScore    = d.risk_score || null;
+        let riskLevel    = d.risk_level || null;
+        if(d.phone) currentPhone = d.phone;
 
-    let levelEl = document.getElementById("riskLevel");
-    levelEl.innerText = riskLevel;
-    if(riskLevel==="Low Risk")         levelEl.style.color="#34d399";
-    else if(riskLevel==="Medium Risk") levelEl.style.color="#f59e0b";
-    else if(riskLevel==="High Risk")   levelEl.style.color="#f87171";
+        if(!income && !totalExpense){ setRiskDisplay(null, null); openPopup(); return; }
 
-    createCharts(income, transport, education, food, utilities, other, totalExpense);
+        document.getElementById("incomeDisplay").innerText  = income       ? "₹"+income.toLocaleString()       : "—";
+        document.getElementById("expenseDisplay").innerText = totalExpense ? "₹"+totalExpense.toLocaleString() : "—";
+
+        /* Risk score only shown if it came from eligibility check */
+        setRiskDisplay(riskScore, riskLevel);
+
+        createCharts(income, transport, education, food, utilities, other, totalExpense);
+    }).catch(function(){ setRiskDisplay(null, null); openPopup(); });
 }
 
 function openPopup(){
@@ -219,41 +323,34 @@ function saveFinance(){
     let sum = transport+education+food+utilities+other;
     if(sum !== totalExpense){ errEl.innerText="⚠ Breakdown must add up to total expenses!"; return; }
 
-    let ratio = (income-totalExpense)/income;
-    let riskScore, riskLevel, color;
-    if(ratio>0.4)     { riskScore=85; riskLevel="Low Risk";    color="#34d399"; }
-    else if(ratio>0.2){ riskScore=65; riskLevel="Medium Risk"; color="#f59e0b"; }
-    else              { riskScore=40; riskLevel="High Risk";   color="#f87171"; }
+    currentPhone = phone;
 
-    /* Save per-user */
-    localStorage.setItem("financeFilled_"+currentUser, "yes");
-    localStorage.setItem("income_"+currentUser,        income);
-    localStorage.setItem("totalExpense_"+currentUser,  totalExpense);
-    localStorage.setItem("transport_"+currentUser,     transport);
-    localStorage.setItem("education_"+currentUser,     education);
-    localStorage.setItem("food_"+currentUser,          food);
-    localStorage.setItem("utilities_"+currentUser,     utilities);
-    localStorage.setItem("other_"+currentUser,         other);
-    localStorage.setItem("riskScore_"+currentUser,     riskScore);
-    localStorage.setItem("riskLevel_"+currentUser,     riskLevel);
-    localStorage.setItem("phone_"+currentUser,         phone);
-    /* Generic keys for apply_loan */
-    localStorage.setItem("riskScore", riskScore);
-    localStorage.setItem("riskLevel", riskLevel);
-    localStorage.setItem("phone",     phone);
-
-    document.getElementById("incomeDisplay").innerText  = "₹"+income.toLocaleString();
-    document.getElementById("expenseDisplay").innerText = "₹"+totalExpense.toLocaleString();
-    document.getElementById("riskScore").innerText      = riskScore;
-    let levelEl = document.getElementById("riskLevel");
-    levelEl.innerText   = riskLevel;
-    levelEl.style.color = color;
-    errEl.innerText = "";
-
-    showToast('✅ Financial details saved!','success');
-    closePopup();
-    createCharts(income,transport,education,food,utilities,other,totalExpense);
-    pollStatus();
+    /*
+     * NOTE: We do NOT compute or save risk_score/risk_level here anymore.
+     * Risk score is only set after the user completes the Loan Eligibility check (/loan_check).
+     * We send null so the backend knows not to overwrite any existing eligibility result.
+     */
+    fetch("/api/financial_data", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({income, total_expense:totalExpense, transport, education,
+                             food, utilities, other,
+                             risk_score: null, risk_level: null,   // eligibility check will set these
+                             phone})
+    }).then(r=>r.json()).then(function(d){
+        if(d.error){ errEl.innerText="Error saving: "+d.error; return; }
+        document.getElementById("incomeDisplay").innerText  = "₹"+income.toLocaleString();
+        document.getElementById("expenseDisplay").innerText = "₹"+totalExpense.toLocaleString();
+        errEl.innerText = "";
+        showToast('✅ Financial details saved!','success');
+        closePopup();
+        createCharts(income,transport,education,food,utilities,other,totalExpense);
+        /* Re-fetch to get latest risk data (in case eligibility was already checked before) */
+        fetch("/api/financial_data").then(r=>r.json()).then(function(fresh){
+            setRiskDisplay(fresh.risk_score||null, fresh.risk_level||null);
+        });
+        pollStatus();
+    }).catch(function(){ errEl.innerText="Server error saving data."; });
 }
 
 function createCharts(income,transport,education,food,utilities,other,totalExpense){
@@ -277,32 +374,19 @@ function createCharts(income,transport,education,food,utilities,other,totalExpen
     });
 }
 
-/* ── STATUS NOTIFICATION ─────────────────────────────────── */
-function saveLoanNotification(data){
-    let key = "loanHistory_" + currentUser;
-    let history = JSON.parse(localStorage.getItem(key) || "[]");
-    /* Avoid duplicate entries for same status */
-    let exists = history.find(function(h){ return h.status === data.status && h.banker === data.banker; });
-    if(!exists){
-        history.push({
-            status:    data.status,
-            banker:    data.banker || "",
-            reason:    data.reason || "",
-            timestamp: new Date().toLocaleString()
-        });
-        localStorage.setItem(key, JSON.stringify(history));
-    }
-}
-
 function pollStatus(){
     let phone = getPhone();
-    if(!phone) return;
+    if(!phone){
+        fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+            if(d.phone){ currentPhone = d.phone; checkStatus(d.phone); }
+        }).catch(function(){});
+        return;
+    }
     checkStatus(phone);
 }
 
 function checkStatus(phone){
-    let userData = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
-    let name = userData.name || "";
+    let name = currentName || "";
     fetch("/get_status/" + phone + (name ? "?name="+encodeURIComponent(name) : ""))
     .then(res => res.json())
     .then(data => {
@@ -358,18 +442,14 @@ function checkStatus(phone){
         let act = document.getElementById('statusAction');
         if(act) act.style.display = isFinal ? 'block' : 'none';
 
-        /* Browser notification on status change */
         if(window.lastLoanStatus !== undefined && window.lastLoanStatus !== data.status){
             showNotification("FinRisk Loan Update", box.innerText || msg.replace(/<[^>]+>/g,''));
         }
         window.lastLoanStatus = data.status;
 
         if(isFinal){
-            saveLoanNotification(data);
-            /* STOP polling so interval never redraws the box */
             clearInterval(window.pollTimer);
             window.pollTimer = null;
-            /* Fade out after 6 seconds */
             setTimeout(function(){
                 box.style.transition = 'opacity 1.5s ease';
                 box.style.opacity    = '0';
@@ -395,16 +475,13 @@ function showNotification(title, body){
     }
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage.removeItem('currentUser'); window.location.href='/index'; }
-}
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/index'; }); } }
 
-/* Poll every 5 seconds — stored in window.pollTimer so we can stop it */
 window.pollTimer = setInterval(function(){ pollStatus(); }, 5050);
 
 </script>
 
 <script>
-
 /* ── TOAST SYSTEM ── */
 (function(){
     let container = document.getElementById('toastContainer');
@@ -447,7 +524,6 @@ window.pollTimer = setInterval(function(){ pollStatus(); }, 5050);
         overlay.classList.remove('open');
     });
 })();
-
 </script>
 </body>
 </html>
