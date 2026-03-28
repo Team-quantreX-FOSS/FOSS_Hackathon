@@ -314,19 +314,12 @@ let allData   = [];
 let myBanker  = "";
 let chartObj  = null;
 
-/* Get logged-in banker name */
-let currentBankerId = localStorage.getItem("currentBanker") || "";
-if(currentBankerId){
-    let bd = JSON.parse(localStorage.getItem("banker_" + currentBankerId) || "{}");
-    myBanker = bd.name || "";
-    /* If empty, fetch from DB */
-    if(!myBanker){
-        fetch("/api/get_banker/" + currentBankerId)
-        .then(r=>r.json())
-        .then(data=>{ if(data.name){ myBanker=data.name; loadReview(); } })
-        .catch(()=>{});
-    }
-}
+/* Get logged-in banker from session */
+fetch("/api/session").then(r=>r.json()).then(function(sess){
+    if(!sess.role || sess.role !== "banker"){ window.location.href="/"; return; }
+    myBanker = sess.name || "";
+    loadReview();
+}).catch(function(){ window.location.href="/"; });
 
 function loadReview(){
     fetch("/users")
@@ -454,9 +447,8 @@ function renderChart(data){
     });
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage.removeItem('currentBanker'); window.location.href='/'; } }
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; }); } }
 
-loadReview();
 
 </script>
 
