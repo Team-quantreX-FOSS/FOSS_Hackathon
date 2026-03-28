@@ -203,18 +203,23 @@
 <script>
 /* Store uploaded file data */
 let fileStore = { aadharData:null, panData:null, salaryData:null, bankStmtData:null };
+let _sessionName  = "";
+let _sessionPhone = "";
 
 window.addEventListener("DOMContentLoaded", function(){
-    let currentUser = localStorage.getItem("currentUser");
-    if(!currentUser){ window.location.href="/"; return; }
-    let ud = JSON.parse(localStorage.getItem("user_"+currentUser)||"{}");
-    if(ud.name) document.getElementById("fullName").value = ud.name;
+    fetch("/api/session").then(r=>r.json()).then(function(sess){
+        if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
+        _sessionName = sess.name || "";
+        if(_sessionName) document.getElementById("fullName").value = _sessionName;
 
-    let phone = localStorage.getItem("phone_"+currentUser) || localStorage.getItem("phone") || "";
-    if(phone) document.getElementById("phone").value = phone;
-
-    let score = localStorage.getItem("riskScore_"+currentUser) || localStorage.getItem("riskScore") || "";
-    if(score) document.getElementById("score").value = score;
+        /* Pre-fill phone + risk score from financial data */
+        fetch("/api/financial_data").then(r=>r.json()).then(function(fd){
+            _sessionPhone = fd.phone || sess.phone || "";
+            if(_sessionPhone) document.getElementById("phone").value = _sessionPhone;
+            let score = fd.risk_score || "";
+            if(score) document.getElementById("score").value = score;
+        });
+    }).catch(function(){ window.location.href="/"; });
 });
 
 function formatAadhar(inp){
@@ -299,25 +304,6 @@ function submitApplication(){
     let r2 = ann/12/100;
     let emi = r2>0 ? Math.round(Number(loan)*r2*Math.pow(1+r2,Number(tenure))/(Math.pow(1+r2,Number(tenure))-1)) : Math.round(Number(loan)/Number(tenure));
 
-    /* Save documents to localStorage for banker to view */
-    let currentUser = localStorage.getItem("currentUser");
-    let appDocs = {
-        fullName, age, phone, address, employment, employer,
-        aadhar: aadhar.substring(0,8)+"XXXX", /* mask last 4 */
-        pan: pan.substring(0,5)+"XXXXX",       /* mask last 5 */
-        purpose, accountHolder,
-        accountNumber: "XXXXXX"+accountNumber.slice(-4), /* mask */
-        ifsc,
-        aadharImg: fileStore.aadharData,
-        panImg:    fileStore.panData,
-        salaryImg: fileStore.salaryData,
-        bankStmt:  fileStore.bankStmtData
-    };
-    localStorage.setItem("appDocs_"+currentUser, JSON.stringify(appDocs));
-    /* Save phone for status tracking */
-    localStorage.setItem("phone_"+currentUser, phone);
-    localStorage.setItem("phone", phone);
-
     /* Save profile + images to DB so banker can view */
     fetch("/save_borrower_profile",{
         method:"POST", headers:{"Content-Type":"application/json"},
@@ -335,7 +321,16 @@ function submitApplication(){
             salaryImg:  fileStore.salaryData,
             bankStmt:   fileStore.bankStmtData
         })
-    }).catch(()=>{});
+    }).catch(function(){});
+
+    /* Also update phone in financial_data so status tracking works */
+    fetch("/api/financial_data").then(r=>r.json()).then(function(fd){
+        let payload = Object.assign({}, fd, { phone: phone });
+        fetch("/api/financial_data",{
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(payload)
+        }).catch(function(){});
+    }).catch(function(){});
 
     fetch("/apply_loan",{
         method:"POST", headers:{"Content-Type":"application/json"},
@@ -348,20 +343,20 @@ function submitApplication(){
         })
     })
     .then(r=>r.json())
-    .then(res=>{
+    .then(function(res){
         if(res.message==="no_banker"){
             sucEl.innerText="✅ Application submitted! No banker available yet — will be picked up once a banker registers.";
         } else {
-            sucEl.innerText="✅ Application submitted successfully! A banker will review your application shortly."; showToast('✅ Loan application submitted!','success');
+            sucEl.innerText="✅ Application submitted successfully! A banker will review your application shortly.";
+            showToast('✅ Loan application submitted!','success');
         }
-        setTimeout(()=>{ window.location.href="/user_dashboard"; }, 2500);
+        setTimeout(function(){ window.location.href="/user_dashboard"; }, 2500);
     })
-    .catch(()=>{ errEl.innerText="Server error. Please try again."; });
+    .catch(function(){ errEl.innerText="Server error. Please try again."; });
 }
 
 function logout(){
-    localStorage.removeItem("currentUser");
-    window.location.href="/";
+    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
 }
 </script>
 
