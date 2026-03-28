@@ -239,12 +239,12 @@
             <span class="bb-max">/ 30 pts</span>
         </div>
         <div class="breakdown-box">
-            <span class="bb-label">Debt-to-Income</span>
+            <span class="bb-label">FOIR</span>
             <span class="bb-val" id="bDTI">—</span>
             <span class="bb-max">/ 25 pts</span>
         </div>
         <div class="breakdown-box">
-            <span class="bb-label">EMI Affordability</span>
+            <span class="bb-label">Savings Rate</span>
             <span class="bb-val" id="bEMI">—</span>
             <span class="bb-max">/ 25 pts</span>
         </div>
@@ -277,7 +277,6 @@ function toggleMethod(){
     document.getElementById("btnAlt").classList.toggle("active", method==="alt");
 }
 
-/* ── FILE UPLOAD HANDLER ──────────────────────────────── */
 function fileUploaded(inputId, lblId, iconId, txtId){
     let file  = document.getElementById(inputId).files[0];
     let lbl   = document.getElementById(lblId);
@@ -286,7 +285,6 @@ function fileUploaded(inputId, lblId, iconId, txtId){
     if(file){
         lbl.classList.add("uploaded");
         icon.innerText = "✅";
-        /* Truncate long filenames */
         let name = file.name.length > 22 ? file.name.substring(0,20)+"…" : file.name;
         txt.innerText = name;
     } else {
@@ -309,7 +307,6 @@ function checkRisk(){
         loan        = parseFloat(document.getElementById("loan").value)        || 0;
         tenure      = parseFloat(document.getElementById("tenure").value)      || 1;
 
-        /* Validate credit method required fields */
         let missing = [];
         if(!income)      missing.push("Monthly Income");
         if(!expenses)    missing.push("Monthly Expenses");
@@ -317,10 +314,7 @@ function checkRisk(){
         if(!loan)        missing.push("Loan Amount");
         if(!tenure)      missing.push("Tenure");
         if(!creditScore) missing.push("Credit Score");
-        if(missing.length > 0){
-            alert("Please fill in: " + missing.join(", "));
-            return;
-        }
+        if(missing.length > 0){ alert("Please fill in: " + missing.join(", ")); return; }
 
     } else {
         income      = parseFloat(document.getElementById("income_alt").value)      || 0;
@@ -331,19 +325,14 @@ function checkRisk(){
         loan        = parseFloat(document.getElementById("loan_alt").value)        || 0;
         tenure      = parseFloat(document.getElementById("tenure_alt").value)      || 1;
 
-        /* Validate alt method required fields */
         let missing = [];
         if(!income)   missing.push("Monthly Income");
         if(!expenses) missing.push("Monthly Expenses");
         if(!age)      missing.push("Age");
         if(!loan)     missing.push("Loan Amount");
         if(!tenure)   missing.push("Tenure");
-        if(missing.length > 0){
-            alert("Please fill in: " + missing.join(", "));
-            return;
-        }
+        if(missing.length > 0){ alert("Please fill in: " + missing.join(", ")); return; }
 
-        /* Warn if no documents uploaded (not block — alt data is optional evidence) */
         let f1 = document.getElementById("f1").files[0];
         let f2 = document.getElementById("f2").files[0];
         let f3 = document.getElementById("f3").files[0];
@@ -355,15 +344,8 @@ function checkRisk(){
         }
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       FINTECH SCORING MODEL — RBI / CIBIL / NBFC Standard
-       Based on: TransUnion CIBIL methodology + RBI FLDG guidelines
-       Total: 100 points across 5 independent factors
-       ═══════════════════════════════════════════════════════════ */
-
-    /* Proper EMI formula: EMI = P*r*(1+r)^n / ((1+r)^n - 1)
-       Estimated annual interest rate based on risk score */
-    let annualRate = 12; /* default 12% */
+    /* ── INTEREST RATE ── */
+    let annualRate = 12;
     if(method === "credit"){
         if(creditScore >= 750)      annualRate = 8.5;
         else if(creditScore >= 700) annualRate = 10.5;
@@ -371,14 +353,10 @@ function checkRisk(){
         else if(creditScore >= 600) annualRate = 16;
         else                        annualRate = 20;
     }
-    let r = annualRate / 12 / 100; /* monthly rate */
+    let r = annualRate / 12 / 100;
     let newEmi = r > 0 ? Math.round(loan * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1)) : Math.round(loan / tenure);
 
-    /* ── FACTOR 1: CIBIL / CREDIT SCORE  (35 pts) ──────────────
-       Industry standard: CIBIL score is the single biggest factor.
-       Below 550 → automatic red flag in most Indian banks.
-       Above 750 → preferred customer, best rates.
-       Alt method: no credit score → scored on financial health only */
+    /* ── FACTOR 1: CREDIT SCORE (35 pts) ── */
     let creditPts = 0;
     if(method === "credit"){
         if     (creditScore >= 800) creditPts = 35;
@@ -387,18 +365,12 @@ function checkRisk(){
         else if(creditScore >= 650) creditPts = 17;
         else if(creditScore >= 600) creditPts = 10;
         else if(creditScore >= 550) creditPts = 5;
-        else                        creditPts = 0;  /* Below 550 = hard reject in most banks */
+        else                        creditPts = 0;
     } else {
-        creditPts = 17; /* Alt: neutral mid-score, judged on other factors */
+        creditPts = 17;
     }
 
-    /* ── FACTOR 2: FIXED OBLIGATION TO INCOME RATIO — FOIR (25 pts) ──
-       FOIR = (all fixed obligations i.e. existing EMI + new EMI) / net income
-       RBI circular: lenders must check FOIR before sanctioning.
-       FOIR < 40% → comfortable
-       FOIR 40–50% → acceptable (most banks cap here)
-       FOIR 50–60% → risky
-       FOIR > 60%  → most banks reject outright */
+    /* ── FACTOR 2: FOIR (25 pts) ── */
     let foir = income > 0 ? (existingEmi + newEmi) / income : 1;
     let foirPts = 0;
     if     (foir < 0.30) foirPts = 25;
@@ -407,14 +379,7 @@ function checkRisk(){
     else if(foir < 0.60) foirPts = 6;
     else                 foirPts = 0;
 
-    /* ── FACTOR 3: NET INCOME SURPLUS / SAVINGS RATE (20 pts) ──
-       Savings = income - expenses - existingEmi
-       Savings rate = savings / income
-       This shows ability to repay after living expenses.
-       > 40% savings → very healthy
-       20–40% → healthy
-       10–20% → marginal
-       < 10%  → stressed */
+    /* ── FACTOR 3: SAVINGS RATE (20 pts) ── */
     let savings     = income - expenses - existingEmi;
     let savingsRate = income > 0 ? savings / income : 0;
     let savingsPts  = 0;
@@ -423,16 +388,9 @@ function checkRisk(){
     else if(savingsRate > 0.20) savingsPts = 12;
     else if(savingsRate > 0.10) savingsPts = 7;
     else if(savingsRate > 0)    savingsPts = 3;
-    else                        savingsPts = 0; /* Negative savings = spending > earning */
+    else                        savingsPts = 0;
 
-    /* ── FACTOR 4: LOAN TO ANNUAL INCOME RATIO — LTI (12 pts) ──
-       LTI = loan amount / (net monthly income × 12)
-       RBI & NHB guideline for home loans: LTI ≤ 4x annual income preferred.
-       For personal loans: ≤ 10x monthly income (≈ 0.83x annual)
-       < 2x annual  → very safe
-       2–4x annual  → safe
-       4–6x annual  → moderate
-       > 6x annual  → risky */
+    /* ── FACTOR 4: LTI (12 pts) ── */
     let annualIncome = income * 12;
     let lti          = annualIncome > 0 ? loan / annualIncome : 99;
     let ltiPts       = 0;
@@ -442,12 +400,7 @@ function checkRisk(){
     else if(lti < 8) ltiPts = 2;
     else             ltiPts = 0;
 
-    /* ── FACTOR 5: AGE & EMPLOYMENT STABILITY (8 pts) ──
-       Based on RBI priority sector & PSB lending norms.
-       Prime earning age (25–45) → full points
-       Young (18–24) → lower stability, shorter employment history
-       Pre-retirement (46–58) → acceptable, fewer repayment years
-       Near/post retirement (>58) → tenure risk */
+    /* ── FACTOR 5: AGE (8 pts) ── */
     let agePts = 0;
     if     (age >= 25 && age <= 45) agePts = 8;
     else if(age >= 46 && age <= 55) agePts = 6;
@@ -455,28 +408,20 @@ function checkRisk(){
     else if(age >= 56 && age <= 65) agePts = 2;
     else                            agePts = 0;
 
-    /* ── FINAL WEIGHTED SCORE ──────────────────────────────────
-       Hard knockout rules (industry standard):
-       1. CIBIL < 550 in credit method → cap score at 30 max
-       2. FOIR > 65% → cap score at 25 max
-       3. Negative savings → deduct 10 pts */
+    /* ── TOTAL ── */
     let totalScore = creditPts + foirPts + savingsPts + ltiPts + agePts;
-
-    /* Apply knockout caps */
-    if(method === "credit" && creditScore > 0 && creditScore < 550){
-        totalScore = Math.min(totalScore, 30);
-    }
-    if(foir > 0.65){
-        totalScore = Math.min(totalScore, 25);
-    }
-    if(savings < 0){
-        totalScore = Math.max(0, totalScore - 10);
-    }
-
+    if(method === "credit" && creditScore > 0 && creditScore < 550) totalScore = Math.min(totalScore, 30);
+    if(foir > 0.65) totalScore = Math.min(totalScore, 25);
+    if(savings < 0) totalScore = Math.max(0, totalScore - 10);
     totalScore = Math.min(100, Math.max(0, totalScore));
 
-    /* ── RESULT CLASSIFICATION ─────────────────────────────────
-       Mirrors actual bank risk buckets used by SBI, HDFC, ICICI */
+    /* ── RISK LEVEL (matches dashboard colour logic) ── */
+    let riskLevel;
+    if     (totalScore >= 75) riskLevel = "Low Risk";
+    else if(totalScore >= 45) riskLevel = "Medium Risk";
+    else                      riskLevel = "High Risk";
+
+    /* ── CLASSIFICATION ── */
     let result, loanTypeText, color, barColor;
     if(totalScore >= 75){
         result       = "✅ Prime — Excellent Credit Profile";
@@ -500,13 +445,12 @@ function checkRisk(){
         color = "#f87171"; barColor = "#ef4444";
     }
 
-    /* ── DERIVED VALUES ────────────────────────────────────────*/
-    /* Max safe EMI = 40% of income minus existing EMI (conservative FOIR cap) */
+    /* ── DERIVED VALUES ── */
     let maxSafeEmi  = Math.max(0, income * 0.40 - existingEmi);
     let maxSafeLoan = Math.round(maxSafeEmi * tenure);
     let foirPct     = Math.round(foir * 100);
 
-    /* ── UPDATE UI ─────────────────────────────────────────────*/
+    /* ── UPDATE UI ── */
     document.getElementById("score").innerText       = totalScore;
     document.getElementById("score").style.color     = color;
     document.getElementById("result").innerText      = result;
@@ -519,39 +463,51 @@ function checkRisk(){
     document.getElementById("riskBar").style.width      = totalScore + "%";
     document.getElementById("riskBar").style.background = barColor;
 
-    /* BREAKDOWN */
     let setBox = (id, val, good, mid) => {
-        document.getElementById(id).innerText    = val;
-        document.getElementById(id).style.color  = val >= good ? "#34d399" : val >= mid ? "#f59e0b" : "#f87171";
+        document.getElementById(id).innerText   = val;
+        document.getElementById(id).style.color = val >= good ? "#34d399" : val >= mid ? "#f59e0b" : "#f87171";
     };
-    setBox("bCredit", creditPts,   25, 15);
-    setBox("bDTI",    foirPts,     18, 10);
-    setBox("bEMI",    savingsPts,  14,  8);
-    setBox("bLTI",    ltiPts,       8,  4);
-    setBox("bAge",    agePts,       6,  3);
-
-    /* Update breakdown labels to match new factors */
-    document.querySelector('[for="bDTI"] .bb-label, #bDTI').closest('.breakdown-box').querySelector('.bb-label').innerText = "FOIR";
-    document.querySelector('#bEMI').closest('.breakdown-box').querySelector('.bb-label').innerText = "Savings Rate";
+    setBox("bCredit", creditPts,  25, 15);
+    setBox("bDTI",    foirPts,    18, 10);
+    setBox("bEMI",    savingsPts, 14,  8);
+    setBox("bLTI",    ltiPts,      8,  4);
+    setBox("bAge",    agePts,      6,  3);
 
     document.getElementById("formulaNote").innerText =
-        "Estimated Rate: "+annualRate+"% p.a. | RBI/CIBIL Standard: CIBIL Score (35pts) + FOIR — Fixed Obligation to Income (25pts) + Net Savings Rate (20pts) + Loan-to-Income LTI (12pts) + Age Factor (8pts) = " + totalScore + "/100. Hard knockouts: CIBIL < 550 caps score at 30; FOIR > 65% caps at 25.";
+        "Estimated Rate: "+annualRate+"% p.a. | RBI/CIBIL Standard: CIBIL Score (35pts) + FOIR (25pts) + Net Savings Rate (20pts) + LTI (12pts) + Age Factor (8pts) = " + totalScore + "/100. Hard knockouts: CIBIL < 550 caps score at 30; FOIR > 65% caps at 25.";
 
     document.getElementById("resultCard").classList.add("show");
     document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
 
-    /* Save */
-    let apps = JSON.parse(localStorage.getItem("applications")) || [];
-    apps.push({ income, expenses, age, loan, tenure, existingEmi, creditScore, emi: newEmi, score: totalScore, result, loanType: loanTypeText });
-    localStorage.setItem("applications", JSON.stringify(apps));
-    localStorage.setItem("riskScore", totalScore);
+    /* ── SAVE risk_score + risk_level to backend ── */
+    fetch("/api/financial_data").then(r=>r.json()).then(function(fd){
+        /* Build payload from existing data, override only risk fields */
+        let payload = {
+            income:        fd.income        || 0,
+            total_expense: fd.total_expense || 0,
+            transport:     fd.transport     || 0,
+            education:     fd.education     || 0,
+            food:          fd.food          || 0,
+            utilities:     fd.utilities     || 0,
+            other:         fd.other         || 0,
+            phone:         fd.phone         || '',
+            risk_score:    totalScore,
+            risk_level:    riskLevel
+        };
+        fetch("/api/financial_data", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        }).then(function(){
+            if(window.showToast) showToast('✅ Risk score saved to your dashboard!', 'success');
+        }).catch(function(){});
+    }).catch(function(){});
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage.removeItem('currentUser'); window.location.href='/'; } }
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; }); } }
 </script>
 
 <script>
-
 /* ── TOAST SYSTEM ── */
 (function(){
     let container = document.getElementById('toastContainer');
@@ -594,7 +550,6 @@ function logout(){ if(confirm('Are you sure you want to logout?')){ localStorage
         overlay.classList.remove('open');
     });
 })();
-
 </script>
 </body>
 </html>
