@@ -1,3 +1,21 @@
-python reset_db.py
-python add_bankers.py
-python app.py
+💻 Terminal / User Flow
+
+# Borrower Side
+$ git clone https://github.com/<your-repo>
+$ cd FinRisk
+$ python app.py
+> Access via http://localhost:5000
+
+[Landing Page] --> Register/Login --> Dashboard
+--> Enter Income & Expenses --> Loan Eligibility Checker
+--> Apply Loan --> Track Status & Receive Notifications
+--> View Analytics & Financial Advisory
+--> Access Government Schemes / Courses
+
+# Banker Side
+Login --> View Unassigned Requests --> Pick Loan --> Approve / Reject / Manual Review
+--> Performance Dashboard Updates in Real-time
+
+# Admin Side
+Login --> View Banks, Borrowers, and Loan Applications
+--> Visualize Charts, Live System Stats
