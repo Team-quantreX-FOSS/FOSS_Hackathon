@@ -1,51 +1,94 @@
-# FOSS_Hackathon
-🏦 FinRisk — AI-Powered Borrower Risk Analyzer
-
-A full-stack fintech web application for intelligent loan risk assessment, built for the FOSS Hackathon.
 
 
-📌 What is FinRisk?
-FinRisk is a real-time loan risk analysis platform that connects borrowers, bankers, and admins in a seamless digital loan workflow — powered by RBI/CIBIL-standard risk scoring, government scheme discovery, future financial planning, and skill development resources.
+# FOSS_Hackathon 2026
 
-🚀 Features:-
-👤 Borrower
+🏦 **FinRisk — AI-Powered Borrower Risk Analyzer (Multi-Device, Backend-Driven)**
 
-Register and login securely
-Enter financial details (income, expenses, EMIs)
-Loan Eligibility Checker — 5-factor RBI/CIBIL scoring model (FOIR, Credit Score, Savings Rate, LTI, Age)
-Apply for Loan — submit application with age, loan type, tenure
-Real-time Status Tracking — live notifications when banker picks up, approves, or rejects
-Loan History & Spending Tracker — log expenses with bill upload, view category breakdown charts
-Financial Advisory — personalised advice based on savings rate and risk score
-Government Schemes — 12 official schemes with working links (APY, PMJDY, PMJJBY, MUDRA, etc.)
-Future Planning — set short/mid/long-term goals, see monthly savings needed
-Skill & Courses — 15 curated free and paid courses (NPTEL, Google, SEBI, AWS, CFA)
+A full-stack fintech web application for **intelligent loan risk assessment**, designed for **FOSS Hackathon 2026** with a focus on **open-source contribution, real-world impact, and robust architecture**.
 
-🏦 Banker
+---
 
-Register with bank name, branch, IFSC, and banker ID
-View unassigned loan requests and pick them up
-Approve / Reject / Manual Review with reason
-Approve and Reject buttons freeze after action (prevents accidental changes)
-Manual Review opens a decision popup
-Performance stats (approval %, rejection %, total cases)
+## 📌 About FinRisk
 
-⚙ Admin
+FinRisk is a **real-time, AI-powered loan risk analysis platform** that connects borrowers, bankers, and admins in a seamless digital loan workflow. It integrates **RBI/CIBIL-standard scoring, alternative data risk assessment, government scheme discovery, and future financial planning**.
 
-View all registered banks with branch, IFSC, banker count, and performance
-View all borrowers and loan applications
-View all bankers with individual and overall pie charts
-Live system stats on landing page
+Now with **backend-based data storage**, users can **login from multiple devices** and see consistent, real-time financial and loan data.
 
+---
 
-🧠 Risk Scoring Model
+## 🚀 Key Features
 
-Based on RBI circulars, CIBIL methodology and NBFC lending norms:
-Factor:- CIBIL Score, FOIR (Fixed Obligation to Income Ratio), Net Savings Rate, LTI (Loan to Annual Income), Age Factor
-Weight: 35pts, 25 pts, 20 pts, 12 pts, 8 pts
-Standard: TransUnion CIBIL, RBI circular, Income − Expenses, RBI/NHB guideline, PSB lending norms
-Hard knockouts: CIBIL < 550 → capped at 30 pts. FOIR > 65% → capped at 25 pts.
+### 👤 Borrower
 
-🛠 Tech Stack
-Layer:- Backend, Database, Frontend, Charts, Fonts, Auth
-Technology: Python 3.11 and Flask, SQLite3, HTML5 and  CSS3 and Vanilla and JavaScript, Chart.js, Syne and DM Mono (Google Fonts), localStorage (client-side)
+* **Secure Registration & Login** – Multi-device, session-based authentication.
+* **Financial Input Dashboard** – Income, expenses, EMIs; data stored securely in backend.
+* **Loan Eligibility Checker** – Enhanced 5-factor scoring model:
+
+  * **Standard Factors:** FOIR, Credit Score, Savings Rate, LTI, Age
+  * **Alternative Data:** Social footprint, transaction history patterns, digital footprint → feeds risk score
+* **Apply for Loan** – Submit requests with tenure, type, and age.
+* **Real-Time Status Updates** – Notifications when banker picks, approves, or rejects.
+* **Loan & Expense Tracker** – Upload bills, categorize expenses, view breakdown charts.
+* **Financial Advisory** – AI-driven recommendations based on risk score and savings trends.
+* **Government Schemes** – Access 12 official schemes (APY, PMJDY, PMJJBY, MUDRA) with working links.
+* **Future Planning & Skill Development** – Set goals; 15 curated courses from NPTEL, Google, SEBI, AWS, CFA.
+
+### 🏦 Banker
+
+* **Banker Registration** – Branch, IFSC, Banker ID.
+* **Loan Request Dashboard** – Pick unassigned requests.
+* **Decision Workflow** – Approve / Reject / Manual Review (with reasons).
+* **Freeze Action Buttons** – Prevent accidental duplicate decisions.
+* **Performance Analytics** – Approval %, rejection %, total processed.
+
+### ⚙ Admin
+
+* **Overview Dashboard** – All banks, borrowers, and bankers.
+* **Detailed Analytics** – Individual and overall charts, performance metrics.
+* **Live System Stats** – Landing page shows active borrowers, pending loans, approvals.
+
+---
+
+## 🧠 Risk Scoring Model
+
+**Hybrid scoring using standard and alternative data sources**:
+
+| Factor                                  | Weight | Source                         |
+| --------------------------------------- | ------ | ------------------------------ |
+| CIBIL / Credit Score                    | 35 pts | TransUnion CIBIL               |
+| FOIR (Fixed Obligation to Income Ratio) | 25 pts | RBI Circulars / NBFC norms     |
+| Net Savings Rate                        | 20 pts | Income - Expenses (User Input) |
+| LTI (Loan to Annual Income)             | 12 pts | Calculated from financial data |
+| Age Factor                              | 8 pts  | RBI/NHB Lending Norms          |
+
+**Hard Knockouts:**
+
+* CIBIL < 550 → capped at 30 pts
+* FOIR > 65% → capped at 25 pts
+
+**Alternative Data Risk Integration:**
+
+* Uses digital footprint, utility payments, and micro-transactions
+* Supplements traditional metrics for borrowers without formal credit history
+
+**Final Risk Score = Weighted Standard Score + Alternative Data Score**
+
+* Enables **more inclusive lending** for underbanked users
+
+---
+
+## 🛠 Tech Stack & Architecture
+
+**Backend:** Python 3.11, Flask
+**Database:** SQLite3 (multi-device support)
+**Frontend:** HTML5, CSS3, JavaScript, Chart.js
+**Fonts:** Google Fonts (Syne, DM Mono)
+**Authentication:** Session-based, JWT-compatible for multi-device login
+**Data Flow:** Backend stores all user, loan, and analytics data → ensures **consistent multi-device experience**
+
+**Notes:**
+
+* All interactions pass through backend → ensures **secure, synchronized data**.
+* Risk Scoring Engine runs in backend → outputs risk scores visible to borrower, banker, admin.
+* Notifications handled via backend → real-time status updates.
+* Charts & analytics generated via frontend pulling backend JSON endpoints.
