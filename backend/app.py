@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -27,6 +27,13 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 # SECRET KEY — reads from environment in production, falls back for local dev
 app.secret_key                   = os.environ.get("SECRET_KEY", "dev-fallback-change-me")
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
+
+# ── SESSION COOKIE CONFIG (fixes WebView / mobile session loss) ────────────────
+app.config['SESSION_COOKIE_SAMESITE']      = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY']      = True
+app.config['SESSION_COOKIE_SECURE']        = False   # Set True only on HTTPS
+app.config['PERMANENT_SESSION_LIFETIME']   = timedelta(days=30)
+# ──────────────────────────────────────────────────────────────────────────────
 
 # ── VALIDATION HELPERS ─────────────────────────────────────────────────────────
 import re
@@ -345,6 +352,7 @@ def login_user():
         return jsonify({"error": "Wrong password!"}), 401
 
     session.clear()
+    session.permanent   = True          # ← keeps session alive for 30 days
     session['role']     = 'user'
     session['username'] = username
     session['name']     = row[1]
@@ -378,6 +386,7 @@ def login_banker():
         return jsonify({"error": "Wrong password!"}), 401
 
     session.clear()
+    session.permanent    = True          # ← keeps session alive for 30 days
     session['role']      = 'banker'
     session['banker_id'] = banker_id
     session['name']      = row[1]
@@ -397,6 +406,7 @@ def login_admin():
         return jsonify({"error": "Access Denied"}), 401
 
     session.clear()
+    session.permanent   = True          # ← keeps session alive for 30 days
     session['role']     = 'admin'
     session['admin_id'] = ADMIN_ID
     session['name']     = ADMIN_NAME
@@ -697,7 +707,6 @@ def banker_action():
     if banker:
         first_action = current_status in ("Pending", "Picked Up")
 
-        # Decrement old-status counter safely (CASE WHEN — MAX() is invalid in SQLite UPDATE)
         if current_status == "Approved" and action != "Approved":
             c.execute("""UPDATE bankers
                          SET approval = CASE WHEN approval > 0 THEN approval - 1 ELSE 0 END
@@ -711,7 +720,6 @@ def banker_action():
                          SET manual = CASE WHEN manual > 0 THEN manual - 1 ELSE 0 END
                          WHERE name=?""", (banker,))
 
-        # Increment new-status counter
         if action == "Approved":
             c.execute("UPDATE bankers SET approval = approval + 1 WHERE name=?", (banker,))
         elif action == "Rejected":
@@ -847,19 +855,15 @@ def get_stats():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
 
-    # Total loans
     c.execute("SELECT COUNT(*) FROM users")
     total_loans = c.fetchone()[0]
 
-    # Loans by status
     c.execute("SELECT loan_status, COUNT(*) FROM users GROUP BY loan_status")
     status_counts = dict(c.fetchall())
 
-    # Total bankers
     c.execute("SELECT COUNT(*) FROM bankers")
     total_bankers = c.fetchone()[0]
 
-    # Bankers performance summary
     c.execute("SELECT SUM(total_customers), SUM(approval), SUM(rejection), SUM(manual) FROM bankers")
     banker_totals = c.fetchone()
     total_customers = banker_totals[0] or 0
@@ -1013,11 +1017,6 @@ def admin_remove_banker(id):
 
 @app.route('/save_borrower_profile', methods=['POST'])
 def save_borrower_profile():
-    """
-    Accepts EITHER:
-      multipart/form-data  — with optional uploaded file fields
-      application/json     — image fields carry existing stored paths
-    """
     is_multipart = request.content_type and 'multipart/form-data' in request.content_type
 
     if is_multipart:
@@ -1037,7 +1036,6 @@ def save_borrower_profile():
     if not phone:
         return jsonify({"error": "Phone number is required to save borrower profile."}), 400
 
-    # ── fetch existing image paths so partial updates don't wipe them ─────────
     conn = sqlite3.connect('users.db')
     cur  = conn.cursor()
 
@@ -1056,7 +1054,6 @@ def save_borrower_profile():
         'bank_stmt':  existing_row[4] if existing_row else None,
     }
 
-    # ── helper: save uploaded file or fall back to JSON value / existing DB path
     def save_upload(field_name, json_alias, existing_path):
         f = files.get(field_name) if is_multipart else None
         if f and f.filename:
@@ -1066,7 +1063,6 @@ def save_borrower_profile():
             filename = secure_filename(f"{phone}_{field_name}_{int(datetime.now().timestamp())}.{ext}")
             f.save(os.path.join(UPLOAD_FOLDER, filename))
             return f"uploads/{filename}", None
-        # No new file — use value from JSON body or keep existing DB path
         return fget(json_alias) or fget(field_name) or existing_path, None
 
     errors = []
@@ -1079,7 +1075,6 @@ def save_borrower_profile():
         conn.close()
         return jsonify({"error": " | ".join(errors)}), 400
 
-    # ── 16 update values ───────────────────────────────────────────────────────
     update_vals = (
         name,
         fget('age', 0),
