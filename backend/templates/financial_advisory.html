@@ -466,6 +466,29 @@ window.addEventListener("DOMContentLoaded", function(){
 function logout(){
     fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
 }
+
+/* ── MOBILE SIDEBAR ── */
+(function(){
+    let sidebar = document.querySelector('.sidebar');
+    if(!sidebar) return;
+    let btn = document.createElement('button');
+    btn.className = 'hamburger';
+    btn.innerHTML = '☰';
+    document.body.appendChild(btn);
+    let overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+    btn.addEventListener('click', function(){
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function(){
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    });
+})();
+
+    
 </script>
 </body>
 </html>
