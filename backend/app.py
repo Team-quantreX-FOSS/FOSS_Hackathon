@@ -32,7 +32,8 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
 app.config['SESSION_COOKIE_SAMESITE']      = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY']      = True
 app.config['SESSION_COOKIE_SECURE']        = False   # Set True only on HTTPS
-app.config['PERMANENT_SESSION_LIFETIME']   = timedelta(days=30)
+app.config['PERMANENT_SESSION_LIFETIME']   = timedelta(days=3650)
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ── VALIDATION HELPERS ─────────────────────────────────────────────────────────
