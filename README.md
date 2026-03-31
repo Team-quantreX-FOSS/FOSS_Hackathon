@@ -80,11 +80,42 @@ Now with **backend-based data storage**, users can **login from multiple devices
 ## 🛠 Tech Stack & Architecture
 
 **Backend:** Python 3.11, Flask
+
 **Database:** SQLite3 (multi-device support)
+
 **Frontend:** HTML5, CSS3, JavaScript, Chart.js
+
 **Fonts:** Google Fonts (Syne, DM Mono)
+
 **Authentication:** Session-based, JWT-compatible for multi-device login
+
 **Data Flow:** Backend stores all user, loan, and analytics data → ensures **consistent multi-device experience**
+
+ 💻 **Installation & Usage**
+
+## Prerequisites
+- Python 3.8+
+
+### Steps
+
+bash:
+# 1. Clone the repository
+git clone https://github.com/yourusername/FinRisk.git
+cd FinRisk
+
+# 2. Create and activate virtual environment (recommended)
+python -m venv venv
+# On Windows:
+# venv\Scripts\activate
+# On macOS/Linux:
+# source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run the application
+python app.py
+
 
 **Notes:**
 
