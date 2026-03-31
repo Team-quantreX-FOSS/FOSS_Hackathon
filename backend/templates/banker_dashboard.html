@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banker Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -144,7 +149,7 @@ let userDataMap = {};
 
 async function init(){
     try {
-        let sessRes = await fetch("/api/session");
+        let sessRes = await fetch("/api/session", { credentials: "include" });
         let sess    = await sessRes.json();
         if(!sess.role || sess.role !== "banker"){
             document.getElementById("tableBody").innerHTML =
@@ -167,7 +172,7 @@ async function init(){
 }
 
 function fetchUsers(){
-    fetch("/users")
+    fetch("/users", { credentials: "include" })
     .then(function(r){ return r.json(); })
     .then(function(data){
         applications = data
@@ -260,7 +265,7 @@ function openProfile(name, phone){
     document.getElementById("profileOverlay").style.display = "block";
     document.getElementById("profileContent").innerHTML = '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#888;">⏳ Loading profile...</div>';
 
-    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name))
+    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name), { credentials: "include" })
     .then(function(r){ return r.json(); })
     .then(function(d){
         if(d.error){
@@ -376,7 +381,7 @@ function filterTable(status, btn){
 function sortByScore(){ renderTable([...applications].sort(function(a,b){ return b.score - a.score; })); }
 
 function approve(id){
-    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+    fetch("/banker_action",{ method:"POST", credentials:"include", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:id, action:"Approved", reason:"Approved by banker" })
     }).then(function(r){ return r.json(); }).then(function(d){ showToast(d.error || '✅ Action recorded', d.error?'error':'success'); fetchUsers(); }).catch(function(){ showToast('Server error','error'); });
 }
@@ -385,7 +390,7 @@ function openRejectPopup(id){ selectedId=id; document.getElementById("rejectReas
 function closeRejectPopup(){ document.getElementById("rejectPopup").style.display="none"; selectedId=null; }
 function submitReject(){
     let reason = document.getElementById("rejectReason").value.trim() || "Rejected by banker";
-    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+    fetch("/banker_action",{ method:"POST", credentials:"include", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:selectedId, action:"Rejected", reason:reason })
     }).then(function(r){ return r.json(); }).then(function(d){ showToast(d.error||'✅ Loan rejected','error'); closeRejectPopup(); fetchUsers(); }).catch(function(){ showToast('Server error','error'); });
 }
@@ -396,12 +401,12 @@ function manualDecision(action){
     if(!manualUserId) return;
     if(action === "Rejected"){ closeManualPopup(); openRejectPopup(manualUserId); manualUserId=null; return; }
     let reason = action === "Approved" ? "Approved after manual review" : "Under verification";
-    fetch("/banker_action",{ method:"POST", headers:{"Content-Type":"application/json"},
+    fetch("/banker_action",{ method:"POST", credentials:"include", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ user_id:manualUserId, action:action, reason:reason })
     }).then(function(r){ return r.json(); }).then(function(d){ showToast(d.error||'✅ Decision recorded', d.error?'error':'success'); closeManualPopup(); fetchUsers(); }).catch(function(){ showToast('Server error','error'); });
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; }); } }
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href='/'; }); } }
 
 init();
 </script>
