@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>User Profile</title>
@@ -146,7 +151,7 @@
 <script>
 let _currentUser = "";
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
         _currentUser = sess.username;
 
@@ -154,7 +159,7 @@ window.addEventListener("DOMContentLoaded", function(){
         document.getElementById("pUsername").innerText = sess.username || "—";
 
         /* Load phone + financial snapshot from backend */
-        fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+        fetch("/api/financial_data", { credentials: "include" }).then(r=>r.json()).then(function(d){
             let phone = d.phone || sess.phone || "—";
             document.getElementById("pPhone").innerText   = phone;
             document.getElementById("pIncome").innerText  = d.income       ? "₹"+Number(d.income).toLocaleString()       : "—";
@@ -174,10 +179,10 @@ window.addEventListener("DOMContentLoaded", function(){
 });
 
 function openEdit(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         document.getElementById("editName").value     = sess.name     || "";
         document.getElementById("editUsername").value = sess.username || "";
-        fetch("/api/financial_data").then(r=>r.json()).then(function(d){
+        fetch("/api/financial_data", { credentials: "include" }).then(r=>r.json()).then(function(d){
             document.getElementById("editPhone").value = d.phone || sess.phone || "";
         });
         document.getElementById("editPopup").classList.add("show");
@@ -189,7 +194,7 @@ function saveUserEdit(){
     let username = document.getElementById("editUsername").value.trim();
     let phone    = document.getElementById("editPhone").value.trim();
     fetch("/api/update_user_profile",{
-        method:"POST",
+        method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({name,username,phone})
     }).then(r=>r.json()).then(function(d){
@@ -203,7 +208,7 @@ function saveUserEdit(){
     }).catch(function(){ document.getElementById("editMsg").innerText="Server error."; });
 }
 function logout(){
-    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
+    fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href="/"; });
 }
 
 /* ── MOBILE SIDEBAR ── */
