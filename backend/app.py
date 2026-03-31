@@ -22,13 +22,13 @@ def allowed_file(filename):
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-app.secret_key                   = os.environ.get("SECRET_KEY", "finrisk-secret-key-2026-stable")
+app.secret_key = os.environ.get("SECRET_KEY")
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
 
 # ── SESSION CONFIG — works on both HTTP and HTTPS (PythonAnywhere) ─────────────
 app.config['SESSION_COOKIE_SAMESITE']    = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY']    = True
-app.config['SESSION_COOKIE_SECURE']      = False  # PythonAnywhere handles HTTPS at proxy level
+app.config['SESSION_COOKIE_SECURE']      = True  # PythonAnywhere handles HTTPS at proxy level
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
 app.config['SESSION_COOKIE_PATH']        = '/'
 app.config['SESSION_COOKIE_NAME']        = 'finrisk_session'
@@ -165,6 +165,21 @@ def init_db():
         phone TEXT,
         updated_at TEXT
     )''')
+
+        # === ADD THIS BLOCK ===
+    c.execute('''CREATE TABLE IF NOT EXISTS user_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        goal_type TEXT,           -- 'short', 'mid', 'long'
+        goal_name TEXT,
+        target_amount REAL,
+        monthly_contribution REAL DEFAULT 0,
+        current_savings REAL DEFAULT 0,
+        updated_at TEXT
+    )''')
+
+    c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_goal ON user_goals(username, goal_type)")
+    # =======================
 
     c.execute('''CREATE TABLE IF NOT EXISTS loan_expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -546,6 +561,61 @@ def save_financial_data():
     conn.commit()
     conn.close()
     return jsonify({"message": "Financial data saved."})
+
+@app.route('/api/user_goals', methods=['GET'])
+def get_user_goals():
+    username = session.get('username')
+    if not username:
+        return jsonify({"error": "Not logged in"}), 401
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("""SELECT goal_type, goal_name, target_amount, 
+                        monthly_contribution, current_savings 
+                 FROM user_goals WHERE username=?""", (username,))
+    rows = c.fetchall()
+    conn.close()
+
+    goals = {}
+    for r in rows:
+        goals[r[0]] = {
+            "name": r[1] or "",
+            "target": float(r[2] or 0),
+            "monthly": float(r[3] or 0),
+            "current": float(r[4] or 0)
+        }
+    return jsonify(goals)
+
+
+@app.route('/api/user_goals', methods=['POST'])
+def save_user_goals():
+    username = session.get('username')
+    if not username:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.json or {}
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM user_goals WHERE username=?", (username,))
+
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    for goal_type, g in data.items():
+        if isinstance(g, dict) and g.get('target', 0) > 0:
+            c.execute('''INSERT INTO user_goals 
+                        (username, goal_type, goal_name, target_amount,
+                         monthly_contribution, current_savings, updated_at)
+                        VALUES (?,?,?,?,?,?,?)''',
+                      (username, goal_type,
+                       g.get('name',''),
+                       g.get('target',0),
+                       g.get('monthly',0),
+                       g.get('current',0),
+                       current_time))
+
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Goals saved successfully"})
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LOAN EXPENSES
