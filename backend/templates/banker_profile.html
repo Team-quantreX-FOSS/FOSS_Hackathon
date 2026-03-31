@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Banker Profile</title>
@@ -110,7 +115,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "banker"){ window.location.href="/"; return; }
 
         let bid = sess.banker_id;
@@ -118,14 +123,14 @@ window.addEventListener("DOMContentLoaded", function(){
         document.getElementById("pId").innerText   = bid       || "—";
 
         /* Fetch full banker info */
-        fetch("/api/get_banker/" + encodeURIComponent(bid))
+        fetch("/api/get_banker/" + encodeURIComponent(bid), { credentials: "include" })
         .then(r=>r.json()).then(function(bd){
             document.getElementById("pBank").innerText = bd.bankName || "—";
             document.getElementById("pIfsc").innerText = bd.ifsc     || "—";
         });
 
         /* Fetch live stats */
-        fetch("/api/bankers").then(r=>r.json()).then(function(bankers){
+        fetch("/api/bankers", { credentials: "include" }).then(r=>r.json()).then(function(bankers){
             let me = bankers.find(function(b){ return b.bankerId === bid || b.name === sess.name; });
             if(me){
                 document.getElementById("pTotal").innerText    = me.totalCustomers || 0;
@@ -138,12 +143,12 @@ window.addEventListener("DOMContentLoaded", function(){
 });
 
 function logout(){
-    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; });
+    fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href='/'; });
 }
 
 function openEdit(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
-        fetch("/api/get_banker/"+encodeURIComponent(sess.banker_id)).then(r=>r.json()).then(function(bd){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
+        fetch("/api/get_banker/"+encodeURIComponent(sess.banker_id), { credentials: "include" }).then(r=>r.json()).then(function(bd){
             document.getElementById("editName").value     = sess.name      || "";
             document.getElementById("editBankName").value = bd.bankName    || "";
             document.getElementById("editIfsc").value     = bd.ifsc        || "";
