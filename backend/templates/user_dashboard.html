@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -146,7 +151,7 @@
 </div>
 
 <!-- LOAN STATUS NOTIFICATION BOX -->
-<div id="statusBox"></div>
+<div id="statusBox"><span id="loanPendingTimer" style="display:none;"></span><span id="statusMsg"></span></div>
 <div id="statusAction" style="display:none;margin-top:8px;">
     <button onclick="location.href='/loan_tracking'" style="padding:9px 20px;background:linear-gradient(135deg,#e6d5b8,#bfa980);color:#111;font-family:Syne,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:8px;cursor:pointer;">View Full History & Track Spending →</button>
 </div>
@@ -201,6 +206,7 @@ window.addEventListener("DOMContentLoaded", function(){
         }
         currentUser  = sess.username;
         currentName  = sess.name || "";
+        window._sessionName = currentName;
         currentPhone = sess.phone || "";
 
         document.getElementById("welcome").innerText  = "Welcome, " + currentName;
@@ -380,95 +386,99 @@ function createCharts(income,transport,education,food,utilities,other,totalExpen
 }
 
 function pollStatus(){
-    let phone = getPhone();
-    if(!phone){
-        fetch("/api/financial_data", { credentials: "include" }).then(r=>r.json()).then(function(d){
-            if(d.phone){ currentPhone = d.phone; checkStatus(d.phone); }
-        }).catch(function(){});
-        return;
-    }
-    checkStatus(phone);
+    fetch("/api/financial_data", { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+        currentPhone = d.phone || currentPhone;
+        if (currentPhone) checkStatus(currentPhone);
+    })
+    .catch(err => console.warn("Poll status failed", err));
 }
-
-function checkStatus(phone){
+function checkStatus(phone) {
     let name = currentName || "";
-    fetch("/get_status/" + phone + (name ? "?name="+encodeURIComponent(name) : ""), { credentials: "include" })
+    // Always normalize phone before sending
+    let cleanPhone = phone ? phone.replace(/[^0-9]/g, '').replace(/^91|^0/, '') : '';
+
+    fetch(`/get_status/${cleanPhone}${name ? '?name=' + encodeURIComponent(name) : ''}`, {
+        credentials: "include"
+    })
     .then(res => res.json())
     .then(data => {
-        let box = document.getElementById("statusBox");
+        console.log("Status response:", data);   // ← Debug this in console
 
-        if(!data.status || data.status === "No Application"){
+        let box = document.getElementById("statusBox");
+        if (!data.status || data.status === "No Application") {
             box.style.display = "none";
             return;
         }
 
         box.style.display = "block";
 
-        let msg="", bg="", border="", color="";
+        let msg = "", bg = "", border = "", color = "";
 
-        if(data.status === "Pending"){
-            msg    = "⏳ Your loan request has been sent. Waiting for a banker to pick it up.";
-            bg     = "rgba(245,158,11,0.1)";
+        if (data.status === "Pending") {
+            msg = "⏳ Your loan request has been sent. Waiting for a banker to pick it up.";
+            bg = "rgba(245,158,11,0.1)";
             border = "1px solid rgba(245,158,11,0.4)";
-            color  = "#fbbf24";
-        }
-        else if(data.status === "Picked Up"){
-            msg    = "📋 <b>" + (data.banker||"A banker") + "</b> has picked up your loan request and is reviewing it.";
-            bg     = "rgba(59,130,246,0.1)";
+            color = "#fbbf24";
+            
+            let timerEl = document.getElementById("loanPendingTimer");
+            if (timerEl && window.startLoanTimer) {
+                timerEl.style.display = "inline-block";
+                startLoanTimer(data.created_at || new Date().toISOString());
+            }
+        } 
+        else if (data.status === "Picked Up") {
+            msg = `📋 <b>${data.banker || "A banker"}</b> has picked up your loan request and is reviewing it.`;
+            bg = "rgba(59,130,246,0.1)";
             border = "1px solid rgba(59,130,246,0.4)";
-            color  = "#60a5fa";
-        }
-        else if(data.status === "Approved"){
-            msg    = "✅ <b>" + (data.banker||"Your banker") + "</b> has approved your loan!";
-            bg     = "rgba(16,185,129,0.12)";
+            color = "#60a5fa";
+        } 
+        else if (data.status === "Approved") {
+            msg = `✅ <b>${data.banker || "Your banker"}</b> has approved your loan!`;
+            bg = "rgba(16,185,129,0.12)";
             border = "1px solid rgba(16,185,129,0.5)";
-            color  = "#34d399";
-        }
-        else if(data.status === "Rejected"){
-            msg    = "❌ <b>" + (data.banker||"Your banker") + "</b> has rejected your loan." + (data.reason ? " Reason: " + data.reason : "");
-            bg     = "rgba(239,68,68,0.1)";
+            color = "#34d399";
+        } 
+        else if (data.status === "Rejected") {
+            msg = `❌ <b>${data.banker || "Your banker"}</b> has rejected your loan.` 
+                + (data.reason ? " Reason: " + data.reason : "");
+            bg = "rgba(239,68,68,0.1)";
             border = "1px solid rgba(239,68,68,0.4)";
-            color  = "#f87171";
-        }
-        else if(data.status === "Manual Review"){
-            msg    = "⚠ <b>" + (data.banker||"Your banker") + "</b> has placed your loan under manual review.";
-            bg     = "rgba(139,92,246,0.1)";
+            color = "#f87171";
+        } 
+        else if (data.status === "Manual Review") {
+            msg = `⚠ <b>${data.banker || "Your banker"}</b> has placed your loan under manual review.`;
+            bg = "rgba(139,92,246,0.1)";
             border = "1px solid rgba(139,92,246,0.4)";
-            color  = "#a78bfa";
+            color = "#a78bfa";
         }
 
         box.style.background = bg;
-        box.style.border     = border;
-        box.style.color      = color;
-        box.style.opacity    = "1";
-        box.innerHTML        = msg;
+        box.style.border = border;
+        box.style.color = color;
 
-        let isFinal = ['Approved','Rejected','Manual Review'].includes(data.status);
-        let act = document.getElementById('statusAction');
-        if(act) act.style.display = isFinal ? 'block' : 'none';
-
-        if(window.lastLoanStatus !== undefined && window.lastLoanStatus !== data.status){
-            showNotification("FinRisk Loan Update", box.innerText || msg.replace(/<[^>]+>/g,''));
+        let msgEl = document.getElementById("statusMsg");
+        if (!msgEl) {
+            msgEl = document.createElement("span");
+            msgEl.id = "statusMsg";
+            box.appendChild(msgEl);
         }
-        window.lastLoanStatus = data.status;
+        msgEl.innerHTML = msg;
 
-        if(isFinal){
-            clearInterval(window.pollTimer);
-            window.pollTimer = null;
-            setTimeout(function(){
-                box.style.transition = 'opacity 1.5s ease';
-                box.style.opacity    = '0';
-                if(act){ act.style.transition='opacity 1.5s ease'; act.style.opacity='0'; }
-                setTimeout(function(){
-                    box.style.display = 'none';
-                    if(act) act.style.display = 'none';
-                }, 1500);
-            }, 6000);
+        let isFinal = ['Approved', 'Rejected', 'Manual Review'].includes(data.status);
+        document.getElementById('statusAction').style.display = isFinal ? 'block' : 'none';
+
+        // Notification
+        if (window.lastLoanStatus !== data.status) {
+            if (data.status !== "No Application") {
+                showNotification("FinRisk Loan Update", msg.replace(/<[^>]+>/g, ''));
+            }
+            window.lastLoanStatus = data.status;
         }
     })
-    .catch(function(err){ console.error("Status poll error:", err); });
+    .catch(err => console.error("Status check failed:", err));
 }
-
 function showNotification(title, body){
     if(!("Notification" in window)) return;
     if(Notification.permission === "granted"){
