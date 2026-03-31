@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Loan Requests</title>
@@ -289,7 +293,7 @@
 let myBanker = "";
 
 /* Load banker identity from session */
-fetch("/api/session").then(r=>r.json()).then(function(sess){
+fetch("/api/session", {credentials:"include"}).then(r=>r.json()).then(function(sess){
     if(!sess.role || sess.role !== "banker"){
         window.location.href = "/";
         return;
@@ -298,29 +302,41 @@ fetch("/api/session").then(r=>r.json()).then(function(sess){
     loadRequests();
 }).catch(function(){ window.location.href="/"; });
 
-function loadRequests(){
-    fetch("/users")
-    .then(res => res.json())
-    .then(data => {
-        /* Only unassigned (no allocated_banker) */
-        let unassigned = data
-            .map(u => ({
-                id:       u[0],
-                name:     u[1],
-                phone:    u[2],
-                loan:     u[3],
-                loanType: u[4],
-                tenure:   u[5],
-                emi:      u[6],
-                score:    u[7],
-                banker:   u[8],
-                status:   u[9]
-            }))
-            .filter(u => !u.banker);
+function loadRequests() {
+    fetch("/users", { credentials: "include" })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch");
+            return res.json();
+        })
+        .then(rawData => {
+            console.log("Raw data from /users:", rawData);
 
-        document.getElementById("requestCount").innerText = unassigned.length;
-        renderCards(unassigned);
-    });
+            const unassigned = rawData
+                .map(u => ({
+                    id:       u[0],
+                    name:     u[1] || "",
+                    phone:    u[2] || "",
+                    loan:     u[3] || 0,
+                    loanType: u[4] || "",
+                    tenure:   u[5] || 0,
+                    emi:      u[6] || 0,
+                    score:    u[7] || 0,
+                    banker:   u[8] || "",
+                    status:   u[9] || "Pending"
+                }))
+                .filter(u => !u.banker || u.banker.trim() === "");
+
+            console.log("Unassigned requests found:", unassigned.length);
+
+            document.getElementById("requestCount").innerText = unassigned.length;
+            renderCards(unassigned);
+        })
+        .catch(err => {
+            console.error("Load requests failed:", err);
+            if (typeof showToast === "function") {
+                showToast("Failed to load loan requests", "error");
+            }
+        });
 }
 
 function renderCards(data){
@@ -389,7 +405,7 @@ function pickUp(id, btn){
     btn.disabled  = true;
     btn.innerText = "Claiming...";
 
-    fetch("/pickup_loan", {
+    fetch("/pickup_loan", {credentials:"include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: id, banker_name: myBanker })
@@ -417,7 +433,7 @@ function pickUp(id, btn){
 }
 
 function logout(){
-    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href = "/"; });
+    fetch('/logout',{credentials:"include",method:'POST'}).finally(function(){ window.location.href = "/"; });
 }
 
 /* Auto-refresh every 10 seconds */
@@ -443,12 +459,12 @@ setInterval(loadRequests, 10000);
 </div>
 
 <script>
-function openProfile(name, phone){
+function viewBorrowerProfile(name, phone){
     document.getElementById("profileOverlay").style.display = "block";
     let el = document.getElementById("profileContent2");
     el.innerHTML = '<div style="text-align:center;padding:32px;font-family:DM Mono,monospace;font-size:14px;color:#888;">⏳ Loading...</div>';
 
-    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name))
+    fetch("/api/borrower_profile?phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name), {credentials:"include"})
     .then(function(r){ return r.json(); })
     .then(function(d){
         el.innerHTML = "";
@@ -574,5 +590,8 @@ function appendDoc2(p,label,src){
 })();
 
 </script>
+
+<!-- FinRisk Shared Features -->
+<script src="{{ url_for('static', filename='finrisk_shared.js') }}"></script>
 </body>
 </html>
