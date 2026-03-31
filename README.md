@@ -91,12 +91,12 @@ Now with **backend-based data storage**, users can **login from multiple devices
 
 **Data Flow:** Backend stores all user, loan, and analytics data → ensures **consistent multi-device experience**
 
- 💻 **Installation & Usage**
+## 💻 **Installation & Usage**
 
-# Prerequisites
-- Python 3.8+
+### Prerequisites
+- Python 3.8 or higher
 
-# Steps
+### Steps
 
 bash:
 # 1. Clone the repository
@@ -105,9 +105,11 @@ cd FinRisk
 
 # 2. Create and activate virtual environment (recommended)
 python -m venv venv
+
 # On Windows:
 # venv\Scripts\activate
-# On macOS/Linux:
+
+# On macOS / Linux:
 # source venv/bin/activate
 
 # 3. Install dependencies
@@ -115,8 +117,6 @@ pip install -r requirements.txt
 
 # 4. Run the application
 python app.py
-
-
 **Notes:**
 
 * All interactions pass through backend → ensures **secure, synchronized data**.
