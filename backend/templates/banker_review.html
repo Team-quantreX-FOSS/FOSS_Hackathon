@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Review Queue</title>
@@ -315,14 +320,14 @@ let myBanker  = "";
 let chartObj  = null;
 
 /* Get logged-in banker from session */
-fetch("/api/session").then(r=>r.json()).then(function(sess){
+fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
     if(!sess.role || sess.role !== "banker"){ window.location.href="/"; return; }
     myBanker = sess.name || "";
     loadReview();
 }).catch(function(){ window.location.href="/"; });
 
 function loadReview(){
-    fetch("/users")
+    fetch("/users", { credentials: "include" })
     .then(res => res.json())
     .then(data => {
         /* Filter only cases this banker handled */
@@ -447,7 +452,7 @@ function renderChart(data){
     });
 }
 
-function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/'; }); } }
+function logout(){ if(confirm('Are you sure you want to logout?')){ fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href='/'; }); } }
 
 
 </script>
