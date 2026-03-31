@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Loan History & Tracking</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -216,7 +221,7 @@ let billDataURL  = null;
 window.addEventListener("DOMContentLoaded", function(){
     document.getElementById("expDate").valueAsDate = new Date();
 
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
         currentUser  = sess.username || "";
         currentName  = sess.name     || "";
@@ -229,7 +234,7 @@ window.addEventListener("DOMContentLoaded", function(){
 /* ── LOAD LOAN HISTORY FROM DB ── */
 function loadLoanHistory(){
     /* Get phone from financial_data if not in session */
-    fetch("/api/financial_data").then(r=>r.json()).then(function(fd){
+    fetch("/api/financial_data", { credentials: "include" }).then(r=>r.json()).then(function(fd){
         let phone    = fd.phone    || currentPhone || "";
         let userName = fd.name     || currentName  || "";
 
@@ -238,10 +243,13 @@ function loadLoanHistory(){
             return;
         }
 
-        fetch("/api/users").then(r=>r.json()).then(function(users){
+        fetch("/api/users", { credentials: "include" }).then(r=>r.json()).then(function(users){
+            /* FIX: normalize phones before comparing to handle +91 prefix mismatches */
+            function normP(p){ if(!p) return ''; p=String(p).replace(/[\s\-]/g,''); if(p.startsWith('+91'))p=p.slice(3); else if(p.startsWith('91')&&p.length===12)p=p.slice(2); else if(p.startsWith('0')&&p.length===11)p=p.slice(1); return p; }
+            let normPhone = normP(phone);
             let myLoans = users.filter(function(u){
-                return (userName && u.name && u.name.toLowerCase() === userName.toLowerCase())
-                    || (phone && u.phone === phone);
+                return (userName && u.name && u.name.toLowerCase().trim() === userName.toLowerCase().trim())
+                    || (normPhone && normP(u.phone) === normPhone);
             });
 
             if(myLoans.length === 0){
@@ -309,7 +317,7 @@ function loadLoanHistory(){
 
 /* ── EXPENSES — backed by server ── */
 function loadExpenses(){
-    fetch("/api/loan_expenses").then(r=>r.json()).then(function(data){
+    fetch("/api/loan_expenses", { credentials: "include" }).then(r=>r.json()).then(function(data){
         if(data.error){ expenses = []; }
         else { expenses = data; }
         renderExpenses();
@@ -362,6 +370,7 @@ function addExpense(){
 
     fetch("/api/loan_expenses", {
         method: "POST",
+        credentials: "include",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(newExp)
     }).then(r=>r.json()).then(function(d){
@@ -385,7 +394,7 @@ function clearBill(){
 }
 
 function deleteExpense(id){
-    fetch("/api/loan_expenses/" + id, { method: "DELETE" })
+    fetch("/api/loan_expenses/" + id, { method: "DELETE", credentials: "include" })
     .then(r=>r.json()).then(function(){
         expenses = expenses.filter(function(e){ return e.id !== id; });
         renderExpenses();
@@ -511,7 +520,7 @@ function renderCharts(){
 }
 
 function logout(){
-    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
+    fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href="/"; });
 }
 
 /* ── MOBILE SIDEBAR ── */
