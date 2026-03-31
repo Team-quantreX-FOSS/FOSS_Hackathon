@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Admin Profile</title>
@@ -85,7 +90,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "admin"){ window.location.href="/"; return; }
 
         document.getElementById("pName").innerText    = sess.name     || "Admin";
@@ -95,18 +100,18 @@ window.addEventListener("DOMContentLoaded", function(){
     }).catch(function(){ window.location.href="/"; });
 
     /* Live system stats */
-    fetch("/api/bankers").then(r=>r.json()).then(function(d){
+    fetch("/api/bankers", { credentials: "include" }).then(r=>r.json()).then(function(d){
         document.getElementById("sTotalBankers").innerText = d.length;
         let banks = new Set(d.map(b=>b.bankName));
         document.getElementById("sTotalBanks").innerText = banks.size;
     });
-    fetch("/api/users").then(r=>r.json()).then(function(d){
+    fetch("/api/users", { credentials: "include" }).then(r=>r.json()).then(function(d){
         document.getElementById("sTotalBorrowers").innerText = d.length;
     });
 });
 
 function openEdit(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         document.getElementById("editName").value  = sess.name  || "";
         document.getElementById("editEmail").value = sess.email || "";
         document.getElementById("editPopup").classList.add("show");
