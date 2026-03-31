@@ -24,6 +24,8 @@
 .nav-tab:hover { border-color:#e6d5b8; color:#e6d5b8; }
 .nav-tab.active { background:linear-gradient(135deg,#e6d5b8,#bfa980); color:#111; border-color:transparent; font-weight:700; }
 
+
+
 /* ADVICE CARDS */
 .advice-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-bottom:8px; }
 .advice-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; transition:all 0.25s; position:relative; overflow:hidden; }
@@ -81,6 +83,23 @@
 .fp-progress-wrap { width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:99px; margin-top:10px; overflow:hidden; }
 .fp-progress-fill { height:100%; border-radius:99px; transition:width 0.8s ease; }
 
+.update-savings-btn {
+    margin-top:10px;
+    padding:9px 20px;
+    background:linear-gradient(135deg,#10b981,#34d399);
+    color:#111;
+    font-family:'Syne',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    width:100%;
+    transition:all 0.2s;
+}
+.update-savings-btn:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(16,185,129,0.3); }
+
+
 /* COURSES */
 .course-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
 .cf-btn { font-family:'DM Mono',monospace; font-size:12px; padding:7px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:#888; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
@@ -104,6 +123,32 @@
 .course-link { padding:7px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#e6d5b8; font-family:'DM Mono',monospace; font-size:12px; border-radius:8px; text-decoration:none; transition:all 0.2s; cursor:pointer; }
 .course-link:hover { background:rgba(230,213,184,0.1); border-color:#bfa980; }
 .no-advice { text-align:center; padding:40px; font-family:'DM Mono',monospace; font-size:14px; color:#666; }
+
+/* FLOATING HELP BUTTON - NOW ON EVERY PAGE */
+.help-float {
+    position:fixed;
+    bottom:25px;
+    right:25px;
+    width:58px;
+    height:58px;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+    color:#fff;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:32px;
+    box-shadow:0 8px 25px rgba(59,130,246,0.45);
+    cursor:pointer;
+    z-index:99999;
+    transition:all 0.3s;
+    animation:pulse 2s infinite;
+}
+.help-float:hover { transform:scale(1.1); box-shadow:0 12px 30px rgba(59,130,246,0.6); }
+@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+
+
+
 </style>
 </head>
 <body>
@@ -149,47 +194,70 @@
     <div id="schemesSection"></div>
 </div>
 
-<!-- TAB: FUTURE PLANNING -->
 <div id="tab-future" style="display:none;">
     <div class="section-title">Future Planning — Set your goals, we'll show you the path</div>
     <button class="fp-btn" onclick="toggleFPForm()">＋ Add / Update My Goals</button>
+    
     <div class="fp-form" id="fpForm">
         <div class="fp-grid">
+            <!-- Short-term -->
             <div class="fp-group">
-                <label>Short-Term Goal (within 1 year)</label>
-                <input type="text" id="goal1name" placeholder="e.g. Emergency Fund, Laptop, Vacation">
+                <label>Short-Term Goal (≤ 1 year)</label>
+                <input type="text" id="goal1name" placeholder="e.g. Laptop, Emergency Fund">
             </div>
             <div class="fp-group">
                 <label>Target Amount (₹)</label>
-                <input type="number" id="goal1amt" placeholder="e.g. 50000">
+                <input type="number" id="goal1amt" placeholder="50000">
             </div>
+            <div class="fp-group">
+                <label>Monthly Saving (₹)</label>
+                <input type="number" id="goal1monthly" placeholder="4000">
+            </div>
+            <div class="fp-group">
+                <label>Savings Done Till Now (₹)</label>
+                <input type="number" id="goal1current" placeholder="10000">
+            </div>
+
+            <!-- Mid-term -->
             <div class="fp-group">
                 <label>Mid-Term Goal (1–5 years)</label>
-                <input type="text" id="goal2name" placeholder="e.g. Car, Wedding, Higher Education">
+                <input type="text" id="goal2name" placeholder="e.g. Car, Wedding">
             </div>
             <div class="fp-group">
                 <label>Target Amount (₹)</label>
-                <input type="number" id="goal2amt" placeholder="e.g. 500000">
+                <input type="number" id="goal2amt" placeholder="500000">
             </div>
+            <div class="fp-group">
+                <label>Monthly Saving (₹)</label>
+                <input type="number" id="goal2monthly" placeholder="8000">
+            </div>
+            <div class="fp-group">
+                <label>Savings Done Till Now (₹)</label>
+                <input type="number" id="goal2current" placeholder="50000">
+            </div>
+
+            <!-- Long-term -->
             <div class="fp-group">
                 <label>Long-Term Goal (5+ years)</label>
-                <input type="text" id="goal3name" placeholder="e.g. House, Retirement, Child Education">
+                <input type="text" id="goal3name" placeholder="e.g. House, Retirement">
             </div>
             <div class="fp-group">
                 <label>Target Amount (₹)</label>
-                <input type="number" id="goal3amt" placeholder="e.g. 3000000">
+                <input type="number" id="goal3amt" placeholder="3000000">
             </div>
             <div class="fp-group">
-                <label>Current Savings Already Set Aside (₹)</label>
-                <input type="number" id="currentSavings" placeholder="e.g. 20000">
+                <label>Monthly Saving (₹)</label>
+                <input type="number" id="goal3monthly" placeholder="12000">
             </div>
             <div class="fp-group">
-                <label>How Much Can You Save Monthly (₹)</label>
-                <input type="number" id="monthlySave" placeholder="e.g. 8000">
+                <label>Savings Done Till Now (₹)</label>
+                <input type="number" id="goal3current" placeholder="200000">
             </div>
         </div>
-        <button class="fp-submit" onclick="calculateGoals()">Calculate My Plan →</button>
+        <button class="fp-submit" onclick="saveAndCalculateGoals()">💾 Save Goals & Calculate Plan →</button>
+        <button onclick="saveGoals()">💾 Save Goals</button>
     </div>
+
     <div class="fp-results" id="fpResults"></div>
 </div>
 
@@ -219,6 +287,18 @@ function showTab(name, btn){
     });
     document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
     if(btn) btn.classList.add('active');
+
+    // CRITICAL FIX: Every time user opens Future Planning tab (or returns from another page/tab), reload saved goals from server and show results
+    if (name === 'future') {
+        console.log("🔄 Future tab opened – reloading goals from server");
+        loadGoals().then(() => {
+            console.log("✅ Goals loaded, calculating results");
+            calculateGoals();   // This will now always show the saved roadmap
+        }).catch(e => {
+            console.error("❌ loadGoals failed", e);
+            document.getElementById("fpResults").innerHTML = `<div class="no-advice">Could not load saved goals. Please refresh.</div>`;
+        });
+    }
 }
 
 /* ── GOVERNMENT SCHEMES ── */
@@ -286,93 +366,178 @@ function generateAdvice(income, expense, savings, ratio, score){
 }
 
 /* ── FUTURE PLANNING ── */
-function toggleFPForm(){
-    let f = document.getElementById("fpForm");
-    f.classList.toggle("show");
+async function loadGoals() {
+    console.log("🔄 loadGoals() called");
+    try {
+        const res = await fetch('/api/user_goals', { credentials: 'include' });
+        if (!res.ok) throw new Error("Server error");
+        const goals = await res.json();
+        console.log("✅ Loaded goals from server:", goals);
+
+        // Populate form
+        if (goals.short) {
+            document.getElementById('goal1name').value = goals.short.name || '';
+            document.getElementById('goal1amt').value = goals.short.target || '';
+            document.getElementById('goal1monthly').value = goals.short.monthly || '';
+            document.getElementById('goal1current').value = goals.short.current || '';
+        }
+        if (goals.mid) {
+            document.getElementById('goal2name').value = goals.mid.name || '';
+            document.getElementById('goal2amt').value = goals.mid.target || '';
+            document.getElementById('goal2monthly').value = goals.mid.monthly || '';
+            document.getElementById('goal2current').value = goals.mid.current || '';
+        }
+        if (goals.long) {
+            document.getElementById('goal3name').value = goals.long.name || '';
+            document.getElementById('goal3amt').value = goals.long.target || '';
+            document.getElementById('goal3monthly').value = goals.long.monthly || '';
+            document.getElementById('goal3current').value = goals.long.current || '';
+        }
+        return true;
+    } catch(e) {
+        console.error("❌ loadGoals error:", e);
+        return false;
+    }
+}
+window.onload = loadGoals;
+
+async function saveGoals() {
+    console.log("💾 saveGoals() called");
+    const data = {
+        short: { name: document.getElementById('goal1name').value.trim(), target: Number(document.getElementById('goal1amt').value)||0, monthly: Number(document.getElementById('goal1monthly').value)||0, current: Number(document.getElementById('goal1current').value)||0 },
+        mid:   { name: document.getElementById('goal2name').value.trim(), target: Number(document.getElementById('goal2amt').value)||0, monthly: Number(document.getElementById('goal2monthly').value)||0, current: Number(document.getElementById('goal2current').value)||0 },
+        long:  { name: document.getElementById('goal3name').value.trim(), target: Number(document.getElementById('goal3amt').value)||0, monthly: Number(document.getElementById('goal3monthly').value)||0, current: Number(document.getElementById('goal3current').value)||0 }
+    };
+
+    const res = await fetch('/api/user_goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+    });
+    console.log("📡 saveGoals response status:", res.status);
+    return res.ok;
 }
 
-function calculateGoals(){
-    let income  = financeData.income;
-    let expense = financeData.expense;
-    let naturalSavings = Math.max(0, income - expense);
-
-    let goal1name = document.getElementById("goal1name").value.trim() || "Short-Term Goal";
-    let goal1amt  = Number(document.getElementById("goal1amt").value)  || 0;
-    let goal2name = document.getElementById("goal2name").value.trim() || "Mid-Term Goal";
-    let goal2amt  = Number(document.getElementById("goal2amt").value)  || 0;
-    let goal3name = document.getElementById("goal3name").value.trim() || "Long-Term Goal";
-    let goal3amt  = Number(document.getElementById("goal3amt").value)  || 0;
-    let currentSavings = Number(document.getElementById("currentSavings").value) || 0;
-    let monthlySave    = Number(document.getElementById("monthlySave").value)    || naturalSavings;
-
-    if(!goal1amt && !goal2amt && !goal3amt){ alert("Please enter at least one goal amount."); return; }
-    if(!monthlySave){ alert("Please enter how much you can save monthly (or fill financial details on Dashboard first)."); return; }
-
-    let goals = [
-        { name:goal1name, target:goal1amt, months:12,  type:"Short-Term (1 year)" },
-        { name:goal2name, target:goal2amt, months:36,  type:"Mid-Term (3 years)" },
-        { name:goal3name, target:goal3amt, months:120, type:"Long-Term (10 years)" }
-    ].filter(function(g){ return g.target > 0; });
+function calculateGoals() {
+    console.log("📊 calculateGoals() started");
+    const goals = [
+        { type:"short", name:document.getElementById("goal1name").value.trim()||"Short-Term", target:Number(document.getElementById("goal1amt").value)||0, monthly:Number(document.getElementById("goal1monthly").value)||0, current:Number(document.getElementById("goal1current").value)||0, months:12 },
+        { type:"mid",   name:document.getElementById("goal2name").value.trim()||"Mid-Term",   target:Number(document.getElementById("goal2amt").value)||0, monthly:Number(document.getElementById("goal2monthly").value)||0, current:Number(document.getElementById("goal2current").value)||0, months:36 },
+        { type:"long",  name:document.getElementById("goal3name").value.trim()||"Long-Term",  target:Number(document.getElementById("goal3amt").value)||0, monthly:Number(document.getElementById("goal3monthly").value)||0, current:Number(document.getElementById("goal3current").value)||0, months:120 }
+    ].filter(g => g.target > 0);
 
     let html = '<div class="section-title" style="margin-top:0;">Your Financial Roadmap</div>';
 
-    html += '<div class="fp-result-card" style="border-color:rgba(59,130,246,0.3);margin-bottom:20px;">' +
-        '<div class="goal-name" style="color:#60a5fa;">📋 Your Financial Snapshot</div>' +
-        '<div class="goal-detail">' +
-            '💰 Monthly Income: <b style="color:#e6d5b8;">₹'+income.toLocaleString()+'</b><br>' +
-            '💸 Monthly Expenses: <b style="color:#e6d5b8;">₹'+expense.toLocaleString()+'</b><br>' +
-            '🏦 Natural Savings/month: <b style="color:#34d399;">₹'+naturalSavings.toLocaleString()+'</b><br>' +
-            '🎯 Planned Savings/month: <b style="color:#60a5fa;">₹'+monthlySave.toLocaleString()+'</b><br>' +
-            '💼 Current Savings: <b style="color:#e6d5b8;">₹'+currentSavings.toLocaleString()+'</b>' +
-        '</div>' +
-    '</div>';
+    if (goals.length === 0) {
+        html += `<div class="no-advice">No goals saved yet. Click “Add / Update My Goals” above.</div>`;
+    } else {
+        goals.forEach(g => {
+            const remaining = Math.max(0, g.target - g.current);
+            const monthsNeeded = (remaining > 0 && g.monthly > 0) ? Math.ceil(remaining / g.monthly) : 0;
+            const canAchieve = monthsNeeded <= g.months && g.monthly > 0;
+            const progress = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
 
-    goals.forEach(function(g){
-        let remaining    = Math.max(0, g.target - currentSavings);
-        let monthsNeeded = remaining > 0 ? Math.ceil(remaining / monthlySave) : 0;
-        let canAchieve   = monthsNeeded <= g.months;
-        let progress     = Math.min(100, Math.round((currentSavings / g.target) * 100));
-        let shortfall    = Math.max(0, remaining - monthlySave * g.months);
-        let extraNeeded  = shortfall > 0 ? Math.ceil(shortfall / g.months) : 0;
-        let progressColor = canAchieve ? "#34d399" : monthsNeeded <= g.months * 1.5 ? "#f59e0b" : "#f87171";
-        let statusClass   = canAchieve ? "status-ok" : monthsNeeded <= g.months * 1.5 ? "status-warn" : "status-bad";
-        let statusText    = canAchieve ? "✓ On Track" : "⚠ Needs More Savings";
-
-        html += '<div class="fp-result-card">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
-                '<div class="goal-name">'+g.name+'</div>' +
-                '<span class="goal-status '+statusClass+'">'+statusText+'</span>' +
-            '</div>' +
-            '<div class="goal-detail">' +
-                '🎯 Goal: <b style="color:#e6d5b8;">₹'+g.target.toLocaleString()+'</b> in '+g.type+'<br>' +
-                '📅 Months to achieve: <b style="color:#e6d5b8;">'+monthsNeeded+' months</b>' +
-                (canAchieve ? ' ✓ within '+g.months+' months!' : ' (deadline: '+g.months+' months)') + '<br>';
-
-        if(canAchieve){
-            html += '✅ At ₹'+monthlySave.toLocaleString()+'/month you will reach this goal in <b style="color:#34d399;">'+monthsNeeded+' months</b>.';
-        } else {
-            html += '❌ You need <b style="color:#fbbf24;">₹'+(monthlySave+extraNeeded).toLocaleString()+'/month</b> to meet this goal on time. (₹'+extraNeeded.toLocaleString()+' more/month)';
-        }
-
-        html += '</div>' +
-            '<div class="fp-progress-wrap"><div class="fp-progress-fill" style="width:'+progress+'%;background:'+progressColor+';"></div></div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:11px;color:#666;margin-top:5px;">'+progress+'% saved toward goal</div>' +
-        '</div>';
-    });
-
-    html += '<div class="fp-result-card" style="border-color:rgba(16,185,129,0.2);">' +
-        '<div class="goal-name" style="color:#34d399;">💡 Pro Tip — Make Your Savings Work</div>' +
-        '<div class="goal-detail">' +
-            '• <b>Short goals</b>: Keep in savings account or liquid mutual fund<br>' +
-            '• <b>Mid goals</b>: SIP in debt mutual funds or recurring deposit<br>' +
-            '• <b>Long goals</b>: SIP in equity mutual funds (12–15% avg returns over 10yr)<br>' +
-            '• At 12% returns, ₹'+monthlySave.toLocaleString()+'/month for 10 years = <b style="color:#34d399;">₹'+Math.round(monthlySave*((Math.pow(1.01,120)-1)/0.01)).toLocaleString()+'</b>' +
-        '</div>' +
-    '</div>';
+            html += `<div class="fp-result-card">
+                <div style="display:flex;justify-content:space-between;">
+                    <div class="goal-name">${g.name}</div>
+                    <span class="goal-status ${canAchieve?'status-ok':'status-warn'}">${canAchieve?'✓ On Track':'⚠ Needs More'}</span>
+                </div>
+                <div class="goal-detail">
+                    Target: ₹${g.target.toLocaleString()} • ${g.type}<br>
+                    Already saved: ₹${g.current.toLocaleString()}<br>
+                    Monthly: ₹${g.monthly.toLocaleString()}<br>
+                    Months needed: ${monthsNeeded}
+                </div>
+                <div class="fp-progress-wrap"><div class="fp-progress-fill" style="width:${progress}%;background:${canAchieve?'#34d399':'#f59e0b'}"></div></div>
+                <!-- IMPROVED SAVINGS BUTTON -->
+                <button onclick="updateGoalSavings('${g.type}')" class="update-savings-btn">💰 Update Savings Done Till Now</button>
+            </div>`;
+        });
+    }
 
     document.getElementById("fpResults").innerHTML = html;
-    document.getElementById("fpForm").classList.remove("show");
-    document.getElementById("fpResults").scrollIntoView({behavior:"smooth"});
+}
+
+async function updateGoalSavings(type) {
+    const amt = prompt("Enter updated 'Savings Done Till Now' amount (₹):");
+    if (amt === null) return;
+    if (type==="short") document.getElementById('goal1current').value = amt;
+    if (type==="mid")   document.getElementById('goal2current').value = amt;
+    if (type==="long")  document.getElementById('goal3current').value = amt;
+    
+    const saved = await saveGoals();
+    if (saved) {
+        console.log("✅ Savings updated and saved to server");
+        calculateGoals();
+    } else {
+        alert("❌ Could not save updated savings. Please try again.");
+    }
+}
+
+async function saveAndCalculateGoals() {
+    if (!document.getElementById("goal1amt").value && !document.getElementById("goal2amt").value && !document.getElementById("goal3amt").value) {
+        alert("Enter at least one goal");
+        return;
+    }
+    console.log("🚀 Saving goals & calculating...");
+    const saved = await saveGoals();
+    if (saved) {
+        calculateGoals();
+        document.getElementById("fpForm").classList.remove("show");
+    } else {
+        alert("❌ Failed to save goals to server. Please try again.");
+    }
+}
+
+function toggleFPForm() { 
+    const form = document.getElementById("fpForm");
+    form.classList.toggle("show");
+    if (form.classList.contains("show")) {
+        // Optional: pre-load current values when opening form
+        loadGoals();
+    }
+}
+
+/* ── FLOATING HELP BUTTON (NOW WORKS ON EVERY PAGE – copy these 2 functions to user_dashboard.html, loan_check.html, etc.) ── */
+function createHelpButton() {
+    // Remove any existing one (safe)
+    if (document.getElementById('global-help-btn')) return;
+    const btn = document.createElement('div');
+    btn.id = 'global-help-btn';
+    btn.innerHTML = `❓`;
+    btn.className = 'help-float';
+    btn.onclick = showHelpModal;
+    document.body.appendChild(btn);
+    console.log("✅ Floating ? help button added");
+}
+
+function showHelpModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:100000;`;
+    modal.innerHTML = `
+        <div style="background:#1a1a2e;color:#e6d5b8;padding:35px;max-width:560px;border-radius:22px;box-shadow:0 15px 50px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto;">
+            <h2 style="margin:0 0 22px 0;color:#60a5fa;font-size:24px;">How to use FinRisk</h2>
+            
+            <h3 style="color:#e6d5b8;margin:18px 0 8px 0;">📌 Future Planning Tab</h3>
+            <p style="font-size:14px;line-height:1.6;">1. Click “Add / Update My Goals”<br>
+               2. Fill Goal name, Target amount, Monthly saving &amp; Savings Done Till Now<br>
+               3. Click “Save Goals &amp; Calculate Plan”<br>
+               4. Your roadmap appears below with progress bars<br>
+               5. Click the green <strong>💰 Update Savings Done Till Now</strong> button on any goal to update saved amount – it saves instantly.</p>
+            
+            <h3 style="color:#e6d5b8;margin:18px 0 8px 0;">📌 General Tips</h3>
+            <p style="font-size:14px;line-height:1.6;">• Fill Dashboard first → get personalised advice<br>
+               • Switch tabs freely – your Future Planning data is now saved permanently on the server<br>
+               • Refresh or go to any other page and come back → data will still be there</p>
+            
+            <h3 style="color:#e6d5b8;margin:18px 0 8px 0;">📌 Need more help?</h3>
+            <p style="font-size:14px;line-height:1.6;">Refresh the page or contact support via the Profile tab.</p>
+            
+            <button onclick="this.closest('div[style*=\'position:fixed\']').remove()" style="margin-top:25px;padding:14px 32px;background:#e6d5b8;color:#111;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:15px;width:100%;">Close</button>
+        </div>`;
+    document.body.appendChild(modal);
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
 }
 
 /* ── COURSES ── */
@@ -434,42 +599,30 @@ function renderCourses(){
 let financeData = { income: 0, expense: 0, score: 0 };
 
 window.addEventListener("DOMContentLoaded", function(){
-    /* Render static sections immediately — no auth needed */
     renderSchemes();
     renderCourses();
 
-    /* Load financial data from backend session */
-    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
-        if(!sess.role || sess.role !== "user"){
-            window.location.href="/";
-            return;
-        }
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(sess => {
+        if (sess.role !== "user") return window.location.href = "/";
+
         fetch("/api/financial_data", { credentials: "include" })
-        .then(function(response){ return response.json(); })
-        .then(function(finance){
-            financeData.income  = Number(finance.income)        || 0;
-            financeData.expense = Number(finance.total_expense) || 0;
-            financeData.score   = Number(finance.risk_score)    || 0;
+        .then(r => r.json())
+        .then(finance => {
+            financeData = finance;
             let savings = financeData.income - financeData.expense;
-            let ratio   = financeData.income > 0 ? savings / financeData.income : 0;
-            if(financeData.income > 0){
-                generateAdvice(
-                    financeData.income,
-                    financeData.expense,
-                    savings,
-                    ratio,
-                    financeData.score
-                );
-            }
-        })
-        .catch(function(error){
-            console.error("Financial advisory load error:", error);
+            let ratio = financeData.income > 0 ? savings / financeData.income : 0;
+            if (financeData.income > 0) generateAdvice(financeData.income, financeData.expense, savings, ratio, financeData.risk_score||0);
+            
+            // Initial load of goals (results will appear when you click Future tab)
+            loadGoals();
         });
-    }).catch(function(){ window.location.href="/"; });
+    });
+
+    createHelpButton();   // ← Floating ? button now on this page (copy the two functions to other pages)
 });
 
 function logout(){
-    fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href="/"; });
+    fetch('/logout',{method:'POST', credentials:'include'}).finally(() => window.location.href="/");
 }
 
 /* ── MOBILE SIDEBAR ── */
