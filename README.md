@@ -82,16 +82,18 @@ All interactions pass through the backend for secure, synchronized data across d
 
 **Steps:**
 
-bash
+```bash
 # 1. Clone the repository
 git clone https://github.com/yourusername/FinRisk.git
 cd FinRisk
 
-# 2. Create and activate virtual environment
+# 2. Create virtual environment
 python -m venv venv
 
+# Activate the virtual environment:
+
 # On Windows:
-# venv\Scripts\activate
+venv\Scripts\activate
 
 # On macOS/Linux:
 # source venv/bin/activate
