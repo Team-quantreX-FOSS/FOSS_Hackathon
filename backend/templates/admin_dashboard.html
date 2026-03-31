@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -67,7 +72,7 @@ th { background:#333; color:white; }
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "admin"){
             document.getElementById("mainContent").style.display = "none";
             document.getElementById("notLoggedIn").style.display = "block";
@@ -84,7 +89,7 @@ window.addEventListener("DOMContentLoaded", function(){
 });
 
 async function loadBanks(){
-    let res     = await fetch("/api/bankers");
+    let res     = await fetch("/api/bankers", { credentials: "include" });
     let bankers = await res.json();
     let table   = document.getElementById("bankTable");
 
@@ -122,7 +127,7 @@ async function loadBanks(){
 
 function logout(){
     if(confirm('Are you sure you want to logout?')){
-        fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/index'; });
+        fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href='/index'; });
     }
 }
 </script>
@@ -140,6 +145,36 @@ function logout(){
     btn.addEventListener('click',function(){ sidebar.classList.toggle('open'); overlay.classList.toggle('open'); });
     overlay.addEventListener('click',function(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); });
 })();
+
+/* ── BANKER LEADERBOARD ── */
+function loadLeaderboard(){
+    fetch('/api/bankers', { credentials: 'include' }).then(r=>r.json()).then(function(bankers){
+        bankers.sort(function(a,b){
+            let ar = a.totalCustomers>0 ? a.approval/a.totalCustomers : 0;
+            let br = b.totalCustomers>0 ? b.approval/b.totalCustomers : 0;
+            return br-ar || b.totalCustomers-a.totalCustomers;
+        });
+        let html = '';
+        bankers.forEach(function(b,i){
+            let rate = b.totalCustomers>0 ? Math.round((b.approval/b.totalCustomers)*100) : 0;
+            let rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+            html += '<tr>' +
+                '<td class="'+rankClass+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1))+'</td>' +
+                '<td style="color:#e6d5b8;font-weight:600;">'+b.name+'</td>' +
+                '<td>'+b.bankName+'</td>' +
+                '<td>'+b.totalCustomers+'</td>' +
+                '<td style="color:#34d399;">'+b.approval+'</td>' +
+                '<td><span style="color:#e6d5b8;font-weight:700;">'+rate+'%</span>' +
+                '<span class="lb-bar-wrap"><span class="lb-bar-fill" style="width:'+rate+'%;"></span></span></td>' +
+            '</tr>';
+        });
+        var lb = document.getElementById('leaderboardBody');
+        if(lb) lb.innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#555;padding:20px;font-family:DM Mono,monospace;">No bankers registered yet.</td></tr>';
+    }).catch(function(){});
+}
+loadLeaderboard();
+setInterval(loadLeaderboard, 15000);
+
 </script>
 </body>
 </html>
