@@ -1,15 +1,19 @@
 {
-  "name": "FOSS-Borrower-Risk-Analysis",
-  "short_name": "Fin-Risk",
+  "name": "FinRisk — Loan Risk Analyzer",
+  "short_name": "FinRisk",
+  "description": "AI-powered borrower risk analysis and loan management platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "orientation": "portrait",
+  "background_color": "#13110f",
+  "theme_color": "#bfa980",
   "icons": [
     {
       "src": "/static/icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["finance", "business"]
 }
