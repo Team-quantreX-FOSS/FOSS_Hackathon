@@ -91,7 +91,7 @@ Now with **backend-based data storage**, users can **login from multiple devices
 
 **Data Flow:** Backend stores all user, loan, and analytics data → ensures **consistent multi-device experience**
 
-## 💻 **Installation & Usage**
+## 💻 Installation & Usage
 
 ### Prerequisites
 - Python 3.8 or higher
@@ -117,6 +117,8 @@ pip install -r requirements.txt
 
 # 4. Run the application
 python app.py
+
+
 **Notes:**
 
 * All interactions pass through backend → ensures **secure, synchronized data**.
