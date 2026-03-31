@@ -1,180 +1,174 @@
-// ================= REGISTER =================
-function registerUser() {
-    let name = document.getElementById("name")?.value;
-    let phone = document.getElementById("phone")?.value;
-    let username = document.getElementById("username")?.value;
-    let password = document.getElementById("password")?.value;
-    let confirmPassword = document.getElementById("confirmPassword")?.value;
+/* ═══════════════════════════════════════════════════════
+   FinRisk — Global Script
+   • PWA Service Worker registration
+   • Notification Bell system
+   • Loan pending timer
+   • Toast system (shared)
+   • Mobile sidebar (shared)
+   • Legacy login/register stubs (kept for compat)
+═══════════════════════════════════════════════════════ */
 
-    if (!name || !phone || !username || !password || !confirmPassword) {
-        alert("Please fill all fields");
-        return;
-    }
-
-    if (password !== confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-    }
-
-    let user = {
-        name,
-        phone,
-        username,
-        password,
-        riskScore: 0,
-        riskLevel: "New"
-    };
-
-    localStorage.setItem(username, JSON.stringify(user));
-
-    alert("Registered Successfully!");
-    window.location.href = "login.html";
+/* ── PWA SERVICE WORKER ─────────────────────────────── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/static/sw.js')
+      .then(function(reg){ console.log('SW registered:', reg.scope); })
+      .catch(function(err){ console.log('SW error:', err); });
+  });
 }
 
-// ================= LOGIN =================
-function loginUser() {
-    let username = document.getElementById("loginUsername")?.value;
-    let password = document.getElementById("loginPassword")?.value;
+/* ── TOAST SYSTEM ───────────────────────────────────── */
+(function(){
+  function ensureContainer(){
+    let c = document.getElementById('toastContainer');
+    if(!c){
+      c = document.createElement('div');
+      c.id = 'toastContainer';
+      document.body.appendChild(c);
+    }
+    return c;
+  }
+  window.showToast = function(msg, type){
+    type = type || 'info';
+    let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
+    let t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = '<span>'+(icons[type]||'')+'</span><span>'+msg+'</span>';
+    ensureContainer().appendChild(t);
+    setTimeout(function(){
+      t.classList.add('fade-out');
+      setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 3000);
+  };
+})();
 
-    let storedUser = JSON.parse(localStorage.getItem(username));
+/* ── MOBILE SIDEBAR ─────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function(){
+  let sidebar = document.querySelector('.sidebar');
+  if(!sidebar) return;
+  if(document.querySelector('.hamburger')) return; // already added
+  let btn = document.createElement('button');
+  btn.className = 'hamburger';
+  btn.innerHTML = '☰';
+  btn.setAttribute('aria-label','Open menu');
+  document.body.appendChild(btn);
+  let overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+  btn.addEventListener('click', function(){
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+  });
+  overlay.addEventListener('click', function(){
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  });
+});
 
-    if (!storedUser || storedUser.password !== password) {
-        alert("Username and Password not matched!");
-        return;
+/* ── NOTIFICATION BELL ──────────────────────────────── */
+/* Injects a bell icon into .topbar and manages unread count */
+(function(){
+  let _unread = 0;
+  let _msgs   = [];
+
+  function ensureBell(){
+    let topbar = document.querySelector('.topbar');
+    if(!topbar || document.getElementById('notifBell')) return;
+
+    let bell = document.createElement('div');
+    bell.id = 'notifBell';
+    bell.innerHTML = `
+      <button id="notifBtn" onclick="window._notifToggle()" aria-label="Notifications">
+        🔔<span id="notifBadge" style="display:none">0</span>
+      </button>
+      <div id="notifDropdown" style="display:none">
+        <div id="notifHeader">
+          <span>Notifications</span>
+          <button onclick="window._notifClear()" style="background:none;border:none;color:#bfa980;font-size:12px;cursor:pointer;font-family:DM Mono,monospace;">Clear all</button>
+        </div>
+        <div id="notifList"><div id="notifEmpty">No notifications yet</div></div>
+      </div>`;
+    topbar.appendChild(bell);
+  }
+
+  window._notifToggle = function(){
+    let d = document.getElementById('notifDropdown');
+    if(!d) return;
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    // mark as read
+    _unread = 0;
+    let badge = document.getElementById('notifBadge');
+    if(badge){ badge.style.display = 'none'; badge.innerText = '0'; }
+  };
+
+  window._notifClear = function(){
+    _msgs = [];
+    _unread = 0;
+    let list = document.getElementById('notifList');
+    if(list) list.innerHTML = '<div id="notifEmpty">No notifications yet</div>';
+    let badge = document.getElementById('notifBadge');
+    if(badge){ badge.style.display = 'none'; badge.innerText = '0'; }
+  };
+
+  window.addNotification = function(msg, type){
+    ensureBell();
+    type = type || 'info';
+    _msgs.unshift({ msg: msg, type: type, time: new Date() });
+    if(_msgs.length > 20) _msgs.pop();
+    _unread++;
+
+    let badge = document.getElementById('notifBadge');
+    if(badge){
+      badge.style.display = 'inline-block';
+      badge.innerText = _unread > 9 ? '9+' : _unread;
     }
 
-    localStorage.setItem("currentUser", username);
-
-    // ✅ FIXED REDIRECT
-    window.location.href = "dashboard.html";
-}
-
-// ================= DASHBOARD LOAD =================
-function loadDashboard() {
-    let currentUser = localStorage.getItem("currentUser");
-
-    if (!currentUser) return;
-
-    let user = JSON.parse(localStorage.getItem(currentUser));
-
-    let scoreEl = document.getElementById("riskScore");
-    let levelEl = document.getElementById("riskLevel");
-
-    if (scoreEl) scoreEl.innerText = user?.riskScore || 0;
-    if (levelEl) levelEl.innerText = user?.riskLevel || "New";
-
-    loadCharts();
-}
-
-// ================= NAVIGATION =================
-function goToLoan() {
-    window.location.href = "loan.html";
-}
-
-// ================= LOAN CALC =================
-function calculateLoan() {
-    let income = parseInt(document.getElementById("income")?.value) || 0;
-    let expense = parseInt(document.getElementById("expense")?.value) || 0;
-    let emi = parseInt(document.getElementById("existingEmi")?.value) || 0;
-
-    let food = parseInt(document.getElementById("food")?.value) || 0;
-    let rent = parseInt(document.getElementById("rent")?.value) || 0;
-    let travel = parseInt(document.getElementById("travel")?.value) || 0;
-    let others = parseInt(document.getElementById("others")?.value) || 0;
-
-    let disposable = income - expense - emi;
-
-    let score = 0;
-    if (disposable > 50000) score = 80;
-    else if (disposable > 20000) score = 60;
-    else score = 40;
-
-    let riskLevel = "";
-    let color = "";
-
-    if (score >= 75) {
-        riskLevel = "Low Risk";
-        color = "green";
-    } else if (score >= 50) {
-        riskLevel = "Medium Risk";
-        color = "orange";
-    } else {
-        riskLevel = "High Risk";
-        color = "red";
+    let list = document.getElementById('notifList');
+    if(list){
+      let empty = document.getElementById('notifEmpty');
+      if(empty) empty.remove();
+      let item = document.createElement('div');
+      item.className = 'notif-item notif-' + type;
+      let icons = {success:'✅',error:'❌',warn:'⚠',info:'ℹ'};
+      item.innerHTML = '<span class="ni-icon">'+(icons[type]||'ℹ')+'</span>' +
+        '<span class="ni-msg">'+msg+'</span>' +
+        '<span class="ni-time">'+_fmtTime(new Date())+'</span>';
+      list.insertBefore(item, list.firstChild);
     }
+  };
 
-    let loanAmount = Math.max(disposable * 10, 0);
-    let emiEstimate = Math.max(Math.round(loanAmount / 12), 0);
+  function _fmtTime(d){
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  }
 
-    let resultEl = document.getElementById("result");
+  document.addEventListener('DOMContentLoaded', ensureBell);
+})();
 
-    if (resultEl) {
-        resultEl.innerHTML = `
-            <p>Risk Score: ${score}</p>
-            <p style="color:${color}">Risk Level: ${riskLevel}</p>
-            <p>Recommended Loan: ₹${loanAmount}</p>
-            <p>Estimated EMI: ₹${emiEstimate}</p>
-        `;
-    }
+/* ── LOAN PENDING TIMER ─────────────────────────────── */
+/* Call startLoanTimer(dateString) with the created_at date of the loan */
+window.startLoanTimer = function(dateStr){
+  let el = document.getElementById('loanPendingTimer');
+  if(!el || !dateStr) return;
+  function update(){
+    let now  = new Date();
+    let then = new Date(dateStr);
+    let diff = Math.floor((now - then) / 1000);
+    if(diff < 0){ el.innerText = 'Just now'; return; }
+    let d = Math.floor(diff/86400);
+    let h = Math.floor((diff%86400)/3600);
+    let m = Math.floor((diff%3600)/60);
+    if(d>0)      el.innerText = d+'d '+h+'h '+m+'m pending';
+    else if(h>0) el.innerText = h+'h '+m+'m pending';
+    else         el.innerText = m+'m pending';
+  }
+  update();
+  setInterval(update, 60000);
+};
 
-    // SAVE USER DATA
-    let currentUser = localStorage.getItem("currentUser");
-    let user = JSON.parse(localStorage.getItem(currentUser));
-
-    if (user) {
-        user.riskScore = score;
-        user.riskLevel = riskLevel;
-        localStorage.setItem(currentUser, JSON.stringify(user));
-    }
-
-    // SAVE FOR CHARTS
-    localStorage.setItem("income", income);
-    localStorage.setItem("expense", expense);
-    localStorage.setItem("food", food);
-    localStorage.setItem("rent", rent);
-    localStorage.setItem("travel", travel);
-    localStorage.setItem("others", others);
-}
-
-// ================= CHARTS =================
-function loadCharts() {
-    if (typeof Chart === "undefined") return;
-
-    let income = parseInt(localStorage.getItem("income")) || 0;
-    let expense = parseInt(localStorage.getItem("expense")) || 0;
-
-    let food = parseInt(localStorage.getItem("food")) || 0;
-    let rent = parseInt(localStorage.getItem("rent")) || 0;
-    let travel = parseInt(localStorage.getItem("travel")) || 0;
-    let others = parseInt(localStorage.getItem("others")) || 0;
-
-    let barCanvas = document.getElementById("barChart");
-    let pieCanvas = document.getElementById("pieChart");
-
-    if (barCanvas) {
-        new Chart(barCanvas, {
-            type: "bar",
-            data: {
-                labels: ["Income", "Expense"],
-                datasets: [{
-                    data: [income, expense],
-                    backgroundColor: ["#8ad18d5d", "#f4433634"]
-                }]
-            }
-        });
-    }
-
-    if (pieCanvas) {
-        new Chart(pieCanvas, {
-            type: "pie",
-            data: {
-                labels: ["Food", "Rent", "Travel", "Others"],
-                datasets: [{
-                    data: [food, rent, travel, others],
-                    backgroundColor: ["#2196F3", "#FF9800", "#4CAF50", "#9C27B0"]
-                }]
-            }
-        });
-    }
-}
-
+/* ── LEGACY STUBS (kept so old references don't break) ─ */
+function registerUser(){}
+function loginUser(){}
+function loadDashboard(){}
+function goToLoan(){}
+function calculateLoan(){}
+function loadCharts(){}
