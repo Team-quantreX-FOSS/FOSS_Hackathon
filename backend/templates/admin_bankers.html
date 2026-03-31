@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin - Bankers</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -101,7 +106,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "admin"){
             document.getElementById("mainContent").style.display = "none";
             document.getElementById("notLoggedIn").style.display = "block";
@@ -129,7 +134,7 @@ function deactivateBanker(id, name){
 }
 
 async function loadBankers(){
-    let res     = await fetch("/api/bankers");
+    let res     = await fetch("/api/bankers", { credentials: "include" });
     let bankers = await res.json();
     let body    = document.getElementById("bankerBody");
     let pieGrid = document.getElementById("pieGrid");
@@ -225,7 +230,7 @@ async function loadBankers(){
 
 function logout(){
     if(confirm('Are you sure you want to logout?')){
-        fetch('/logout',{method:'POST'}).finally(function(){ window.location.href='/index'; });
+        fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href='/index'; });
     }
 }
 </script>
