@@ -93,10 +93,10 @@ Now with **backend-based data storage**, users can **login from multiple devices
 
  💻 **Installation & Usage**
 
-## Prerequisites
+# Prerequisites
 - Python 3.8+
 
-### Steps
+# Steps
 
 bash:
 # 1. Clone the repository
