@@ -5,42 +5,52 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-# ── HARDCODED ADMIN CREDENTIALS (never stored in DB) ──────────────────────────
+# ── HARDCODED ADMIN CREDENTIALS ───────────────────────────────────────────────
 ADMIN_ID       = "ADMViki@2008"
 ADMIN_PASSWORD = "Viki@2008"
 ADMIN_NAME     = "Moksha"
 ADMIN_EMAIL    = "t.moksha.2102@gmail.com"
-# ──────────────────────────────────────────────────────────────────────────────
 
 # ── FILE UPLOAD CONFIG ─────────────────────────────────────────────────────────
 UPLOAD_FOLDER   = os.path.join('static', 'uploads')
 ALLOWED_EXT     = {'png', 'jpg', 'jpeg', 'pdf', 'webp'}
-MAX_CONTENT_LEN = 5 * 1024 * 1024   # 5 MB per file
+MAX_CONTENT_LEN = 5 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
-# ──────────────────────────────────────────────────────────────────────────────
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# SECRET KEY — reads from environment in production, falls back for local dev
-app.secret_key                   = os.environ.get("SECRET_KEY", "dev-fallback-change-me")
+app.secret_key                   = os.environ.get("SECRET_KEY", "finrisk-secret-key-2026-stable")
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
 
-# ── SESSION COOKIE CONFIG (fixes WebView / mobile session loss) ────────────────
-app.config['SESSION_COOKIE_SAMESITE']      = 'Lax'
-app.config['SESSION_COOKIE_HTTPONLY']      = True
-app.config['SESSION_COOKIE_SECURE']        = False   # Set True only on HTTPS
-app.config['PERMANENT_SESSION_LIFETIME']   = timedelta(days=3650)
+# ── SESSION CONFIG — works on both HTTP and HTTPS (PythonAnywhere) ─────────────
+app.config['SESSION_COOKIE_SAMESITE']    = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY']    = True
+app.config['SESSION_COOKIE_SECURE']      = False  # PythonAnywhere handles HTTPS at proxy level
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
+app.config['SESSION_COOKIE_PATH']        = '/'
+app.config['SESSION_COOKIE_NAME']        = 'finrisk_session'
 
-# ──────────────────────────────────────────────────────────────────────────────
-
-# ── VALIDATION HELPERS ─────────────────────────────────────────────────────────
 import re
 
+def normalize_phone(phone):
+    """Strip +91, 0 prefix, spaces, dashes. Returns clean 10-digit string or original."""
+    if not phone:
+        return ''
+    p = re.sub(r'[\s\-]', '', str(phone).strip())
+    if p.startswith('+91'):
+        p = p[3:]
+    elif p.startswith('91') and len(p) == 12:
+        p = p[2:]
+    elif p.startswith('0') and len(p) == 11:
+        p = p[1:]
+    return p
+
 def validate_phone(phone):
-    return bool(re.fullmatch(r'[6-9]\d{9}', phone or ''))
+    p = normalize_phone(phone)
+    return bool(re.fullmatch(r'[6-9]\d{9}', p))
 
 def validate_loan_amount(amount):
     try:
@@ -62,7 +72,6 @@ def validate_risk_score(score):
         return 0 <= v <= 100
     except (TypeError, ValueError):
         return False
-# ──────────────────────────────────────────────────────────────────────────────
 
 def get_db():
     conn = sqlite3.connect('users.db')
@@ -101,8 +110,14 @@ def init_db():
     )''')
     c.execute("PRAGMA table_info(bankers)")
     bcols = [r[1] for r in c.fetchall()]
-    if 'password' not in bcols:
-        c.execute("ALTER TABLE bankers ADD COLUMN password TEXT")
+    for col, typ in [('bank_name','TEXT'),('branch','TEXT'),('ifsc','TEXT'),
+                     ('banker_id','TEXT'),('password','TEXT'),
+                     ('total_customers','INTEGER DEFAULT 0'),
+                     ('approval','INTEGER DEFAULT 0'),
+                     ('rejection','INTEGER DEFAULT 0'),
+                     ('manual','INTEGER DEFAULT 0')]:
+        if col not in bcols:
+            c.execute(f"ALTER TABLE bankers ADD COLUMN {col} {typ}")
 
     c.execute('''CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -261,7 +276,7 @@ def logout():
 def register_user():
     data     = request.json or {}
     name     = data.get('name', '').strip()
-    phone    = data.get('phone', '').strip()
+    phone    = normalize_phone(data.get('phone', ''))
     username = data.get('username', '').strip()
     password = data.get('password', '').strip()
 
@@ -292,7 +307,7 @@ def register_banker():
     name      = data.get('name', '').strip()
     banker_id = data.get('banker_id', '').strip()
     bank_name = data.get('bank_name', '').strip()
-    branch    = data.get('branch', '').strip()
+    branch    = data.get('branch', '').strip() or 'Main Branch'
     ifsc      = data.get('ifsc', '').strip()
     password  = data.get('pass', '').strip()
 
@@ -302,19 +317,33 @@ def register_banker():
         return jsonify({"error": "Password must be at least 6 characters."}), 400
 
     hashed_pw = generate_password_hash(password)
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("SELECT id FROM bankers WHERE banker_id=?", (banker_id,))
-    if c.fetchone():
+    try:
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("PRAGMA table_info(bankers)")
+        cols = [r[1] for r in c.fetchall()]
+        for col, typ in [('bank_name','TEXT'),('branch','TEXT'),('ifsc','TEXT'),
+                         ('password','TEXT'),('banker_id','TEXT'),
+                         ('total_customers','INTEGER DEFAULT 0'),
+                         ('approval','INTEGER DEFAULT 0'),
+                         ('rejection','INTEGER DEFAULT 0'),
+                         ('manual','INTEGER DEFAULT 0')]:
+            if col not in cols:
+                c.execute(f"ALTER TABLE bankers ADD COLUMN {col} {typ}")
+        conn.commit()
+        c.execute("SELECT id FROM bankers WHERE banker_id=?", (banker_id,))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"error": "Banker ID already registered."}), 400
+        c.execute('''INSERT INTO bankers
+                     (name, bank_name, branch, ifsc, banker_id, password,
+                      total_customers, approval, rejection, manual)
+                     VALUES (?,?,?,?,?,?,0,0,0,0)''',
+                  (name, bank_name, branch, ifsc, banker_id, hashed_pw))
+        conn.commit()
         conn.close()
-        return jsonify({"error": "Banker ID already registered."}), 400
-    c.execute('''INSERT INTO bankers
-                 (name, bank_name, branch, ifsc, banker_id, password,
-                  total_customers, approval, rejection, manual)
-                 VALUES (?,?,?,?,?,?,0,0,0,0)''',
-              (name, bank_name, branch, ifsc, banker_id, hashed_pw))
-    conn.commit()
-    conn.close()
+    except Exception as e:
+        return jsonify({"error": "Registration error: " + str(e)}), 500
     return jsonify({"message": "Banker registered successfully."})
 
 
@@ -344,7 +373,6 @@ def login_user():
     if not row:
         return jsonify({"error": "Username not found. Please register first."}), 404
 
-    # Support both hashed (new) and plain-text (legacy) passwords transparently
     stored_pw = row[3] or ''
     pw_ok = (check_password_hash(stored_pw, password)
              if stored_pw.startswith('pbkdf2:') or stored_pw.startswith('scrypt:')
@@ -353,11 +381,11 @@ def login_user():
         return jsonify({"error": "Wrong password!"}), 401
 
     session.clear()
-    session.permanent   = True          # ← keeps session alive for 30 days
+    session.permanent   = True
     session['role']     = 'user'
     session['username'] = username
     session['name']     = row[1]
-    session['phone']    = row[2] or ''
+    session['phone']    = normalize_phone(row[2] or '')
     return jsonify({"message": "Login successful.", "name": row[1], "username": username})
 
 
@@ -370,16 +398,32 @@ def login_banker():
     if not banker_id or not password:
         return jsonify({"error": "Enter all fields!"}), 400
 
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("SELECT id, name, bank_name, password FROM bankers WHERE banker_id=?", (banker_id,))
-    row = c.fetchone()
-    conn.close()
+    try:
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("PRAGMA table_info(bankers)")
+        cols = [r[1] for r in c.fetchall()]
+        for col, typ in [('bank_name','TEXT'),('branch','TEXT'),('ifsc','TEXT'),
+                         ('password','TEXT'),('banker_id','TEXT'),
+                         ('total_customers','INTEGER DEFAULT 0'),
+                         ('approval','INTEGER DEFAULT 0'),
+                         ('rejection','INTEGER DEFAULT 0'),
+                         ('manual','INTEGER DEFAULT 0')]:
+            if col not in cols:
+                c.execute(f"ALTER TABLE bankers ADD COLUMN {col} {typ}")
+        conn.commit()
+        c.execute("SELECT id, name, bank_name, password FROM bankers WHERE banker_id=?", (banker_id,))
+        row = c.fetchone()
+        conn.close()
+    except Exception as e:
+        return jsonify({"error": "Login error: " + str(e)}), 500
 
     if not row:
         return jsonify({"error": "Banker ID not found. Please register first."}), 404
 
     stored_pw = row[3] or ''
+    if not stored_pw:
+        return jsonify({"error": "No password set. Please re-register."}), 401
     pw_ok = (check_password_hash(stored_pw, password)
              if stored_pw.startswith('pbkdf2:') or stored_pw.startswith('scrypt:')
              else stored_pw == password)
@@ -387,7 +431,7 @@ def login_banker():
         return jsonify({"error": "Wrong password!"}), 401
 
     session.clear()
-    session.permanent    = True          # ← keeps session alive for 30 days
+    session.permanent    = True
     session['role']      = 'banker'
     session['banker_id'] = banker_id
     session['name']      = row[1]
@@ -407,7 +451,7 @@ def login_admin():
         return jsonify({"error": "Access Denied"}), 401
 
     session.clear()
-    session.permanent   = True          # ← keeps session alive for 30 days
+    session.permanent   = True
     session['role']     = 'admin'
     session['admin_id'] = ADMIN_ID
     session['name']     = ADMIN_NAME
@@ -464,7 +508,7 @@ def save_financial_data():
     food          = data.get('food', 0)
     utilities     = data.get('utilities', 0)
     other         = data.get('other', 0)
-    phone         = data.get('phone', '')
+    phone         = normalize_phone(data.get('phone', ''))
     updated_at    = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     new_risk_score = data.get('risk_score')
@@ -569,7 +613,7 @@ def update_user_profile():
         return jsonify({"error": "Not logged in"}), 401
     data         = request.json or {}
     new_name     = data.get('name', '').strip()
-    new_phone    = data.get('phone', '').strip()
+    new_phone    = normalize_phone(data.get('phone', ''))
     new_username = data.get('username', '').strip()
 
     if new_phone and not validate_phone(new_phone):
@@ -597,53 +641,64 @@ def update_user_profile():
     return jsonify({"message": "Profile updated.", "username": session['username']})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# APPLY LOAN  (server-side validation added)
+# APPLY LOAN
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/apply_loan', methods=['POST'])
 def apply_loan():
-    data   = request.json or {}
-    name   = (data.get('name') or '').strip()
-    phone  = (data.get('phone') or '').strip()
-    age    = data.get('age', 0)
-    amount = data.get('loanAmount')
-    tenure = data.get('tenure')
-    score  = data.get('risk_score')
+    data = request.json or {}
+    
+    name       = (data.get('name') or '').strip()
+    phone      = normalize_phone(data.get('phone') or '')
+    age        = data.get('age', 0)
+    loanAmount = data.get('loanAmount')
+    loanType   = data.get('loanType')
+    tenure     = data.get('tenure')
+    emi        = data.get('emi')
+    risk_score = data.get('risk_score')
 
-    errors = []
+    # Validation
     if not name:
-        errors.append("Name is required.")
+        return jsonify({"error": "Name is required."}), 400
     if not validate_phone(phone):
-        errors.append("Invalid phone number.")
-    if not validate_loan_amount(amount):
-        errors.append("Loan amount must be between Rs.1,000 and Rs.1,00,00,000.")
+        return jsonify({"error": "Invalid phone number."}), 400
+    if not validate_loan_amount(loanAmount):
+        return jsonify({"error": "Loan amount must be between ₹1,000 and ₹1,00,00,000."}), 400
     if not validate_tenure(tenure):
-        errors.append("Tenure must be between 1 and 360 months.")
-    if score is not None and not validate_risk_score(score):
-        errors.append("Risk score must be between 0 and 100.")
-    if errors:
-        return jsonify({"error": " | ".join(errors)}), 400
+        return jsonify({"error": "Tenure must be between 1 and 360 months."}), 400
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+
+    # Check if banker exists
     c.execute("SELECT COUNT(*) FROM bankers")
     banker_count = c.fetchone()[0]
-    c.execute('''INSERT INTO users
-                 (name, age, phone, loanAmount, loanType, tenure, emi,
-                  risk_score, allocated_banker, loan_status, reason,
-                  address, employment, purpose, aadhar, pan, created_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-              (name, age, phone, amount, data.get('loanType'), tenure,
-               data.get('emi'), score, None, "Pending", "",
-               data.get('address', ''), data.get('employment', ''),
-               data.get('purpose', ''), data.get('aadhar', ''),
-               data.get('pan', ''), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "no_banker" if banker_count == 0 else "submitted"})
 
+    try:
+        c.execute('''INSERT INTO users 
+                     (name, age, phone, loanAmount, loanType, tenure, emi, 
+                      risk_score, allocated_banker, loan_status, reason, 
+                      created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+                  (name, age, phone, loanAmount, loanType, tenure, emi,
+                   risk_score, None, "Pending", "", 
+                   datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        
+        conn.commit()
+        
+        return jsonify({
+            "message": "Application submitted successfully",
+            "status": "Pending",
+            "bankers_available": banker_count > 0
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 # ══════════════════════════════════════════════════════════════════════════════
-# PICKUP LOAN  (BEGIN IMMEDIATE prevents race condition)
+# PICKUP LOAN
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/pickup_loan', methods=['POST'])
@@ -662,25 +717,22 @@ def pickup_loan():
         c.execute("SELECT allocated_banker FROM users WHERE id=?", (user_id,))
         row = c.fetchone()
         if not row:
-            conn.rollback()
-            conn.close()
+            conn.rollback(); conn.close()
             return jsonify({"error": "Application not found."}), 404
         if row[0]:
-            conn.rollback()
-            conn.close()
+            conn.rollback(); conn.close()
             return jsonify({"error": "Already picked up by another banker."}), 400
         c.execute("UPDATE users SET allocated_banker=?, loan_status=? WHERE id=?",
                   (banker_name, "Picked Up", user_id))
         conn.commit()
     except Exception as e:
-        conn.rollback()
-        conn.close()
-        return jsonify({"error": f"Could not pick up loan: {str(e)}"}), 500
+        conn.rollback(); conn.close()
+        return jsonify({"error": f"Could not pick up: {str(e)}"}), 500
     conn.close()
     return jsonify({"message": "Picked up successfully."})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# BANKER ACTION  (CASE WHEN replaces invalid MAX() in UPDATE)
+# BANKER ACTION
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/banker_action', methods=['POST'])
@@ -707,54 +759,58 @@ def banker_action():
 
     if banker:
         first_action = current_status in ("Pending", "Picked Up")
-
         if current_status == "Approved" and action != "Approved":
-            c.execute("""UPDATE bankers
-                         SET approval = CASE WHEN approval > 0 THEN approval - 1 ELSE 0 END
-                         WHERE name=?""", (banker,))
+            c.execute("UPDATE bankers SET approval=CASE WHEN approval>0 THEN approval-1 ELSE 0 END WHERE name=?", (banker,))
         elif current_status == "Rejected" and action != "Rejected":
-            c.execute("""UPDATE bankers
-                         SET rejection = CASE WHEN rejection > 0 THEN rejection - 1 ELSE 0 END
-                         WHERE name=?""", (banker,))
+            c.execute("UPDATE bankers SET rejection=CASE WHEN rejection>0 THEN rejection-1 ELSE 0 END WHERE name=?", (banker,))
         elif current_status == "Manual Review" and action != "Manual Review":
-            c.execute("""UPDATE bankers
-                         SET manual = CASE WHEN manual > 0 THEN manual - 1 ELSE 0 END
-                         WHERE name=?""", (banker,))
-
+            c.execute("UPDATE bankers SET manual=CASE WHEN manual>0 THEN manual-1 ELSE 0 END WHERE name=?", (banker,))
         if action == "Approved":
-            c.execute("UPDATE bankers SET approval = approval + 1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET approval=approval+1 WHERE name=?", (banker,))
         elif action == "Rejected":
-            c.execute("UPDATE bankers SET rejection = rejection + 1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET rejection=rejection+1 WHERE name=?", (banker,))
         elif action == "Manual Review":
-            c.execute("UPDATE bankers SET manual = manual + 1 WHERE name=?", (banker,))
-
+            c.execute("UPDATE bankers SET manual=manual+1 WHERE name=?", (banker,))
         if first_action:
-            c.execute("UPDATE bankers SET total_customers = total_customers + 1 WHERE name=?", (banker,))
+            c.execute("UPDATE bankers SET total_customers=total_customers+1 WHERE name=?", (banker,))
 
     conn.commit()
     conn.close()
     return jsonify({"message": "Action recorded"})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GET STATUS
+# GET STATUS — BUG FIX: search by normalized phone, fallback to name-only
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/get_status/<phone>')
 def get_status(phone):
+    phone = normalize_phone(phone)
+    name = request.args.get('name', '').strip()
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    name = request.args.get('name', '').strip()
+
+    # Try phone first (most reliable)
+    if phone:
+        c.execute('''SELECT loan_status, reason, allocated_banker, created_at 
+                     FROM users WHERE phone=? ORDER BY id DESC LIMIT 1''', (phone,))
+        row = c.fetchone()
+        if row:
+            conn.close()
+            return jsonify({"status": row[0], "reason": row[1] or "", "banker": row[2] or "", "created_at": row[3] or ""})
+
+    # Fallback to name
     if name:
-        c.execute('''SELECT loan_status, reason, allocated_banker FROM users
-                     WHERE phone=? AND name=? ORDER BY id DESC LIMIT 1''', (phone, name))
-    else:
-        c.execute('''SELECT loan_status, reason, allocated_banker FROM users
-                     WHERE phone=? ORDER BY id DESC LIMIT 1''', (phone,))
-    data = c.fetchone()
+        c.execute('''SELECT loan_status, reason, allocated_banker, created_at 
+                     FROM users WHERE name=? ORDER BY id DESC LIMIT 1''', (name,))
+        row = c.fetchone()
+
     conn.close()
-    if data:
-        return jsonify({"status": data[0], "reason": data[1], "banker": data[2] or ""})
-    return jsonify({"status": "No Application", "reason": "", "banker": ""})
+
+    if row:
+        return jsonify({"status": row[0], "reason": row[1] or "", "banker": row[2] or "", "created_at": row[3] or ""})
+    
+    return jsonify({"status": "No Application", "reason": "", "banker": "", "created_at": ""})
 
 # ══════════════════════════════════════════════════════════════════════════════
 # USERS / BANKERS / STATS
@@ -764,25 +820,25 @@ def get_status(phone):
 def get_users():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM users")
+    c.execute("SELECT id,name,age,phone,loanAmount,loanType,tenure,emi,risk_score,allocated_banker,loan_status,reason FROM users")
     rows = c.fetchall()
     conn.close()
-    return jsonify([{"id": r[0], "name": r[1], "age": r[2], "phone": r[3],
-                     "loanAmount": r[4], "loanType": r[5], "tenure": r[6],
-                     "emi": r[7], "score": r[8], "banker": r[9],
-                     "status": r[10], "reason": r[11]} for r in rows])
+    return jsonify([{"id":r[0],"name":r[1],"age":r[2],"phone":r[3],
+                     "loanAmount":r[4],"loanType":r[5],"tenure":r[6],
+                     "emi":r[7],"score":r[8],"banker":r[9],
+                     "status":r[10],"reason":r[11]} for r in rows])
 
 
 @app.route('/users')
 def api_users():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM users")
+    c.execute("SELECT id,name,phone,loanAmount,loanType,tenure,emi,risk_score,allocated_banker,loan_status,reason FROM users")
     rows = c.fetchall()
     conn.close()
-    return jsonify([[r[0], r[1], r[3], r[4] or 0, r[5] or "", r[6] or 0,
-                     r[7] or 0, r[8] or 0, r[9] or "", r[10] or "Pending", r[11] or ""]
-                    for r in rows])
+    return jsonify([[r[0],r[1] or "",r[2] or "",r[3] or 0,r[4] or "",
+                     r[5] or 0,r[6] or 0,r[7] or 0,r[8] or "",
+                     r[9] or "Pending",r[10] or ""] for r in rows])
 
 
 @app.route('/api/bankers')
@@ -797,18 +853,12 @@ def get_bankers():
     result = []
     for b in rows:
         r = dict(zip(cols, b))
-        result.append({
-            "id":             r.get("id", ""),
-            "name":           r.get("name", ""),
-            "bankName":       r.get("bank_name", ""),
-            "branch":         r.get("branch", ""),
-            "ifsc":           r.get("ifsc", ""),
-            "bankerId":       r.get("banker_id", ""),
-            "totalCustomers": r.get("total_customers", 0),
-            "approval":       r.get("approval", 0),
-            "rejection":      r.get("rejection", 0),
-            "manual":         r.get("manual", 0),
-        })
+        result.append({"id":r.get("id",""),"name":r.get("name",""),
+                        "bankName":r.get("bank_name",""),"branch":r.get("branch",""),
+                        "ifsc":r.get("ifsc",""),"bankerId":r.get("banker_id",""),
+                        "totalCustomers":r.get("total_customers",0),
+                        "approval":r.get("approval",0),"rejection":r.get("rejection",0),
+                        "manual":r.get("manual",0)})
     return jsonify(result)
 
 
@@ -824,10 +874,10 @@ def get_banks():
     seen, banks = set(), []
     for r in rows:
         row = dict(zip(cols, r))
-        k = row.get("bank_name", "")
+        k = row.get("bank_name","")
         if k not in seen:
             seen.add(k)
-            banks.append({"name": k, "branch": row.get("branch", ""), "ifsc": row.get("ifsc", "")})
+            banks.append({"name":k,"branch":row.get("branch",""),"ifsc":row.get("ifsc","")})
     return jsonify(banks)
 
 
@@ -845,9 +895,9 @@ def get_banker_by_id(banker_id):
     conn.close()
     if row:
         r = dict(zip(cols, row))
-        return jsonify({"name": r.get("name", ""), "bankName": r.get("bank_name", ""),
-                        "ifsc": r.get("ifsc", ""), "branch": r.get("branch", ""),
-                        "bankerId": r.get("banker_id", "")})
+        return jsonify({"name":r.get("name",""),"bankName":r.get("bank_name",""),
+                        "ifsc":r.get("ifsc",""),"branch":r.get("branch",""),
+                        "bankerId":r.get("banker_id","")})
     return jsonify({"error": "Not found"}), 404
 
 
@@ -855,34 +905,19 @@ def get_banker_by_id(banker_id):
 def get_stats():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-
     c.execute("SELECT COUNT(*) FROM users")
     total_loans = c.fetchone()[0]
-
     c.execute("SELECT loan_status, COUNT(*) FROM users GROUP BY loan_status")
     status_counts = dict(c.fetchall())
-
     c.execute("SELECT COUNT(*) FROM bankers")
     total_bankers = c.fetchone()[0]
-
-    c.execute("SELECT SUM(total_customers), SUM(approval), SUM(rejection), SUM(manual) FROM bankers")
-    banker_totals = c.fetchone()
-    total_customers = banker_totals[0] or 0
-    total_approved  = banker_totals[1] or 0
-    total_rejected  = banker_totals[2] or 0
-    total_manual    = banker_totals[3] or 0
-
+    c.execute("SELECT SUM(total_customers),SUM(approval),SUM(rejection),SUM(manual) FROM bankers")
+    bt = c.fetchone()
     conn.close()
-
-    return jsonify({
-        "total_loans": total_loans,
-        "status_counts": status_counts,
-        "total_bankers": total_bankers,
-        "total_customers": total_customers,
-        "total_approved": total_approved,
-        "total_rejected": total_rejected,
-        "total_manual_review": total_manual
-    })
+    return jsonify({"total_loans":total_loans,"status_counts":status_counts,
+                    "total_bankers":total_bankers,"total_customers":bt[0] or 0,
+                    "total_approved":bt[1] or 0,"total_rejected":bt[2] or 0,
+                    "total_manual_review":bt[3] or 0})
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ADMIN-ONLY APIs
@@ -897,10 +932,10 @@ def api_borrowers():
     c.execute("SELECT * FROM users")
     rows = c.fetchall()
     conn.close()
-    return jsonify([{"id": r[0], "name": r[1], "age": r[2], "phone": r[3],
-                     "loanAmount": r[4], "loanType": r[5], "tenure": r[6],
-                     "emi": r[7], "risk_score": r[8], "allocated_banker": r[9],
-                     "loan_status": r[10], "reason": r[11]} for r in rows])
+    return jsonify([{"id":r[0],"name":r[1],"age":r[2],"phone":r[3],
+                     "loanAmount":r[4],"loanType":r[5],"tenure":r[6],
+                     "emi":r[7],"risk_score":r[8],"allocated_banker":r[9],
+                     "loan_status":r[10],"reason":r[11]} for r in rows])
 
 
 @app.route('/api/admin_bankers')
@@ -917,18 +952,12 @@ def api_admin_bankers():
     result = []
     for b in rows:
         r = dict(zip(cols, b))
-        result.append({
-            "id":              r.get("id", ""),
-            "name":            r.get("name", ""),
-            "bank_name":       r.get("bank_name", ""),
-            "branch":          r.get("branch", ""),
-            "ifsc":            r.get("ifsc", ""),
-            "banker_id":       r.get("banker_id", ""),
-            "total_customers": r.get("total_customers", 0),
-            "approval":        r.get("approval", 0),
-            "rejection":       r.get("rejection", 0),
-            "manual":          r.get("manual", 0),
-        })
+        result.append({"id":r.get("id",""),"name":r.get("name",""),
+                        "bank_name":r.get("bank_name",""),"branch":r.get("branch",""),
+                        "ifsc":r.get("ifsc",""),"banker_id":r.get("banker_id",""),
+                        "total_customers":r.get("total_customers",0),
+                        "approval":r.get("approval",0),"rejection":r.get("rejection",0),
+                        "manual":r.get("manual",0)})
     return jsonify(result)
 
 
@@ -941,7 +970,7 @@ def get_user_accounts():
     c.execute("SELECT * FROM user_accounts")
     rows = c.fetchall()
     conn.close()
-    return jsonify([{"id": r[0], "name": r[1], "phone": r[2], "username": r[3]} for r in rows])
+    return jsonify([{"id":r[0],"name":r[1],"phone":r[2],"username":r[3]} for r in rows])
 
 
 @app.route('/delete_user/<int:id>', methods=['DELETE'])
@@ -1005,48 +1034,40 @@ def admin_remove_banker(id):
     row = c.fetchone()
     if row:
         c.execute("""UPDATE users SET allocated_banker=NULL, loan_status='Pending'
-                     WHERE allocated_banker=?
-                       AND loan_status NOT IN ('Approved','Rejected')""", (row[0],))
+                     WHERE allocated_banker=? AND loan_status NOT IN ('Approved','Rejected')""", (row[0],))
     c.execute("DELETE FROM bankers WHERE id=?", (id,))
     conn.commit()
     conn.close()
     return jsonify({"message": "Banker removed"})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# BORROWER PROFILE  (real multipart file upload support)
+# BORROWER PROFILE
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/save_borrower_profile', methods=['POST'])
 def save_borrower_profile():
     is_multipart = request.content_type and 'multipart/form-data' in request.content_type
-
     if is_multipart:
-        form  = request.form
-        files = request.files
-        def fget(k, default=''):
-            return form.get(k, default)
+        form = request.form; files = request.files
+        def fget(k, default=''): return form.get(k, default)
     else:
-        form  = request.json or {}
-        files = {}
-        def fget(k, default=''):
-            return form.get(k, default)
+        form = request.json or {}; files = {}
+        def fget(k, default=''): return form.get(k, default)
 
-    phone = fget('phone', '').strip()
-    name  = fget('name',  '').strip()
-
+    phone = normalize_phone(fget('phone', ''))
+    name  = fget('name', '').strip()
     if not phone:
-        return jsonify({"error": "Phone number is required to save borrower profile."}), 400
+        return jsonify({"error": "Phone number is required."}), 400
 
     conn = sqlite3.connect('users.db')
     cur  = conn.cursor()
-
     cur.execute("PRAGMA table_info(borrower_profiles)")
     existing_cols = [r[1] for r in cur.fetchall()]
-    for col in ['aadhar_img', 'pan_img', 'salary_img', 'bank_stmt']:
+    for col in ['aadhar_img','pan_img','salary_img','bank_stmt']:
         if col not in existing_cols:
             cur.execute(f"ALTER TABLE borrower_profiles ADD COLUMN {col} TEXT")
 
-    cur.execute("SELECT id, aadhar_img, pan_img, salary_img, bank_stmt FROM borrower_profiles WHERE phone=?", (phone,))
+    cur.execute("SELECT id,aadhar_img,pan_img,salary_img,bank_stmt FROM borrower_profiles WHERE phone=?", (phone,))
     existing_row = cur.fetchone()
     existing_imgs = {
         'aadhar_img': existing_row[1] if existing_row else None,
@@ -1059,59 +1080,39 @@ def save_borrower_profile():
         f = files.get(field_name) if is_multipart else None
         if f and f.filename:
             if not allowed_file(f.filename):
-                return None, f"Invalid file type for {field_name}. Allowed: png, jpg, jpeg, pdf, webp."
-            ext      = f.filename.rsplit('.', 1)[1].lower()
+                return None, f"Invalid file type for {field_name}."
+            ext = f.filename.rsplit('.',1)[1].lower()
             filename = secure_filename(f"{phone}_{field_name}_{int(datetime.now().timestamp())}.{ext}")
             f.save(os.path.join(UPLOAD_FOLDER, filename))
             return f"uploads/{filename}", None
         return fget(json_alias) or fget(field_name) or existing_path, None
 
     errors = []
-    aadhar_img, err = save_upload('aadhar_img', 'aadharImg', existing_imgs['aadhar_img']); err and errors.append(err)
-    pan_img,    err = save_upload('pan_img',    'panImg',    existing_imgs['pan_img']);    err and errors.append(err)
-    salary_img, err = save_upload('salary_img', 'salaryImg', existing_imgs['salary_img']); err and errors.append(err)
-    bank_stmt,  err = save_upload('bank_stmt',  'bankStmt',  existing_imgs['bank_stmt']);  err and errors.append(err)
-
+    aadhar_img, err = save_upload('aadhar_img','aadharImg',existing_imgs['aadhar_img']); err and errors.append(err)
+    pan_img,    err = save_upload('pan_img','panImg',existing_imgs['pan_img']);           err and errors.append(err)
+    salary_img, err = save_upload('salary_img','salaryImg',existing_imgs['salary_img']); err and errors.append(err)
+    bank_stmt,  err = save_upload('bank_stmt','bankStmt',existing_imgs['bank_stmt']);    err and errors.append(err)
     if errors:
         conn.close()
         return jsonify({"error": " | ".join(errors)}), 400
 
-    update_vals = (
-        name,
-        fget('age', 0),
-        fget('email', ''),
-        fget('address', ''),
-        fget('employment', ''),
-        fget('employer', ''),
-        fget('aadhar', ''),
-        fget('pan', ''),
-        fget('purpose', ''),
-        fget('accountHolder', ''),
-        fget('accountNumber', ''),
-        fget('ifsc', ''),
-        aadhar_img,
-        pan_img,
-        salary_img,
-        bank_stmt,
-    )
+    update_vals = (name, fget('age',0), fget('email',''), fget('address',''),
+                   fget('employment',''), fget('employer',''), fget('aadhar',''),
+                   fget('pan',''), fget('purpose',''), fget('accountHolder',''),
+                   fget('accountNumber',''), fget('ifsc',''),
+                   aadhar_img, pan_img, salary_img, bank_stmt)
 
     if existing_row:
-        cur.execute('''
-            UPDATE borrower_profiles
-            SET name=?, age=?, email=?, address=?, employment=?, employer=?,
-                aadhar=?, pan=?, purpose=?, account_holder=?, account_number=?, ifsc=?,
-                aadhar_img=?, pan_img=?, salary_img=?, bank_stmt=?
-            WHERE phone=?
-        ''', update_vals + (phone,))
+        cur.execute('''UPDATE borrower_profiles SET name=?,age=?,email=?,address=?,employment=?,employer=?,
+                       aadhar=?,pan=?,purpose=?,account_holder=?,account_number=?,ifsc=?,
+                       aadhar_img=?,pan_img=?,salary_img=?,bank_stmt=? WHERE phone=?''',
+                    update_vals + (phone,))
     else:
-        cur.execute('''
-            INSERT INTO borrower_profiles
-                (name, phone, age, email, address, employment, employer,
-                 aadhar, pan, purpose, account_holder, account_number, ifsc,
-                 aadhar_img, pan_img, salary_img, bank_stmt, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ''', (name, phone) + update_vals[1:] + (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),))
-
+        cur.execute('''INSERT INTO borrower_profiles (name,phone,age,email,address,employment,employer,
+                       aadhar,pan,purpose,account_holder,account_number,ifsc,
+                       aadhar_img,pan_img,salary_img,bank_stmt,created_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                    (name, phone) + update_vals[1:] + (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),))
     conn.commit()
     conn.close()
     return jsonify({"message": "saved"})
@@ -1119,20 +1120,20 @@ def save_borrower_profile():
 
 @app.route('/api/borrower_profile')
 def get_borrower_profile():
-    phone = request.args.get('phone', '').strip()
-    name  = request.args.get('name',  '').strip()
+    phone = normalize_phone(request.args.get('phone',''))
+    name  = request.args.get('name','').strip()
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+    row = None
     if phone and name:
         c.execute("SELECT * FROM borrower_profiles WHERE phone=? AND name=? LIMIT 1", (phone, name))
-    elif phone:
+        row = c.fetchone()
+    if not row and phone:
         c.execute("SELECT * FROM borrower_profiles WHERE phone=? LIMIT 1", (phone,))
-    elif name:
+        row = c.fetchone()
+    if not row and name:
         c.execute("SELECT * FROM borrower_profiles WHERE name=? LIMIT 1", (name,))
-    else:
-        conn.close()
-        return jsonify({"error": "Phone or Name required"}), 400
-    row = c.fetchone()
+        row = c.fetchone()
     c.execute("PRAGMA table_info(borrower_profiles)")
     cols = [r[1] for r in c.fetchall()]
     conn.close()
@@ -1140,20 +1141,27 @@ def get_borrower_profile():
         return jsonify(dict(zip(cols, row)))
     return jsonify({"error": "not found"}), 404
 
+
+@app.route('/static/sw.js')
+def service_worker():
+    from flask import send_from_directory, make_response
+    resp = make_response(send_from_directory('static', 'sw.js'))
+    resp.headers['Content-Type'] = 'application/javascript'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    return resp
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ERROR HANDLERS
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.errorhandler(404)
-def not_found(e):     return render_template('404.html'), 404
+def not_found(e):      return render_template('404.html'), 404
 
 @app.errorhandler(500)
-def server_error(e):  return render_template('500.html'), 500
+def server_error(e):   return render_template('500.html'), 500
 
 @app.errorhandler(413)
-def file_too_large(e): return jsonify({"error": "File too large. Maximum size is 5 MB."}), 413
-
-# ══════════════════════════════════════════════════════════════════════════════
+def file_too_large(e): return jsonify({"error": "File too large. Max 5MB."}), 413
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5050)))
