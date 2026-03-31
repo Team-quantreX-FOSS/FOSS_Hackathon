@@ -6,7 +6,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <style>
 * { box-sizing: border-box; }
 body { font-family: 'Syne', sans-serif; text-align: center; margin: 0; padding: 0; }
@@ -402,8 +404,14 @@ function register(){
     if(role === "user"){
         let username = document.getElementById("username").value.trim();
         let name     = document.getElementById("name").value.trim();
-        let phone    = document.getElementById("phone").value.trim();
+        let rawPhone = document.getElementById("phone").value.trim();
+        // Normalize phone: strip +91, spaces, dashes
+        let phone = rawPhone.replace(/[\s\-]/g,'');
+        if(phone.startsWith('+91')) phone = phone.slice(3);
+        else if(phone.startsWith('91') && phone.length===12) phone = phone.slice(2);
+        else if(phone.startsWith('0') && phone.length===11) phone = phone.slice(1);
         if(!name||!username||!phone||!password){ regMsg.innerText="Please fill all fields."; return; }
+        if(!/^[6-9]\d{9}$/.test(phone)){ regMsg.style.color="#f87171"; regMsg.innerText="Enter a valid 10-digit Indian mobile number."; return; }
         if(document.getElementById("username").classList.contains("input-error")){
             regMsg.innerText="Username already taken. Choose another."; return;
         }
@@ -497,6 +505,15 @@ function login(){
             setTimeout(()=>{ window.location.href="/admin_dashboard"; }, 400);
         }).catch(()=>{ loginMsg.style.color="#f87171"; loginMsg.innerText="Server error."; });
     }
+}
+</script>
+
+<script>
+/* ── PWA Service Worker ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/static/sw.js').catch(function(){});
+  });
 }
 </script>
 </body>
