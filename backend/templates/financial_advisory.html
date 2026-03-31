@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#bfa980">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Advisory</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -434,12 +439,12 @@ window.addEventListener("DOMContentLoaded", function(){
     renderCourses();
 
     /* Load financial data from backend session */
-    fetch("/api/session").then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "user"){
             window.location.href="/";
             return;
         }
-        fetch("/api/financial_data")
+        fetch("/api/financial_data", { credentials: "include" })
         .then(function(response){ return response.json(); })
         .then(function(finance){
             financeData.income  = Number(finance.income)        || 0;
@@ -464,7 +469,7 @@ window.addEventListener("DOMContentLoaded", function(){
 });
 
 function logout(){
-    fetch('/logout',{method:'POST'}).finally(function(){ window.location.href="/"; });
+    fetch('/logout',{method:'POST', credentials:'include'}).finally(function(){ window.location.href="/"; });
 }
 
 /* ── MOBILE SIDEBAR ── */
