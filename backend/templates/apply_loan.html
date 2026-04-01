@@ -16,7 +16,6 @@
 .form-section { margin-bottom:28px; }
 .form-section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin:0 0 16px 0; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px; }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 .form-group { margin-bottom:16px; }
 .form-group label { display:block; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:8px; }
 .form-group input, .form-group select, .form-group textarea {
@@ -29,8 +28,13 @@
 .form-group input::placeholder, .form-group textarea::placeholder { color:#555; }
 .form-group select option { background:#1a1a2e; color:#e6d5b8; }
 .form-group textarea { resize:vertical; min-height:70px; }
-.file-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1.5px dashed rgba(230,213,184,0.2); background:rgba(230,213,184,0.03); font-family:'DM Mono',monospace; font-size:14px; color:#bfa980; cursor:pointer; transition:all 0.2s; }
-.file-label:hover { border-color:#bfa980; }
+.file-label {
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    border-radius:10px; border:1.5px dashed rgba(230,213,184,0.2);
+    background:rgba(230,213,184,0.03); font-family:'DM Mono',monospace;
+    font-size:14px; color:#bfa980; cursor:pointer; transition:all 0.2s;
+}
+.file-label:hover { border-color:#bfa980; background:rgba(230,213,184,0.06); }
 .file-label.uploaded { border-style:solid; border-color:#34d399; background:rgba(16,185,129,0.06); color:#34d399; }
 .file-label input[type=file] { display:none; }
 .emi-display { background:rgba(230,213,184,0.08); border:1px solid rgba(230,213,184,0.15); border-radius:10px; padding:16px; text-align:center; margin-bottom:20px; }
@@ -40,10 +44,6 @@
 .submit-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(230,213,184,0.3); }
 #errorMsg { font-family:'DM Mono',monospace; font-size:14px; color:#f87171; margin-top:12px; text-align:center; }
 #successMsg { font-family:'DM Mono',monospace; font-size:14px; color:#34d399; margin-top:12px; text-align:center; line-height:1.6; }
-.step-bar { display:flex; gap:0; margin-bottom:32px; }
-.step { flex:1; text-align:center; padding:10px 0; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; color:#555; border-bottom:2px solid rgba(255,255,255,0.08); position:relative; }
-.step.active { color:#e6d5b8; border-bottom-color:#bfa980; }
-.step.done { color:#34d399; border-bottom-color:#34d399; }
 .required-star { color:#f87171; }
 </style>
 </head>
@@ -100,7 +100,10 @@
             <option value="Retired">Retired</option>
         </select>
     </div>
-    <div class="form-group" id="employerGroup"><label>Employer / Company Name</label><input type="text" id="employer" placeholder="e.g. Infosys, HDFC Bank"></div>
+    <div class="form-group" id="employerGroup">
+        <label>Employer / Company Name</label>
+        <input type="text" id="employer" placeholder="e.g. Infosys, HDFC Bank">
+    </div>
 </div>
 </div>
 
@@ -115,15 +118,19 @@
     <div class="form-group">
         <label>Aadhar Card (Front) <span class="required-star">*</span></label>
         <label class="file-label" id="aadharLabel" for="aadharFile">
-            <span id="aadharIcon">📎</span><span id="aadharTxt">Upload image</span>
-            <input type="file" id="aadharFile" accept="image/*,.pdf" onchange="handleFile('aadharFile','aadharLabel','aadharIcon','aadharTxt','aadharData')">
+            <span id="aadharIcon">📎</span>
+            <span id="aadharTxt">Upload image</span>
+            <input type="file" id="aadharFile" accept="image/*,.pdf"
+                   onchange="handleFile('aadharFile','aadharLabel','aadharIcon','aadharTxt','aadharData')">
         </label>
     </div>
     <div class="form-group">
         <label>PAN Card <span class="required-star">*</span></label>
         <label class="file-label" id="panLabel" for="panFile">
-            <span id="panIcon">📎</span><span id="panTxt">Upload image</span>
-            <input type="file" id="panFile" accept="image/*,.pdf" onchange="handleFile('panFile','panLabel','panIcon','panTxt','panData')">
+            <span id="panIcon">📎</span>
+            <span id="panTxt">Upload image</span>
+            <input type="file" id="panFile" accept="image/*,.pdf"
+                   onchange="handleFile('panFile','panLabel','panIcon','panTxt','panData')">
         </label>
     </div>
 </div>
@@ -136,15 +143,19 @@
     <div class="form-group">
         <label>Salary Slip / Income Proof <span class="required-star">*</span></label>
         <label class="file-label" id="salaryLabel" for="salaryFile">
-            <span id="salaryIcon">📎</span><span id="salaryTxt">Upload latest salary slip</span>
-            <input type="file" id="salaryFile" accept="image/*,.pdf" onchange="handleFile('salaryFile','salaryLabel','salaryIcon','salaryTxt','salaryData')">
+            <span id="salaryIcon">📎</span>
+            <span id="salaryTxt">Upload latest salary slip</span>
+            <input type="file" id="salaryFile" accept="image/*,.pdf"
+                   onchange="handleFile('salaryFile','salaryLabel','salaryIcon','salaryTxt','salaryData')">
         </label>
     </div>
     <div class="form-group">
         <label>Bank Statement (6 months)</label>
         <label class="file-label" id="bankStmtLabel" for="bankStmtFile">
-            <span id="bankStmtIcon">📎</span><span id="bankStmtTxt">Upload PDF or image</span>
-            <input type="file" id="bankStmtFile" accept="image/*,.pdf" onchange="handleFile('bankStmtFile','bankStmtLabel','bankStmtIcon','bankStmtTxt','bankStmtData')">
+            <span id="bankStmtIcon">📎</span>
+            <span id="bankStmtTxt">Upload PDF or image</span>
+            <input type="file" id="bankStmtFile" accept="image/*,.pdf"
+                   onchange="handleFile('bankStmtFile','bankStmtLabel','bankStmtIcon','bankStmtTxt','bankStmtData')">
         </label>
     </div>
 </div>
@@ -173,7 +184,7 @@
     <div class="form-group"><label>Tenure (months) <span class="required-star">*</span></label><input type="number" id="tenure" placeholder="e.g. 60" oninput="calcEmi()"></div>
     <div class="form-group"><label>Risk Score</label><input type="number" id="score" placeholder="Auto-filled from Loan Eligibility"></div>
 </div>
-<div class="form-group"><label>Purpose of Loan <span class="required-star">*</span></label><textarea id="purpose" placeholder="Briefly describe why you need this loan (e.g. to purchase a car, fund college education, expand business)"></textarea></div>
+<div class="form-group"><label>Purpose of Loan <span class="required-star">*</span></label><textarea id="purpose" placeholder="Briefly describe why you need this loan"></textarea></div>
 </div>
 
 <!-- SECTION 5: BANK DETAILS -->
@@ -201,82 +212,219 @@
 </div>
 
 <script>
-/* Store uploaded file data */
-let fileStore = { aadharData:null, panData:null, salaryData:null, bankStmtData:null };
+/* ── FILE STORE ── */
+let fileStore = {
+    aadharData:   null,
+    panData:      null,
+    salaryData:   null,
+    bankStmtData: null
+};
+
 let _sessionName  = "";
 let _sessionPhone = "";
 
+/* ── SESSION LOAD ── */
 window.addEventListener("DOMContentLoaded", function(){
-    fetch("/api/session", {credentials:"include"}).then(r=>r.json()).then(function(sess){
+    fetch("/api/session", { credentials: "include" }).then(r=>r.json()).then(function(sess){
         if(!sess.role || sess.role !== "user"){ window.location.href="/"; return; }
-        _sessionName = sess.name || "";
-        if(_sessionName) document.getElementById("fullName").value = _sessionName;
+        _sessionName  = sess.name  || "";
+        _sessionPhone = sess.phone || "";
+        if(_sessionName)  document.getElementById("fullName").value = _sessionName;
+        if(_sessionPhone) document.getElementById("phone").value    = _sessionPhone;
 
-        fetch("/api/financial_data", {credentials:"include"}).then(r=>r.json()).then(function(fd){
-            _sessionPhone = fd.phone || sess.phone || "";
-            if(_sessionPhone) document.getElementById("phone").value = _sessionPhone;
-            let score = fd.risk_score || "";
-            if(score) document.getElementById("score").value = score;
-        });
+        fetch("/api/financial_data", { credentials: "include" }).then(r=>r.json()).then(function(fd){
+            if(fd.phone && !_sessionPhone){
+                _sessionPhone = fd.phone;
+                document.getElementById("phone").value = _sessionPhone;
+            }
+            if(fd.risk_score) document.getElementById("score").value = fd.risk_score;
+        }).catch(function(){});
     }).catch(function(){ window.location.href="/"; });
 });
 
-function formatAadhar(inp){ /* unchanged */ }
-function toggleEmployment(){ /* unchanged */ }
-function handleFile(inputId, lblId, iconId, txtId, storeKey){ /* unchanged */ }
-function calcEmi(){ /* unchanged */ }
+/* ── FORMAT AADHAR ── */
+function formatAadhar(inp){
+    let v = inp.value.replace(/\D/g,'').substring(0,12);
+    let parts = [];
+    for(let i=0; i<v.length; i+=4) parts.push(v.substring(i,i+4));
+    inp.value = parts.join(' ');
+}
 
+/* ── TOGGLE EMPLOYER FIELD ── */
+function toggleEmployment(){
+    let emp = document.getElementById("employment").value;
+    let grp = document.getElementById("employerGroup");
+    if(emp === "Student" || emp === "Retired"){
+        grp.style.display = "none";
+    } else {
+        grp.style.display = "block";
+    }
+}
+
+/* ── HANDLE FILE UPLOAD — THE MAIN FIX ── */
+function handleFile(inputId, lblId, iconId, txtId, storeKey){
+    let file = document.getElementById(inputId).files[0];
+    if(!file) return;
+
+    /* Show uploaded state immediately */
+    let lbl  = document.getElementById(lblId);
+    let icon = document.getElementById(iconId);
+    let txt  = document.getElementById(txtId);
+
+    lbl.classList.add("uploaded");
+    icon.innerText = "✅";
+    let name = file.name.length > 22 ? file.name.substring(0, 20) + "…" : file.name;
+    txt.innerText = name + " (" + (file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+"MB" : Math.round(file.size/1024)+"KB") + ")";
+
+    /* Read file as base64 for later submission */
+    let reader = new FileReader();
+    reader.onload = function(e){
+        fileStore[storeKey] = e.target.result;
+    };
+    reader.onerror = function(){
+        lbl.classList.remove("uploaded");
+        icon.innerText = "❌";
+        txt.innerText  = "Error reading file. Try again.";
+        fileStore[storeKey] = null;
+    };
+    reader.readAsDataURL(file);
+}
+
+/* ── EMI CALCULATOR ── */
+function calcEmi(){
+    let loan    = Number(document.getElementById("loan").value)   || 0;
+    let tenure  = Number(document.getElementById("tenure").value) || 0;
+    let score   = Number(document.getElementById("score").value)  || 50;
+    let display = document.getElementById("emiDisplay");
+
+    if(!loan || !tenure){ display.innerText = "₹ —"; return; }
+
+    /* Interest rate based on risk score */
+    let rate = score >= 75 ? 8.5 : score >= 55 ? 12 : 18;
+    let r    = rate / 12 / 100;
+    let emi  = r === 0 ? loan/tenure : Math.round(loan * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1));
+    display.innerText = "₹" + emi.toLocaleString() + "/mo  (" + rate + "% p.a.)";
+    return emi;
+}
+
+/* ── SUBMIT APPLICATION ── */
 async function submitApplication(){
     let errEl = document.getElementById("errorMsg");
     let sucEl = document.getElementById("successMsg");
-    errEl.innerText = ""; sucEl.innerText = "";
+    errEl.innerText = "";
+    sucEl.innerText = "";
 
-    // ... all your validation code remains exactly the same ...
+    let fullName      = document.getElementById("fullName").value.trim();
+    let age           = Number(document.getElementById("age").value);
+    let phone         = document.getElementById("phone").value.trim();
+    let address       = document.getElementById("address").value.trim();
+    let employment    = document.getElementById("employment").value;
+    let aadhar        = document.getElementById("aadhar").value.trim();
+    let pan           = document.getElementById("pan").value.trim();
+    let loan          = document.getElementById("loan").value;
+    let loanType      = document.getElementById("loanType").value;
+    let tenure        = document.getElementById("tenure").value;
+    let score         = document.getElementById("score").value;
+    let purpose       = document.getElementById("purpose").value.trim();
+    let accountHolder = document.getElementById("accountHolder").value.trim();
+    let accountNumber = document.getElementById("accountNumber").value.trim();
+    let ifsc          = document.getElementById("ifsc").value.trim();
 
-    let phone = document.getElementById("phone").value.trim();
+    /* Validation */
+    if(!fullName)      { errEl.innerText="Full name is required."; return; }
+    if(!age||age<18)   { errEl.innerText="Valid age (18+) is required."; return; }
+    if(!phone||phone.length<10){ errEl.innerText="Valid 10-digit phone is required."; return; }
+    if(!address)       { errEl.innerText="Address is required."; return; }
+    if(!employment)    { errEl.innerText="Select employment type."; return; }
+    if(!aadhar||aadhar.replace(/\s/g,'').length<12){ errEl.innerText="Valid 12-digit Aadhar is required."; return; }
+    if(!pan||pan.length<10){ errEl.innerText="Valid PAN number is required."; return; }
+    if(!loan)          { errEl.innerText="Loan amount is required."; return; }
+    if(!loanType)      { errEl.innerText="Select loan type."; return; }
+    if(!tenure)        { errEl.innerText="Tenure is required."; return; }
+    if(!purpose)       { errEl.innerText="Loan purpose is required."; return; }
+    if(!accountHolder) { errEl.innerText="Account holder name is required."; return; }
+    if(!accountNumber) { errEl.innerText="Account number is required."; return; }
+    if(!ifsc)          { errEl.innerText="IFSC code is required."; return; }
 
-    // ── CRITICAL FIX: Await financial_data update BEFORE applying loan ──
+    /* Calculate EMI */
+    let scoreNum = Number(score) || 50;
+    let loanNum  = Number(loan);
+    let tenureNum = Number(tenure);
+    let rate = scoreNum >= 75 ? 8.5 : scoreNum >= 55 ? 12 : 18;
+    let r    = rate / 12 / 100;
+    let emi  = r === 0 ? loanNum/tenureNum : Math.round(loanNum * r * Math.pow(1+r, tenureNum) / (Math.pow(1+r, tenureNum) - 1));
+
+    /* Save borrower profile with uploaded docs */
     try {
-        let fdRes = await fetch("/api/financial_data", {credentials:"include"});
-        let fd = await fdRes.json();
+        await fetch("/save_borrower_profile", {
+            method: "POST",
+            credentials: "include",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                name: fullName, phone: phone, age: age,
+                email: document.getElementById("email").value.trim(),
+                address: address, employment: employment,
+                employer: document.getElementById("employer").value.trim(),
+                aadhar: aadhar, pan: pan, purpose: purpose,
+                accountHolder: accountHolder,
+                accountNumber: accountNumber,
+                ifsc: ifsc,
+                aadharImg:  fileStore.aadharData,
+                panImg:     fileStore.panData,
+                salaryImg:  fileStore.salaryData,
+                bankStmt:   fileStore.bankStmtData
+            })
+        });
+    } catch(e) { /* Non-fatal — continue with loan application */ }
+
+    /* Update phone in financial_data */
+    try {
+        let fdRes = await fetch("/api/financial_data", { credentials: "include" });
+        let fd    = await fdRes.json();
         let payload = Object.assign({}, fd, { phone: phone });
         await fetch("/api/financial_data", {
             method: "POST",
             credentials: "include",
-            headers: {"Content-Type": "application/json"},
+            headers: {"Content-Type":"application/json"},
             body: JSON.stringify(payload)
         });
     } catch(e) {}
 
-    // Now submit loan
-    fetch("/apply_loan",{credentials:"include", method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            name:fullName, age, phone,
-            loanAmount:Number(loan), loanType,
-            tenure:Number(tenure), emi,
-            risk_score:Number(score),
-            address, employment, purpose, aadhar, pan
+    /* Submit loan application */
+    fetch("/apply_loan", {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            name: fullName, age: age, phone: phone,
+            loanAmount: loanNum, loanType: loanType,
+            tenure: tenureNum, emi: emi,
+            risk_score: scoreNum,
+            address: address, employment: employment,
+            purpose: purpose,
+            aadhar: aadhar, pan: pan
         })
     })
-    .then(r=>r.json())
+    .then(r => r.json())
     .then(function(res){
-        if(res.message==="no_banker"){
-            sucEl.innerText="✅ Application submitted! No banker available yet — will be picked up once a banker registers.";
+        if(res.error){ errEl.innerText = res.error; return; }
+        if(res.message === "no_banker"){
+            sucEl.innerText = "✅ Application submitted! No banker available yet — will be assigned once a banker registers.";
         } else {
-            sucEl.innerText="✅ Application submitted successfully! Redirecting...";
-            showToast('✅ Loan application submitted!','success');
+            sucEl.innerText = "✅ Application submitted successfully! Redirecting to dashboard...";
+            if(window.showToast) showToast('✅ Loan application submitted!','success');
         }
-        setTimeout(() => { window.location.href="/user_dashboard"; }, 1800);
+        setTimeout(function(){ window.location.href = "/user_dashboard"; }, 2000);
     })
-    .catch(() => { errEl.innerText="Server error. Please try again."; });
+    .catch(function(){ errEl.innerText = "Server error. Please try again."; });
 }
+
 function logout(){
     fetch('/logout',{credentials:"include",method:'POST'}).finally(function(){ window.location.href="/"; });
 }
 </script>
 
 <script>
-
 /* ── TOAST SYSTEM ── */
 (function(){
     let container = document.getElementById('toastContainer');
@@ -290,7 +438,7 @@ function logout(){
         let icons = {success:'✅', error:'❌', info:'ℹ', warn:'⚠'};
         let t = document.createElement('div');
         t.className = 'toast ' + type;
-        t.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + msg + '</span>';
+        t.innerHTML = '<span>'+(icons[type]||'')+'</span><span>'+msg+'</span>';
         container.appendChild(t);
         setTimeout(function(){
             t.classList.add('fade-out');
@@ -319,9 +467,6 @@ function logout(){
         overlay.classList.remove('open');
     });
 })();
-
 </script>
-<script src="{{ url_for('static', filename='finrisk_shared.js') }}"></script>
-<script>createHelpButton();</script>
 </body>
 </html>
