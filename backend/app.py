@@ -22,13 +22,13 @@ def allowed_file(filename):
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-app.secret_key = os.environ.get("SECRET_KEY")
+app.secret_key = "my_super_secret_key_123"
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
 
 # ── SESSION CONFIG — works on both HTTP and HTTPS (PythonAnywhere) ─────────────
 app.config['SESSION_COOKIE_SAMESITE']    = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY']    = True
-app.config['SESSION_COOKIE_SECURE']      = True  # PythonAnywhere handles HTTPS at proxy level
+app.config['SESSION_COOKIE_SECURE'] = False  # PythonAnywhere handles HTTPS at proxy level
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
 app.config['SESSION_COOKIE_PATH']        = '/'
 app.config['SESSION_COOKIE_NAME']        = 'finrisk_session'
