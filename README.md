@@ -102,3 +102,5 @@ pip install -r requirements.txt
 
 # 4. Run the application
 python app.py
+
+⚠️ Note: A minor session configuration issue was fixed post-submission for deployment stability.
