@@ -25,10 +25,10 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = "my_super_secret_key_123"
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LEN
 
-# ── SESSION CONFIG — works on both HTTP and HTTPS (PythonAnywhere) ─────────────
+# ── SESSION CONFIG ─────────────────────────────────────────────────────────────
 app.config['SESSION_COOKIE_SAMESITE']    = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY']    = True
-app.config['SESSION_COOKIE_SECURE'] = False  # PythonAnywhere handles HTTPS at proxy level
+app.config['SESSION_COOKIE_SECURE']      = False  # FIX: Must be False — PythonAnywhere proxies HTTPS, Flask sees HTTP
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
 app.config['SESSION_COOKIE_PATH']        = '/'
 app.config['SESSION_COOKIE_NAME']        = 'finrisk_session'
@@ -36,7 +36,6 @@ app.config['SESSION_COOKIE_NAME']        = 'finrisk_session'
 import re
 
 def normalize_phone(phone):
-    """Strip +91, 0 prefix, spaces, dashes. Returns clean 10-digit string or original."""
     if not phone:
         return ''
     p = re.sub(r'[\s\-]', '', str(phone).strip())
@@ -166,20 +165,18 @@ def init_db():
         updated_at TEXT
     )''')
 
-        # === ADD THIS BLOCK ===
+    # FIX: correct indentation for user_goals table
     c.execute('''CREATE TABLE IF NOT EXISTS user_goals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
-        goal_type TEXT,           -- 'short', 'mid', 'long'
+        goal_type TEXT,
         goal_name TEXT,
         target_amount REAL,
         monthly_contribution REAL DEFAULT 0,
         current_savings REAL DEFAULT 0,
         updated_at TEXT
     )''')
-
     c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_goal ON user_goals(username, goal_type)")
-    # =======================
 
     c.execute('''CREATE TABLE IF NOT EXISTS loan_expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -562,28 +559,22 @@ def save_financial_data():
     conn.close()
     return jsonify({"message": "Financial data saved."})
 
+
 @app.route('/api/user_goals', methods=['GET'])
 def get_user_goals():
     username = session.get('username')
     if not username:
         return jsonify({"error": "Not logged in"}), 401
-
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute("""SELECT goal_type, goal_name, target_amount, 
-                        monthly_contribution, current_savings 
+    c.execute("""SELECT goal_type, goal_name, target_amount, monthly_contribution, current_savings
                  FROM user_goals WHERE username=?""", (username,))
     rows = c.fetchall()
     conn.close()
-
     goals = {}
     for r in rows:
-        goals[r[0]] = {
-            "name": r[1] or "",
-            "target": float(r[2] or 0),
-            "monthly": float(r[3] or 0),
-            "current": float(r[4] or 0)
-        }
+        goals[r[0]] = {"name": r[1] or "", "target": float(r[2] or 0),
+                       "monthly": float(r[3] or 0), "current": float(r[4] or 0)}
     return jsonify(goals)
 
 
@@ -592,27 +583,19 @@ def save_user_goals():
     username = session.get('username')
     if not username:
         return jsonify({"error": "Not logged in"}), 401
-
     data = request.json or {}
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute("DELETE FROM user_goals WHERE username=?", (username,))
-
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     for goal_type, g in data.items():
         if isinstance(g, dict) and g.get('target', 0) > 0:
-            c.execute('''INSERT INTO user_goals 
-                        (username, goal_type, goal_name, target_amount,
-                         monthly_contribution, current_savings, updated_at)
-                        VALUES (?,?,?,?,?,?,?)''',
-                      (username, goal_type,
-                       g.get('name',''),
-                       g.get('target',0),
-                       g.get('monthly',0),
-                       g.get('current',0),
-                       current_time))
-
+            c.execute('''INSERT INTO user_goals
+                         (username, goal_type, goal_name, target_amount,
+                          monthly_contribution, current_savings, updated_at)
+                         VALUES (?,?,?,?,?,?,?)''',
+                      (username, goal_type, g.get('name',''), g.get('target',0),
+                       g.get('monthly',0), g.get('current',0), current_time))
     conn.commit()
     conn.close()
     return jsonify({"message": "Goals saved successfully"})
@@ -711,13 +694,12 @@ def update_user_profile():
     return jsonify({"message": "Profile updated.", "username": session['username']})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# APPLY LOAN
+# APPLY LOAN — FIX: restored original response format that apply_loan.html expects
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/apply_loan', methods=['POST'])
 def apply_loan():
-    data = request.json or {}
-    
+    data       = request.json or {}
     name       = (data.get('name') or '').strip()
     phone      = normalize_phone(data.get('phone') or '')
     age        = data.get('age', 0)
@@ -727,46 +709,36 @@ def apply_loan():
     emi        = data.get('emi')
     risk_score = data.get('risk_score')
 
-    # Validation
     if not name:
         return jsonify({"error": "Name is required."}), 400
     if not validate_phone(phone):
         return jsonify({"error": "Invalid phone number."}), 400
     if not validate_loan_amount(loanAmount):
-        return jsonify({"error": "Loan amount must be between ₹1,000 and ₹1,00,00,000."}), 400
+        return jsonify({"error": "Loan amount must be between Rs.1,000 and Rs.1,00,00,000."}), 400
     if not validate_tenure(tenure):
         return jsonify({"error": "Tenure must be between 1 and 360 months."}), 400
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-
-    # Check if banker exists
     c.execute("SELECT COUNT(*) FROM bankers")
     banker_count = c.fetchone()[0]
-
     try:
-        c.execute('''INSERT INTO users 
-                     (name, age, phone, loanAmount, loanType, tenure, emi, 
-                      risk_score, allocated_banker, loan_status, reason, 
-                      created_at)
+        c.execute('''INSERT INTO users
+                     (name, age, phone, loanAmount, loanType, tenure, emi,
+                      risk_score, allocated_banker, loan_status, reason, created_at)
                      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
                   (name, age, phone, loanAmount, loanType, tenure, emi,
-                   risk_score, None, "Pending", "", 
+                   risk_score, None, "Pending", "",
                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        
         conn.commit()
-        
-        return jsonify({
-            "message": "Application submitted successfully",
-            "status": "Pending",
-            "bankers_available": banker_count > 0
-        })
-        
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
         conn.close()
+        return jsonify({"error": str(e)}), 500
+    conn.close()
+    # FIX: return original format that apply_loan.html expects
+    return jsonify({"message": "no_banker" if banker_count == 0 else "submitted"})
+
 # ══════════════════════════════════════════════════════════════════════════════
 # PICKUP LOAN
 # ══════════════════════════════════════════════════════════════════════════════
@@ -849,37 +821,33 @@ def banker_action():
     return jsonify({"message": "Action recorded"})
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GET STATUS — BUG FIX: search by normalized phone, fallback to name-only
+# GET STATUS — FIX: safe row variable, phone + name fallback
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/get_status/<phone>')
 def get_status(phone):
     phone = normalize_phone(phone)
-    name = request.args.get('name', '').strip()
+    name  = request.args.get('name', '').strip()
+    row   = None  # FIX: always initialize row to avoid NameError
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
 
-    # Try phone first (most reliable)
     if phone:
-        c.execute('''SELECT loan_status, reason, allocated_banker, created_at 
+        c.execute('''SELECT loan_status, reason, allocated_banker, created_at
                      FROM users WHERE phone=? ORDER BY id DESC LIMIT 1''', (phone,))
         row = c.fetchone()
-        if row:
-            conn.close()
-            return jsonify({"status": row[0], "reason": row[1] or "", "banker": row[2] or "", "created_at": row[3] or ""})
 
-    # Fallback to name
-    if name:
-        c.execute('''SELECT loan_status, reason, allocated_banker, created_at 
+    if not row and name:
+        c.execute('''SELECT loan_status, reason, allocated_banker, created_at
                      FROM users WHERE name=? ORDER BY id DESC LIMIT 1''', (name,))
         row = c.fetchone()
 
     conn.close()
 
     if row:
-        return jsonify({"status": row[0], "reason": row[1] or "", "banker": row[2] or "", "created_at": row[3] or ""})
-    
+        return jsonify({"status": row[0], "reason": row[1] or "",
+                        "banker": row[2] or "", "created_at": row[3] or ""})
     return jsonify({"status": "No Application", "reason": "", "banker": "", "created_at": ""})
 
 # ══════════════════════════════════════════════════════════════════════════════
