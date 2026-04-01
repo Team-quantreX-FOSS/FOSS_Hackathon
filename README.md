@@ -4,8 +4,7 @@
 
 A full-stack fintech web application for **intelligent loan risk assessment**, designed for **FOSS Hackathon 2026** with a focus on open-source contribution, real-world impact, and robust architecture.
 
-**Demo Video** → [Watch on YouTube](https://youtu.be/YOUR_VIDEO_ID_HERE)  
-*(Replace with your uploaded demo video link)*
+**Demo Video** →(https://drive.google.com/file/d/1LeaCKgHhyqiAyc152S5b2mXJlygtIdB0/view?usp=sharing)
 
 ---
 
